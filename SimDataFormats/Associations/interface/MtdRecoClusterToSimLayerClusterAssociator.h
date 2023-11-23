@@ -26,15 +26,19 @@ namespace reco {
     
     // ---------- const member functions ---------------------
     /// Associate RecoCluster to MtdSimLayerCluster
-    reco::RecoToSimCollection associateRecoToSim(const edm::Handle<FTLClusterCollection> &rCCH,
-						 const edm::Handle<MtdSimLayerClusterCollection> &sCCH) const {
-      return m_impl->associateRecoToSim(rCCH, sCCH);
+    reco::RecoToSimCollectionMtd associateRecoToSim(const edm::Handle<FTLClusterCollection> &rCCH,
+						    const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
+						    const edm::Handle<FTLRecHitCollection> &btlRecHitsH,
+						    const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const {
+      return m_impl->associateRecoToSim(rCCH, sCCH, btlRecHitsH, etlRecHitsH);
     };
 
     /// Associate MtdSimLayerCluster to RecoCluster
-    reco::SimToRecoCollection associateSimToReco(const edm::Handle<FTLClusterCollection> &rCCH,
-						 const edm::Handle<MtdSimLayerClusterCollection> &sCCH) const {
-      return m_impl->associateSimToReco(rCCH, sCCH);
+    reco::SimToRecoCollectionMtd associateSimToReco(const edm::Handle<FTLClusterCollection> &rCCH,
+						    const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
+						    const edm::Handle<FTLRecHitCollection> &btlRecHitsH,
+                                                    const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const {
+      return m_impl->associateSimToReco(rCCH, sCCH, btlRecHitsH, etlRecHitsH);
     };
 
   private:

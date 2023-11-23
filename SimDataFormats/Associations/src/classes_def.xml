@@ -30,6 +30,9 @@
   <class name="hgcal::LayerClusterToSimTracksterAssociator" persistent="false"/>
   <class name="edm::Wrapper<hgcal::LayerClusterToSimTracksterAssociator>" persistent="false"/>
 
+  <class name="reco::MtdRecoClusterToSimLayerClusterAssociator" persistent="false"/>
+  <class name="edm::Wrapper<reco::MtdRecoClusterToSimLayerClusterAssociator>" persistent="false"/>
+
 
   <class name="reco::VertexSimToRecoCollection" >
     <field name="transientMap_" transient="true"/>
