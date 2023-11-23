@@ -13,13 +13,17 @@ class MtdRecoClusterToSimLayerClusterAssociatorImpl : public reco::MtdRecoCluste
 public:
   MtdRecoClusterToSimLayerClusterAssociatorImpl(edm::EDProductGetter const &);
 
-  reco::RecoToSimCollection associateRecoToSim(
+  reco::RecoToSimCollectionMtd associateRecoToSim(
       const edm::Handle<FTLClusterCollection> &rCCH,
-      const edm::Handle<MtdSimLayerClusterCollection> &sCCH) const override;
+      const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
+      const edm::Handle<FTLRecHitCollection>& btlRecHitsHandle,
+      const edm::Handle<FTLRecHitCollection>& etlRecHitsHandle) const override;
 
-  reco::SimToRecoCollection associateSimToReco(
+  reco::SimToRecoCollectionMtd associateSimToReco(
       const edm::Handle<FTLClusterCollection> &rCCH,
-      const edm::Handle<MtdSimLayerClusterCollection> &sCCH) const override;
+      const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
+      const edm::Handle<FTLRecHitCollection>& btlRecHitsHandle,
+      const edm::Handle<FTLRecHitCollection>& etlRecHitsHandle) const override;
 
 private:
   edm::EDProductGetter const *productGetter_;
