@@ -9,7 +9,7 @@ namespace edm {
   class EDProductGetter;
 }
 
-class MtdRecoClusterToSimLayerClusterAssociatorImpl : public reco::MtdRecoClusterToSimLayerClusterAssociatorImpl {
+class MtdRecoClusterToSimLayerClusterAssociatorImpl : public reco::MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
 public:
   MtdRecoClusterToSimLayerClusterAssociatorImpl(edm::EDProductGetter const &);
 

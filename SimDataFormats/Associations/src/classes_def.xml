@@ -33,7 +33,7 @@
   <class name="reco::MtdRecoClusterToSimLayerClusterAssociator" persistent="false"/>
   <class name="edm::Wrapper<reco::MtdRecoClusterToSimLayerClusterAssociator>" persistent="false"/>
 
-
+  
   <class name="reco::VertexSimToRecoCollection" >
     <field name="transientMap_" transient="true"/>
   </class>
@@ -144,4 +144,20 @@
 
   <class name="edm::Ref<std::vector<TTTrackTruthPair<edm::Ref<edm::DetSetVector<Phase2TrackerDigi>,Phase2TrackerDigi,edm::refhelper::FindForDetSetVector<Phase2TrackerDigi> > > > >" />
   <class name="edm::Wrapper<std::vector<TTTrackTruthPair<edm::Ref<edm::DetSetVector<Phase2TrackerDigi>,Phase2TrackerDigi,edm::refhelper::FindForDetSetVector<Phase2TrackerDigi> > > > >" />
+
+
+  <class name="edm::Wrapper<SimToRecoCollectionMtd>" />
+  <class name="edm::Wrapper<RecoToSimCollectionMtd>" />
+
+  <class name="SimToRecoCollectionMtd" >
+   <field name="transientMap_" transient="true"/>
+  </class>
+  <class name="RecoToSimCollectionMtd" >
+   <field name="transientMap_" transient="true"/>
+  </class>
+  
+  <class name="edm::helpers::KeyVal<edm::RefProd<vector<MtdSimLayerCluster> >,edm::RefProd<vector<FTLCluster> > >" />
+  <class name="edm::helpers::KeyVal<edm::RefProd<vector<FTLCluster> >,edm::RefProd<vector<MtdSimLayerCluster> > >" />
+
+
 </lcgdict>
