@@ -106,7 +106,8 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
       auto recoClusterRef = makeRefTo(rCCH, detSetClus);
       //edm::Ref<FTLClusterCollection> recoClusterRef = edm::Ref<FTLClusterCollection>(recoClusters, DetSetClus);
       //edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusters, simClusIndex);
-      //outputCollection.insert(recoClusterRef, simClusterRef, quality);  
+      // -- insert vuole degli edm::Ref???????????
+      outputCollection.insert(recoClusterRef, simClusterRef, quality);   
     }
 
     
