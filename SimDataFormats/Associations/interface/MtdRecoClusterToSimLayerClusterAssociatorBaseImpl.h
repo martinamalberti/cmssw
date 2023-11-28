@@ -11,7 +11,7 @@
 namespace reco {
 
   typedef edm::AssociationMap<
-      edm::OneToManyWithQualityGeneric<MtdSimLayerClusterCollection, FTLClusterCollection, std::pair<float, float>>>
+      edm::OneToManyWithQualityGeneric<MtdSimLayerClusterCollection, FTLClusterCollection, float>>
       SimToRecoCollectionMtd;
   typedef edm::AssociationMap<edm::OneToManyWithQualityGeneric<FTLClusterCollection, MtdSimLayerClusterCollection, float>>
       RecoToSimCollectionMtd;
