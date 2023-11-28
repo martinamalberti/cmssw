@@ -14,16 +14,18 @@ public:
   MtdRecoClusterToSimLayerClusterAssociatorImpl(edm::EDProductGetter const &);
 
   reco::RecoToSimCollectionMtd associateRecoToSim(
-      const edm::Handle<FTLClusterCollection> &rCCH,
-      const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
-      const edm::Handle<FTLRecHitCollection>& btlRecHitsHandle,
-      const edm::Handle<FTLRecHitCollection>& etlRecHitsHandle) const override;
+      const edm::Handle<FTLClusterCollection> &btlRecoClusH,
+      const edm::Handle<FTLClusterCollection> &etlRecoClusH,
+      const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
+      const edm::Handle<FTLRecHitCollection>& btlRecHitsH,
+      const edm::Handle<FTLRecHitCollection>& etlRecHitsH) const override;
 
   reco::SimToRecoCollectionMtd associateSimToReco(
-      const edm::Handle<FTLClusterCollection> &rCCH,
-      const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
-      const edm::Handle<FTLRecHitCollection>& btlRecHitsHandle,
-      const edm::Handle<FTLRecHitCollection>& etlRecHitsHandle) const override;
+      const edm::Handle<FTLClusterCollection> &btlRecoClusH,
+      const edm::Handle<FTLClusterCollection> &etlRecoClusH,
+      const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
+      const edm::Handle<FTLRecHitCollection>& btlRecHitsH,
+      const edm::Handle<FTLRecHitCollection>& etlRecHitsH) const override;
 
 private:
   edm::EDProductGetter const *productGetter_;

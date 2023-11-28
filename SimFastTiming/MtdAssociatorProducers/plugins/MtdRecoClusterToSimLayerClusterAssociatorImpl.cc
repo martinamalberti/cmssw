@@ -25,94 +25,96 @@ MtdRecoClusterToSimLayerClusterAssociatorImpl::MtdRecoClusterToSimLayerClusterAs
 //
 
 reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::associateRecoToSim(
-      const edm::Handle<FTLClusterCollection>& rCCH, const edm::Handle<MtdSimLayerClusterCollection>& sCCH,
-      const edm::Handle<FTLRecHitCollection>& btlRecHitsHandle, const edm::Handle<FTLRecHitCollection>& etlRecHitsHandle) const {
+      const edm::Handle<FTLClusterCollection>& btlRecoClusH, const edm::Handle<FTLClusterCollection>& etlRecoClusH,
+      const edm::Handle<MtdSimLayerClusterCollection>& simClusH,
+      const edm::Handle<FTLRecHitCollection>& btlRecHitsH, const edm::Handle<FTLRecHitCollection>& etlRecHitsH) const {
 
   RecoToSimCollectionMtd outputCollection(productGetter_);
 
   // do stuff to fill the output collection
 
-  // -- get collections
-  const auto& recoClusters = *rCCH.product();
-  const auto& simClusters  = *sCCH.product();
-  const auto& btlRecHits   = *btlRecHitsHandle.product();
-  const auto& etlRecHits   = *etlRecHitsHandle.product();
-
-  // -- loop over reco clusters
-  for ( const auto detSetClus : *rCCH) {
-  
-    int simClusIndex = 0;
-    float quality = 0;
+  // -- get the collections
+  const auto& btlRecHits   = *btlRecHitsH.product();
+  const auto& etlRecHits   = *etlRecHitsH.product();
+  const auto& simClusters  = *simClusH.product();
     
-    for (const auto& recoClus : detSetClus) {
+  std::array<edm::Handle<FTLClusterCollection>, 2> inputH{{btlRecoClusH, etlRecoClusH}};
+
+  for (auto const& recoClusH : inputH) {
+    
+    const auto& detSetVecs = *recoClusH.product();
+
+    // -- loop over detSetVec
+    for (auto detSetVecIt = detSetVecs.begin(); detSetVecIt != detSetVecs.end(); detSetVecIt++) {
       
-      BTLDetId clusId = recoClus.id();
-      MTDDetId mtdId(clusId);
+      auto detSetVec = *detSetVecIt;
 
-      // === Clusters in BTL   -- testing only BTL for now.
-      if (mtdId.mtdSubDetector() != MTDDetId::BTL)  continue;
+      // -- loop over reco clusters
+      for (const auto& recoClus : detSetVec) {
 
-      std::vector<uint64_t> recoClusHitIds;
+	BTLDetId clusId = recoClus.id(); // DetId dei reco clus e' il sensor module
+	MTDDetId mtdId(clusId);
 
-      // -- loop over hits in the reco cluster and find their ids
-      for (int ihit = 0; ihit < recoClus.size(); ++ihit) {
-	int hit_row = recoClus.minHitRow() + recoClus.hitOffset()[ihit * 2];
-	int hit_col = recoClus.minHitCol() + recoClus.hitOffset()[ihit * 2 + 1];
-	
-	for (auto recHit : btlRecHits) {
-	  BTLDetId hitId(recHit.id().rawId());
+	// === Clusters in BTL   -- testing only BTL for now.
+	if (mtdId.mtdSubDetector() != MTDDetId::BTL)  continue;
+
+	std::vector<uint64_t> recoClusHitIds;
+
+	// -- loop over hits in the reco cluster and find their ids
+	for (int ihit = 0; ihit < recoClus.size(); ++ihit) {
+	  int hit_row = recoClus.minHitRow() + recoClus.hitOffset()[ihit * 2];
+	  int hit_col = recoClus.minHitCol() + recoClus.hitOffset()[ihit * 2 + 1];
 	  
-	  // -- check the hit position
-	  if (hitId.mtdSide() != clusId.mtdSide() || hitId.mtdRR() != clusId.mtdRR() || recHit.row() != hit_row || recHit.column() != hit_col)
-	    continue;
-	  
-	  // -- check the hit energy and time
-	  if (recHit.energy() != recoClus.hitENERGY()[ihit] || recHit.time() != recoClus.hitTIME()[ihit])
-	    continue;
-	  
-	  recoClusHitIds.push_back(hitId);
+	  for (auto recHit : btlRecHits) {
+	    BTLDetId hitId(recHit.id().rawId());
+	    
+	    // -- check the hit position
+	    if (hitId.mtdSide() != clusId.mtdSide() || hitId.mtdRR() != clusId.mtdRR() || recHit.row() != hit_row || recHit.column() != hit_col)
+	      continue;
+	    
+	    // -- check the hit energy and time
+	    if (recHit.energy() != recoClus.hitENERGY()[ihit] || recHit.time() != recoClus.hitTIME()[ihit])
+	      continue;
+	    
+	    recoClusHitIds.push_back(hitId);
+	  }
+	} // end loop over hits in reco cluster
+
+	// -- loop over sim clusters and if this reco clus shares some hits
+	edm::Ref<MtdSimLayerClusterCollection>::key_type simClusIndex = 0;
+	float quality = 0;
+	int nSharedHits = 0;
+	//for (const auto& simClus  : simClusters){
+	for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
+	  auto simClus = *simClusIt;
+	  simClusIndex++;
+	  std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
+	  std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
+	  std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<int, float>& pair) {
+											  return pair.first;});
+	  std::vector<uint64_t> sharedHitIds;
+	  std::set_intersection(recoClusHitIds.begin(), recoClusHitIds.end(), simClusHitIds.begin(), simClusHitIds.end(), std::back_inserter(sharedHitIds));
+	  if (!sharedHitIds.empty()){ 	// NB : may add some requirement on energy and/or time compatibility between the sim cluster and the reco cluster
+	    nSharedHits = sharedHitIds.size();
+	    quality = sharedHitIds.size()/recoClusHitIds.size();
+	    break; 
+	  }
 	}
-      } // end loop over hits in reco cluster
 
-      // -- loop over sim clusters and if this reco clus shares some hits
-      for (const auto& simClus  : simClusters){
-	simClusIndex++;
-	std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
-	std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
-	std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<int, float>& pair) {
-											return pair.first;});
-	std::vector<uint64_t> sharedHitIds;
-	std::set_intersection(recoClusHitIds.begin(), recoClusHitIds.end(), simClusHitIds.begin(), simClusHitIds.end(), std::back_inserter(sharedHitIds));
-	if (sharedHitIds.empty()) continue;
-	quality = sharedHitIds.size()/recoClusHitIds.size();
-      }
-
-      auto recoClusterRef = makeRefTo(rCCH, &recoClus);
-
-      // -- if they share some hits fill the output collection
-      //if ( simClusIndex != -1){
-	//edm::Ref<FTLClusterCollection> recoClusterRef = edm::Ref<FTLClusterCollection>(rCCH, recoClus);
-	//edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(sCCH, simClusters[simClusIndex]);
-	//auto simClusterRef = simClusters[simClusIndex];
-	//outputCollection.insert(recoClusterRef, std::make_pair(simClusterRef, quality));
-	//outputCollection.insert(recoClusterRef, simClusterRef, quality);  
-      //}
-
+	// -- if they share at least one hit fill the output collection
+	if ( nSharedHits > 0 ){ // at least one hit in common
+	  edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex); // OK
 	  
-    }// -- end loop over reco clus
-
-    /// BOH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if ( simClusIndex != -1){
-      auto recoClusterRef = makeRefTo(rCCH, detSetClus);
-      //edm::Ref<FTLClusterCollection> recoClusterRef = edm::Ref<FTLClusterCollection>(recoClusters, DetSetClus);
-      //edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusters, simClusIndex);
-      // -- insert vuole degli edm::Ref???????????
-      outputCollection.insert(recoClusterRef, simClusterRef, quality);   
-    }
-
+	  // Create a persistent edm::Ref to the cluster
+	  // --> voglio : edm::Ref<edmNew::DetSetVector<FTLCluster>, edmNew::DetSet<FTLCluster>
+	  edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> recoClusterRef = edmNew::makeRefTo(recoClusH, &recoClus);
+	  outputCollection.insert(recoClusterRef, std::make_pair(simClusterRef, quality));
+	  
+	}
+      }// -- end loop over reco clus
+    }// -- end loop over detsetclus
+  }	  
     
-  }// -- end loop over detsetclus
-  
   return outputCollection;
 
 }
@@ -120,8 +122,9 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
 
 
 reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::associateSimToReco(
-      const edm::Handle<FTLClusterCollection>& rCCH, const edm::Handle<MtdSimLayerClusterCollection>& sCCH,
-      const edm::Handle<FTLRecHitCollection>& btlRecHitsHandle, const edm::Handle<FTLRecHitCollection>& etlRecHitsHandle) const {
+      const edm::Handle<FTLClusterCollection>& btlRecoClusH, const edm::Handle<FTLClusterCollection>& etlRecoClusH,
+      const edm::Handle<MtdSimLayerClusterCollection>& simClusH,
+      const edm::Handle<FTLRecHitCollection>& btlRecHitsH, const edm::Handle<FTLRecHitCollection>& etlRecHitsH) const {
 
   SimToRecoCollectionMtd outputCollection(productGetter_);
 

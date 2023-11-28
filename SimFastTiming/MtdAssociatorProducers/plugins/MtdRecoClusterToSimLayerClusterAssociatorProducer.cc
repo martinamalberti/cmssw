@@ -31,10 +31,11 @@ public:
 private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
   
-  edm::EDGetTokenT<FTLClusterCollection> recoClustersToken_;
-  edm::EDGetTokenT<MtdSimLayerClusterCollection> simClustersToken_;
+  edm::EDGetTokenT<FTLClusterCollection> btlRecoClustersToken_;
+  edm::EDGetTokenT<FTLClusterCollection> etlRecoClustersToken_;
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
   edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
+  edm::EDGetTokenT<MtdSimLayerClusterCollection> simClustersToken_;
 
   edm::EDGetTokenT<reco::MtdRecoClusterToSimLayerClusterAssociator> associatorToken_;
 };
@@ -43,10 +44,11 @@ MtdRecoClusterToSimLayerClusterAssociatorProducer::MtdRecoClusterToSimLayerClust
   produces<reco::SimToRecoCollectionMtd>();
   produces<reco::RecoToSimCollectionMtd>();
 
-  recoClustersToken_ = consumes<FTLClusterCollection>(pset.getParameter<edm::InputTag>("mtdRecoClustersTag"));
-  simClustersToken_  = consumes<MtdSimLayerClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimClustersTag"));
+  btlRecoClustersToken_ = consumes<FTLClusterCollection>(pset.getParameter<edm::InputTag>("btlRecoClustersTag"));
+  etlRecoClustersToken_ = consumes<FTLClusterCollection>(pset.getParameter<edm::InputTag>("etlRecoClustersTag"));
   btlRecHitsToken_ = consumes<FTLRecHitCollection>(pset.getParameter<edm::InputTag>("btlRecHitsTag"));
   etlRecHitsToken_ = consumes<FTLRecHitCollection>(pset.getParameter<edm::InputTag>("etlRecHitsTag"));
+  simClustersToken_  = consumes<MtdSimLayerClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimClustersTag"));
   associatorToken_ = consumes<reco::MtdRecoClusterToSimLayerClusterAssociator>(pset.getParameter<edm::InputTag>("associator"));
 }
 
@@ -63,11 +65,11 @@ void MtdRecoClusterToSimLayerClusterAssociatorProducer::produce(edm::StreamID, e
   edm::Handle<reco::MtdRecoClusterToSimLayerClusterAssociator> theAssociator;
   iEvent.getByToken(associatorToken_, theAssociator);
 
-  edm::Handle<FTLClusterCollection> recoClusters;
-  iEvent.getByToken(recoClustersToken_, recoClusters);
+  edm::Handle<FTLClusterCollection> btlRecoClusters;
+  iEvent.getByToken(btlRecoClustersToken_, btlRecoClusters);
 
-  edm::Handle<MtdSimLayerClusterCollection> simClusters;
-  iEvent.getByToken(simClustersToken_, simClusters);
+  edm::Handle<FTLClusterCollection> etlRecoClusters;
+  iEvent.getByToken(etlRecoClustersToken_, etlRecoClusters);
 
   edm::Handle<FTLRecHitCollection> btlRecHits;
   iEvent.getByToken(btlRecHitsToken_, btlRecHits);
@@ -75,11 +77,13 @@ void MtdRecoClusterToSimLayerClusterAssociatorProducer::produce(edm::StreamID, e
   edm::Handle<FTLRecHitCollection> etlRecHits;
   iEvent.getByToken(etlRecHitsToken_, etlRecHits);
 
+  edm::Handle<MtdSimLayerClusterCollection> simClusters;
+  iEvent.getByToken(simClustersToken_, simClusters);
+
+
   // associate reco clus to sim layer clus
-  //reco::RecoToSimCollectionMtd recoToSimColl = theAssociator->associateRecoToSim(recoClusters, simClusters);
-  //reco::SimToRecoCollectionMtd simToRecoColl = theAssociator->associateSimToReco(recoClusters, simClusters);
-  reco::RecoToSimCollectionMtd recoToSimColl = theAssociator->associateRecoToSim(recoClusters, simClusters, btlRecHits, etlRecHits);
-  reco::SimToRecoCollectionMtd simToRecoColl = theAssociator->associateSimToReco(recoClusters, simClusters, btlRecHits, etlRecHits);
+  reco::RecoToSimCollectionMtd recoToSimColl = theAssociator->associateRecoToSim(btlRecoClusters, etlRecoClusters, simClusters, btlRecHits, etlRecHits);
+  reco::SimToRecoCollectionMtd simToRecoColl = theAssociator->associateSimToReco(btlRecoClusters, etlRecoClusters, simClusters, btlRecHits, etlRecHits);
 
   auto r2s = std::make_unique<reco::RecoToSimCollectionMtd>(recoToSimColl);
   auto s2r = std::make_unique<reco::SimToRecoCollectionMtd>(simToRecoColl);

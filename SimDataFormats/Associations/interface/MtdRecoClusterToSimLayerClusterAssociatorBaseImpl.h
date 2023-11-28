@@ -24,14 +24,16 @@ namespace reco {
     virtual ~MtdRecoClusterToSimLayerClusterAssociatorBaseImpl();
 
     /// Associate a MtdRecoCluster to MtdSimLayerClusters
-    virtual reco::RecoToSimCollectionMtd associateRecoToSim(const edm::Handle<FTLClusterCollection> &rCCH,
-							    const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
+    virtual reco::RecoToSimCollectionMtd associateRecoToSim(const edm::Handle<FTLClusterCollection> &btlRecoClusH,
+							    const edm::Handle<FTLClusterCollection> &etlRecoClusH,
+							    const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
 							    const edm::Handle<FTLRecHitCollection> &btlRecHitsH,
 							    const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const;  
 
     /// Associate a MtdSimLayerClusters to MtdRecoClusters
-    virtual reco::SimToRecoCollectionMtd associateSimToReco(const edm::Handle<FTLClusterCollection> &rCCH,
-							    const edm::Handle<MtdSimLayerClusterCollection> &sCCH,
+    virtual reco::SimToRecoCollectionMtd associateSimToReco(const edm::Handle<FTLClusterCollection> &btlRecoClusH,
+                                                            const edm::Handle<FTLClusterCollection> &etlRecoClusH,
+                                                            const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
 							    const edm::Handle<FTLRecHitCollection> &btlRecHitsH,
                                                             const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const;
 							 
