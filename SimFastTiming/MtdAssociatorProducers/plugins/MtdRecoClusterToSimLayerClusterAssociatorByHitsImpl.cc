@@ -53,6 +53,8 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 
 	MTDDetId clusId = recoClus.id();
 
+	std::cout << "Reco cluster : " << clusId << std::endl;
+	
 	std::vector<uint64_t> recoClusHitIds;
 
 	// -- loop over hits in the reco cluster and find their ids
@@ -78,9 +80,9 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	      uniqueId |= recHit.row() << 16;
 	      uniqueId |= recHit.column();
 	      recoClusHitIds.push_back(uniqueId);
-	      std::cout << " ======= recHits raw Id : " << hitId.rawId()
+	      std::cout << " ======= recHit raw Id : " << hitId.rawId()
 			<< "  row : " << recHit.row() << "   column: " <<  recHit.column()
-			<< " recHit uniqueId : " << uniqueId
+	      		<< " recHit uniqueId : " << uniqueId
 			<< std::endl;
 	    }
 	  }
@@ -101,7 +103,7 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 											  return pair.first;});
 
 	  for (unsigned int i = 0; i < simClusHitIds.size(); i++){
-	    std::cout << "===>> simCluster index: " << simClusIndex << "  hit: " << i << "   hit id: "<< simClusHitIds[i] <<std::endl;
+	    std::cout << ">>>> simCluster index: " << simClusIndex << "  hit: " << i << "   hit id: "<< simClusHitIds[i] <<std::endl;
 	  }
 	    
 	  // -- get shared hits
@@ -122,7 +124,7 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 
 	std::cout << " Found " << nSharedHits << " shared hits" <<std::endl;
 	if ( nSharedHits > 0 ){
-	  std::cout << "E_recoClus = " << recoClus.energy() << "E_simClus = " << E_simClus << "   E_recoClus/E_simClus = " << dE <<std::endl;
+	  std::cout << "E_recoClus = " << recoClus.energy() << "   E_simClus = " << E_simClus << "   E_recoClus/E_simClus = " << dE <<std::endl;
 	  std::cout << " (t_recoClus-t_simClus)/sigma_t = " << dtSig <<std::endl;
 	}
 	
@@ -219,6 +221,12 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	  // -- may add some requirement on energy and/or time compatibility between the sim cluster and the reco cluster
           float dE = recoClus.energy()*0.001/simClus.simLCEnergy(); // reco cluster energy in MeV
           float dtSig = std::abs((recoClus.time()-simClus.simLCTime())/recoClus.timeError());
+
+	  std::cout << " Found " << nSharedHits << " shared hits" <<std::endl;
+	  if ( nSharedHits > 0 ){
+	    std::cout << "E_recoClus = " << recoClus.energy() << "  E_simClus = " << simClus.simLCEnergy() << "   E_recoClus/E_simClus = " << dE <<std::endl;
+	    std::cout << " (t_recoClus-t_simClus)/sigma_t = " << dtSig <<std::endl;
+	  }
 	  
 	  // -- if the reco clus shares at least one hit with the sim clus fill the output collection
 	  if ( nSharedHits > 0 && dE < energyCut_ && dtSig < timeCut_){ // at least one hit in common + compat.
