@@ -155,6 +155,9 @@
   <class name="reco::RecoToSimCollectionMtd" >
    <field name="transientMap_" transient="true"/>
   </class>
-  
+
+  <class name="edm::helpers::KeyVal<edm::RefProd<edmNew::DetSetVector<FTLCluster> >,edm::RefProd<vector<MtdSimLayerCluster> > >" />
+  <class name="edm::helpers::KeyVal<edm::RefProd<vector<MtdSimLayerCluster> >,edm::RefProd<edmNew::DetSetVector<FTLCluster> > >" />
+
   
 </lcgdict>

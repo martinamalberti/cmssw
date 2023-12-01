@@ -9,9 +9,11 @@ namespace edm {
   class EDProductGetter;
 }
 
-class MtdRecoClusterToSimLayerClusterAssociatorImpl : public reco::MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
+class MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl : public reco::MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
 public:
-  MtdRecoClusterToSimLayerClusterAssociatorImpl(edm::EDProductGetter const &);
+  explicit MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const &,
+							       double,
+							       double);
 
   reco::RecoToSimCollectionMtd associateRecoToSim(
       const edm::Handle<FTLClusterCollection> &btlRecoClusH,
@@ -29,5 +31,7 @@ public:
 
 private:
   edm::EDProductGetter const *productGetter_;
+  const double energyCut_;
+  const double timeCut_;
 };
 

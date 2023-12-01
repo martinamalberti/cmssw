@@ -17,16 +17,15 @@
 
 #include "FWCore/Utilities/interface/EDGetToken.h"
 
-#include "MtdRecoClusterToSimLayerClusterAssociatorImpl.h"
 
 //
 // class decleration
 //
 
-class MtdRecoClusterToSimLayerClusterAssociatorProducer : public edm::global::EDProducer<> {
+class MtdRecoClusterToSimLayerClusterAssociatorEDProducer : public edm::global::EDProducer<> {
 public:
-  explicit MtdRecoClusterToSimLayerClusterAssociatorProducer(const edm::ParameterSet &);
-  ~MtdRecoClusterToSimLayerClusterAssociatorProducer() override;
+  explicit MtdRecoClusterToSimLayerClusterAssociatorEDProducer(const edm::ParameterSet &);
+  ~MtdRecoClusterToSimLayerClusterAssociatorEDProducer() override;
 
 private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
@@ -40,7 +39,7 @@ private:
   edm::EDGetTokenT<reco::MtdRecoClusterToSimLayerClusterAssociator> associatorToken_;
 };
 
-MtdRecoClusterToSimLayerClusterAssociatorProducer::MtdRecoClusterToSimLayerClusterAssociatorProducer(const edm::ParameterSet &pset) {
+MtdRecoClusterToSimLayerClusterAssociatorEDProducer::MtdRecoClusterToSimLayerClusterAssociatorEDProducer(const edm::ParameterSet &pset) {
   produces<reco::SimToRecoCollectionMtd>();
   produces<reco::RecoToSimCollectionMtd>();
 
@@ -52,14 +51,14 @@ MtdRecoClusterToSimLayerClusterAssociatorProducer::MtdRecoClusterToSimLayerClust
   associatorToken_ = consumes<reco::MtdRecoClusterToSimLayerClusterAssociator>(pset.getParameter<edm::InputTag>("associator"));
 }
 
-MtdRecoClusterToSimLayerClusterAssociatorProducer::~MtdRecoClusterToSimLayerClusterAssociatorProducer() {}
+MtdRecoClusterToSimLayerClusterAssociatorEDProducer::~MtdRecoClusterToSimLayerClusterAssociatorEDProducer() {}
 
 //
 // member functions
 //
 
 // ------------ method called to produce the data  ------------
-void MtdRecoClusterToSimLayerClusterAssociatorProducer::produce(edm::StreamID, edm::Event &iEvent, const edm::EventSetup &iSetup) const {
+void MtdRecoClusterToSimLayerClusterAssociatorEDProducer::produce(edm::StreamID, edm::Event &iEvent, const edm::EventSetup &iSetup) const {
   using namespace edm;
 
   edm::Handle<reco::MtdRecoClusterToSimLayerClusterAssociator> theAssociator;
@@ -93,4 +92,4 @@ void MtdRecoClusterToSimLayerClusterAssociatorProducer::produce(edm::StreamID, e
 }
 
 // define this as a plug-in
-DEFINE_FWK_MODULE(MtdRecoClusterToSimLayerClusterAssociatorProducer);
+DEFINE_FWK_MODULE(MtdRecoClusterToSimLayerClusterAssociatorEDProducer);

@@ -6,7 +6,7 @@
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
-#include "MtdRecoClusterToSimLayerClusterAssociatorImpl.h"
+#include "MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl.h"
 
 
 
@@ -16,15 +16,17 @@ using namespace std;
 
 /* Constructor */
 
-MtdRecoClusterToSimLayerClusterAssociatorImpl::MtdRecoClusterToSimLayerClusterAssociatorImpl(edm::EDProductGetter const& productGetter)
-  : productGetter_(&productGetter){}
+MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl::MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const& productGetter,
+													 double energyCut,
+													 double timeCut)
+  : productGetter_(&productGetter), energyCut_(energyCut), timeCut_(timeCut){}
 
 
 //
 //---member functions
 //
 
-reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::associateRecoToSim(
+reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl::associateRecoToSim(
       const edm::Handle<FTLClusterCollection>& btlRecoClusH, const edm::Handle<FTLClusterCollection>& etlRecoClusH,
       const edm::Handle<MtdSimLayerClusterCollection>& simClusH,
       const edm::Handle<FTLRecHitCollection>& btlRecHitsH, const edm::Handle<FTLRecHitCollection>& etlRecHitsH) const {
@@ -32,8 +34,6 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
   RecoToSimCollectionMtd outputCollection(productGetter_);
 
   // -- get the collections
-  //const auto& btlRecHits   = *btlRecHitsH.product();
-  //const auto& etlRecHits   = *etlRecHitsH.product();
   const auto& simClusters  = *simClusH.product();
     
   std::array<edm::Handle<FTLClusterCollection>, 2> inputRecoClusH{{btlRecoClusH, etlRecoClusH}};
@@ -78,6 +78,10 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
 	      uniqueId |= recHit.row() << 16;
 	      uniqueId |= recHit.column();
 	      recoClusHitIds.push_back(uniqueId);
+	      std::cout << " ======= recHits raw Id : " << hitId.rawId()
+			<< "  row : " << recHit.row() << "   column: " <<  recHit.column()
+			<< " recHit uniqueId : " << uniqueId
+			<< std::endl;
 	    }
 	  }
 	}// end loop over rec hits in reco cluster
@@ -86,22 +90,29 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
 	edm::Ref<MtdSimLayerClusterCollection>::key_type simClusIndex = 0;
 	int nSharedHits = 0;
 	float dE = 0;
-	float dt = 0;
+	float dtSig = 0;
+	float E_simClus = 0;
 	for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
 	  auto simClus = *simClusIt;
+
 	  std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
 	  std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
-	  std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<int, float>& pair) {
+	  std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {
 											  return pair.first;});
+
+	  for (unsigned int i = 0; i < simClusHitIds.size(); i++){
+	    std::cout << "===>> simCluster index: " << simClusIndex << "  hit: " << i << "   hit id: "<< simClusHitIds[i] <<std::endl;
+	  }
+	    
 	  // -- get shared hits
 	  std::vector<uint64_t> sharedHitIds;
 	  std::set_intersection(recoClusHitIds.begin(), recoClusHitIds.end(), simClusHitIds.begin(), simClusHitIds.end(), std::back_inserter(sharedHitIds));
 	  nSharedHits = sharedHitIds.size();
 
 	  // -- may add some requirement on energy and/or time compatibility between the sim cluster and the reco cluster
-	  dE = recoClus.energy()/simClus.simLCEnergy();
-	  dt = (recoClus.time()-simClus.simLCTime())/recoClus.time();
-
+	  dE = recoClus.energy()*0.001/simClus.simLCEnergy(); // clusEnergy in MeV
+	  dtSig = std::abs((recoClus.time()-simClus.simLCTime())/recoClus.timeError());
+	  E_simClus = simClus.simLCEnergy();
 	  simClusIndex++;
 
 	  if (!sharedHitIds.empty() ){ 	
@@ -109,16 +120,20 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
 	  }
 	}// -- end loop over sim clus
 
+	std::cout << " Found " << nSharedHits << " shared hits" <<std::endl;
+	if ( nSharedHits > 0 ){
+	  std::cout << "E_recoClus = " << recoClus.energy() << "E_simClus = " << E_simClus << "   E_recoClus/E_simClus = " << dE <<std::endl;
+	  std::cout << " (t_recoClus-t_simClus)/sigma_t = " << dtSig <<std::endl;
+	}
 	
 	// -- if they share at least one hit fill the output collection
-	if ( nSharedHits > 0 ){ // at least one hit in common
-	  //if ( nSharedHits > 0 && dE < 10 && dt <10){ // at least one hit in common + compat.
+	  if ( nSharedHits > 0 && dE < energyCut_ && dtSig < timeCut_){ // at least one hit in common + compat.
 	  edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex); // this works.
 	  	  
 	  // Create a persistent edm::Ref to the cluster
 	  // --> voglio : edm::Ref<edmNew::DetSetVector<FTLCluster>, edmNew::DetSet<FTLCluster> ?????
 	  edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> recoClusterRef = edmNew::makeRefTo(recoClusH, &recoClus); 
-	  outputCollection.insert(recoClusterRef, std::make_pair(simClusterRef, float(nSharedHits)));
+	  //outputCollection.insert(recoClusterRef, std::make_pair(simClusterRef, float(nSharedHits)));
 	  
 	}
       }// -- end loop over reco clus
@@ -131,7 +146,7 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
 
 
 
-reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::associateSimToReco(
+reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl::associateSimToReco(
       const edm::Handle<FTLClusterCollection>& btlRecoClusH, const edm::Handle<FTLClusterCollection>& etlRecoClusH,
       const edm::Handle<MtdSimLayerClusterCollection>& simClusH,
       const edm::Handle<FTLRecHitCollection>& btlRecHitsH, const edm::Handle<FTLRecHitCollection>& etlRecHitsH) const {
@@ -202,17 +217,16 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorImpl::asso
 	  } // -- end loop over hits in the reco clus
 
 	  // -- may add some requirement on energy and/or time compatibility between the sim cluster and the reco cluster
-          //float dE = recoClus.energy()/simClus.simLCEnergy();
-          //float dt = (recoClus.time()-simClus.simLCTime())/recoClus.time();
+          float dE = recoClus.energy()*0.001/simClus.simLCEnergy(); // reco cluster energy in MeV
+          float dtSig = std::abs((recoClus.time()-simClus.simLCTime())/recoClus.timeError());
 	  
 	  // -- if the reco clus shares at least one hit with the sim clus fill the output collection
-	   if ( nSharedHits > 0 ){
-	     //if ( nSharedHits > 0 && dE < 10 && dt <10){ // at least one hit in common + compat.
+	  if ( nSharedHits > 0 && dE < energyCut_ && dtSig < timeCut_){ // at least one hit in common + compat.
 	    edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex); // OK
 	    
 	    // Create a persistent edm::Ref to the cluster
 	    edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> recoClusterRef = edmNew::makeRefTo(recoClusH, &recoClus);
-	    outputCollection.insert(simClusterRef, std::make_pair(recoClusterRef, float(nSharedHits)));
+	    //outputCollection.insert(simClusterRef, std::make_pair(recoClusterRef, float(nSharedHits)));
 	  }
       
 	  

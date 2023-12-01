@@ -1,11 +1,10 @@
 import FWCore.ParameterSet.Config as cms
 
-mtdRecoClusterToSimLayerClusterAssociation = cms.EDProducer("MtdRecoClusterToSimLayerClusterAssociatorProducer",
-    associator = cms.InputTag('associator'), #?
+mtdRecoClusterToSimLayerClusterAssociation = cms.EDProducer("MtdRecoClusterToSimLayerClusterAssociatorEDProducer",
+    associator = cms.InputTag('mtdClusterAssociatorByHitsProducer'),
     mtdSimClustersTag = cms.InputTag('mix','MergedMtdTruthLC'),
-    #mtdRecoClustersTag = cms.InputTag('mtdClusters', 'FTLBarrel'),
     btlRecoClustersTag = cms.InputTag('mtdClusters', 'FTLBarrel'),
-    etlRecoClustersTag = cms.InputTag('mtdClusters', 'FTLBarrel'),
+    etlRecoClustersTag = cms.InputTag('mtdClusters', 'FTLEndcap'),
     btlRecHitsTag = cms.InputTag('mtdRecHits', 'FTLBarrel'),
     etlRecHitsTag = cms.InputTag('mtdRecHits', 'FTLEndcap'),
 )
