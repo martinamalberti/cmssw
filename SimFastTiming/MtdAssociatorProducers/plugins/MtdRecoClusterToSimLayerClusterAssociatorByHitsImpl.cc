@@ -115,11 +115,13 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	  dE = recoClus.energy()*0.001/simClus.simLCEnergy(); // clusEnergy in MeV
 	  dtSig = std::abs((recoClus.time()-simClus.simLCTime())/recoClus.timeError());
 	  E_simClus = simClus.simLCEnergy();
-	  simClusIndex++;
 
 	  if (!sharedHitIds.empty() ){ 	
 	    break; 
 	  }
+	  
+	  simClusIndex++;
+	  
 	}// -- end loop over sim clus
 
 	std::cout << " Found " << nSharedHits << " shared hits" <<std::endl;
@@ -134,6 +136,7 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	  	  
 	  // Create a persistent edm::Ref to the cluster
 	  edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> recoClusterRef = edmNew::makeRefTo(recoClusH, &recoClus); 
+	  //auto recoClusterRef = edm::Ref<FTLClusterCollection>(recoClusH, detSetVec.makeKeyOf( &recoClus )) ; /// mah..
 	  outputCollection.insert(recoClusterRef, std::make_pair(simClusterRef, float(nSharedHits)));
 	  
 	}
