@@ -47,7 +47,7 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     for (auto detSetVecIt = detSetVecs.begin(); detSetVecIt != detSetVecs.end(); detSetVecIt++) {
       
       auto detSetVec = *detSetVecIt;
-
+ 
       // -- loop over reco clusters
       for (const auto& recoClus : detSetVec) {
 
@@ -133,9 +133,8 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	  edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex); // this works.
 	  	  
 	  // Create a persistent edm::Ref to the cluster
-	  // --> voglio : edm::Ref<edmNew::DetSetVector<FTLCluster>, edmNew::DetSet<FTLCluster> ?????
 	  edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> recoClusterRef = edmNew::makeRefTo(recoClusH, &recoClus); 
-	  //outputCollection.insert(recoClusterRef, std::make_pair(simClusterRef, float(nSharedHits)));
+	  outputCollection.insert(recoClusterRef, std::make_pair(simClusterRef, float(nSharedHits)));
 	  
 	}
       }// -- end loop over reco clus

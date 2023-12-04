@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 mtdRecoClusterToSimLayerClusterAssociationByHits = cms.EDProducer('MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer',
-   energyCut = cms.double(9999.),
-   timeCut   = cms.double(9999.),
+   energyCut = cms.double(5.),
+   timeCut   = cms.double(10.),
    mightGet  = cms.optional.untracked.vstring
 )
