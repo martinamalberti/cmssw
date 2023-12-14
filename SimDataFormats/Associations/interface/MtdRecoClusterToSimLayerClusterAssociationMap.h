@@ -22,6 +22,7 @@ public:
   using mapped_type = MtdSimLayerClusterRef;
   using value_type = std::pair<key_type, mapped_type>;
   using map_type = std::vector<value_type>;
+  using const_iterator = typename map_type::const_iterator;
   
   /// Constructor
   MtdRecoClusterToSimLayerClusterAssociationMap();
@@ -32,7 +33,16 @@ public:
     map_.emplace_back(recoClus, simClus);
   }
 
+  bool empty() const { return map_.empty(); }
+  size_t size() const { return map_.size(); }
 
+  const_iterator begin() const { return map_.begin(); }
+  const_iterator cbegin() const { return map_.cbegin(); }
+  const_iterator end() const { return map_.end(); }
+  const_iterator cend() const { return map_.cend(); }
+
+  const map_type& map() const { return map_; }
+  
 private:
   map_type map_;
 

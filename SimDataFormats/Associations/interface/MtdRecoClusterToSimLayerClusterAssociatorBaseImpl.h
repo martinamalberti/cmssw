@@ -2,7 +2,7 @@
 #define SimDataFormats_Associations_MtdRecoClusterToSimLayerClusterAssociatorBaseImpl_h
 
 #include "DataFormats/Common/interface/Handle.h"
-#include "DataFormats/Common/interface/AssociationMap.h"
+//#include "DataFormats/Common/interface/AssociationMap.h"
 #include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "DataFormats/FTLRecHit/interface/FTLRecHitCollections.h"
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"

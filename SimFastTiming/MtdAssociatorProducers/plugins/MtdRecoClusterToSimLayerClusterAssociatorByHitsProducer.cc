@@ -13,7 +13,6 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
-#include "SimDataFormats/Associations/interface/MtdRecoClusterToSimLayerClusterAssociator.h"
 #include "MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl.h"
 
 #include "FWCore/Utilities/interface/EDGetToken.h"
