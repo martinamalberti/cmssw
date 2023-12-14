@@ -1,0 +1,6 @@
+#include "SimDataFormats/Associations/interface/MtdRecoClusterToSimLayerClusterAssociationMap.h"
+
+
+MtdRecoClusterToSimLayerClusterAssociationMap::MtdRecoClusterToSimLayerClusterAssociationMap() {}
+
+MtdRecoClusterToSimLayerClusterAssociationMap::~MtdRecoClusterToSimLayerClusterAssociationMap() {}

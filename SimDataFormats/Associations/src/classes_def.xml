@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <lcgdict>
   <class name="reco::TrackToTrackingParticleAssociator" persistent="false"/>
   <class name="edm::Wrapper<reco::TrackToTrackingParticleAssociator>" persistent="false"/>
@@ -29,7 +30,6 @@
 
   <class name="hgcal::LayerClusterToSimTracksterAssociator" persistent="false"/>
   <class name="edm::Wrapper<hgcal::LayerClusterToSimTracksterAssociator>" persistent="false"/>
-
 
   <class name="reco::VertexSimToRecoCollection" >
     <field name="transientMap_" transient="true"/>
@@ -141,4 +141,18 @@
 
   <class name="edm::Ref<std::vector<TTTrackTruthPair<edm::Ref<edm::DetSetVector<Phase2TrackerDigi>,Phase2TrackerDigi,edm::refhelper::FindForDetSetVector<Phase2TrackerDigi> > > > >" />
   <class name="edm::Wrapper<std::vector<TTTrackTruthPair<edm::Ref<edm::DetSetVector<Phase2TrackerDigi>,Phase2TrackerDigi,edm::refhelper::FindForDetSetVector<Phase2TrackerDigi> > > > >" />
+
+
+  
+  <class name="std::pair<FTLClusterRef, MtdSimLayerClusterRef>" persistent="true" />
+  <class name="std::vector<std::pair<FTLClusterRef, MtdSimLayerClusterRef> >" />
+  <class name="MtdRecoClusterToSimLayerClusterAssociationMap" persistent="true" />
+  <class name="edm::Wrapper<MtdRecoClusterToSimLayerClusterAssociationMap>" />
+  <class name="std::pair<MtdSimLayerClusterRef, FTLClusterRef>" persistent="true" />
+  <class name="std::vector<std::pair<MtdSimLayerClusterRef, FTLClusterRef> >" />
+  <class name="MtdSimLayerClusterToRecoClusterAssociationMap" persistent="true" />
+  <class name="edm::Wrapper<MtdSimLayerClusterToRecoClusterAssociationMap>" />
+  <class name="reco::MtdRecoClusterToSimLayerClusterAssociator" persistent="false"/>
+  <class name="edm::Wrapper<reco::MtdRecoClusterToSimLayerClusterAssociator>" persistent="false"/>
+
 </lcgdict>
