@@ -58,8 +58,8 @@ private:
 
 // ------------ constructor and destructor --------------
 TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig) {
-  btlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("bltRecoClusTag"));
-  //etlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("eltRecoClusTag"));
+  btlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("btlRecoClustersTag"));
+  //etlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("eltRecoClustersTag"));
   clusterAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(iConfig.getParameter<edm::InputTag>("clusterAssociationMapTag"));
   mtdTrackingHitToken_ = consumes<MTDTrackingDetSetVector>(iConfig.getParameter<edm::InputTag>("trkHitTag"));
 }
@@ -120,7 +120,8 @@ void TestClusterAssociation::endJob() {}
 void TestClusterAssociation::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
 
-  desc.add<edm::InputTag>("recCluTag", edm::InputTag("mtdClusters", "FTLBarrel"));
+  desc.add<edm::InputTag>("btlRecoClustersTag", edm::InputTag("mtdClusters", "FTLBarrel"));
+  desc.add<edm::InputTag>("clusterAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
   desc.add<edm::InputTag>("trkHitTag", edm::InputTag("mtdTrackingRecHits"));
   descriptions.add("TestClusterAssociation", desc);
 }

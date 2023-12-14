@@ -31,9 +31,7 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:')
-
-    )       
+    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre1/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAsocciationMaps.root')
 )
 
 
@@ -43,7 +41,7 @@ for a in process.aliases: delattr(process, a)
 
 # --- Sim Clusters dumper
 process.clusterAssociation = cms.EDAnalyzer('TestClusterAssociation',
-    bltRecoClusTag = cms.InputTag('mtdClusters', 'FTLBarrel'),
+    btlRecoClustersTag = cms.InputTag('mtdClusters', 'FTLBarrel'),
     clusterAssociationMapTag = cms.InputTag('mtdRecoClusterToSimLayerClusterAssociation'),
     trkHitTag = cms.InputTag('mtdTrackingRecHits')
 )
@@ -55,4 +53,4 @@ process.clusterAssociation = cms.EDAnalyzer('TestClusterAssociation',
 #    fileName = cms.string('mtdSimClustersTree_SinglePiFlat.root')
 #)
 
-process.p = cms.Path(process.mix + process.mtdSimClusterDumper)
+process.p = cms.Path(process.mix + process.clusterAssociation)
