@@ -100,11 +100,12 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
       auto simClusterRef = (*it).second;
       
       float simClusEnergy = (*simClusterRef).simLCEnergy();
+      float simClusTime = (*simClusterRef).simLCTime();
 
       
-      //      float simClusTime = simClusterRef.simLCEnergy() ;
 
-      std::cout << recoClusEnergy << "  " << recoClusTime <<std::endl;
+      std::cout << "reco cluster energy = " << recoClusEnergy << "    sim cluster energy = " << simClusEnergy <<std::endl;
+      std::cout << "reco cluster time = " << recoClusTime << "    sim cluster time = " << simClusTime <<std::endl;
       
     }  // Cluster loop
 
