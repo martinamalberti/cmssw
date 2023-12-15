@@ -42,15 +42,17 @@ for a in process.aliases: delattr(process, a)
 # --- Sim Clusters dumper
 process.clusterAssociation = cms.EDAnalyzer('TestClusterAssociation',
     btlRecoClustersTag = cms.InputTag('mtdClusters', 'FTLBarrel'),
-    clusterAssociationMapTag = cms.InputTag('mtdRecoClusterToSimLayerClusterAssociation'),
+    etlRecoClustersTag = cms.InputTag('mtdClusters', 'FTLEndcap'),
+    r2sAssociationMapTag = cms.InputTag('mtdRecoClusterToSimLayerClusterAssociation'),
+    s2rAssociationMapTag = cms.InputTag('mtdRecoClusterToSimLayerClusterAssociation'),
+    mtdSimLayerClustersTag = cms.InputTag('mix','MergedMtdTruthLC'),
     trkHitTag = cms.InputTag('mtdTrackingRecHits')
 )
 
 
 # Output TFile
-#process.TFileService = cms.Service('TFileService',
-#    #fileName = cms.string('mtdSimClustersTree_SingleMuonPt10.root')
-#    fileName = cms.string('mtdSimClustersTree_SinglePiFlat.root')
-#)
+process.TFileService = cms.Service('TFileService',
+   fileName = cms.string('clusterAssociationTest.root')
+)
 
 process.p = cms.Path(process.mix + process.clusterAssociation)

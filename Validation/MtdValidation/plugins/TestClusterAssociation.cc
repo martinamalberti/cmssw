@@ -24,11 +24,19 @@
 
 #include "DataFormats/Common/interface/ValidHandle.h"
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
+#include "DataFormats/ForwardDetId/interface/ETLDetId.h"
 #include "DataFormats/FTLRecHit/interface/FTLRecHitCollections.h"
 #include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "DataFormats/TrackerRecHit2D/interface/MTDTrackingRecHit.h"
+#include "DataFormats/ForwardDetId/interface/MTDDetId.h"
+
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"
 
 #include "SimDataFormats/Associations/interface/MtdRecoClusterToSimLayerClusterAssociationMap.h"
+#include "SimDataFormats/Associations/interface/MtdSimLayerClusterToRecoClusterAssociationMap.h"
+
+#include "TTree.h"
+#include "TH1F.h"
 
 using namespace std;
 
@@ -49,19 +57,61 @@ private:
   
 
   // ------------ member data ------------
-  edm::EDGetTokenT<FTLClusterCollection> btlRecCluToken_;
-  //edm::EDGetTokenT<FTLClusterCollection> etlRecCluToken_;
+  edm::EDGetTokenT<FTLClusterCollection> btlRecoClusToken_;
+  edm::EDGetTokenT<FTLClusterCollection> etlRecoClusToken_;
   edm::EDGetTokenT<MTDTrackingDetSetVector> mtdTrackingHitToken_;
-  edm::EDGetTokenT<MtdRecoClusterToSimLayerClusterAssociationMap> clusterAssociationMapToken_;
+  edm::EDGetTokenT<std::vector<MtdSimLayerCluster>> mtdSimLayerClustersToken_;
+  edm::EDGetTokenT<MtdRecoClusterToSimLayerClusterAssociationMap> r2sAssociationMapToken_;
+  edm::EDGetTokenT<MtdSimLayerClusterToRecoClusterAssociationMap> s2rAssociationMapToken_;
 
+
+  // --  Output histos
+  edm::Service<TFileService> fs_;
+  TH1F *h_energyResol_BTL;
+  TH1F *h_energyResol_ETL;
+
+  TH1F *h_timeResol_BTL; 
+  TH1F *h_timeResol_ETL;
+
+  TH1F *h_nSimClusPerRecoClus_BTL;
+  TH1F *h_nSimClusPerRecoClus_ETL;
+
+  TH1F *h_nRecoClusPerSimClus_BTL;
+  TH1F *h_nRecoClusPerSimClus_ETL;
+
+  TH1F *h_etaSimClus;
+  TH1F *h_etaSimClus_assocToReco;
+    
 };
 
+
+  
 // ------------ constructor and destructor --------------
 TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig) {
-  btlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("btlRecoClustersTag"));
-  //etlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("eltRecoClustersTag"));
-  clusterAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(iConfig.getParameter<edm::InputTag>("clusterAssociationMapTag"));
+  btlRecoClusToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("btlRecoClustersTag"));
+  etlRecoClusToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("etlRecoClustersTag"));
+  r2sAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(iConfig.getParameter<edm::InputTag>("r2sAssociationMapTag"));
+  s2rAssociationMapToken_ = consumes<MtdSimLayerClusterToRecoClusterAssociationMap>(iConfig.getParameter<edm::InputTag>("s2rAssociationMapTag"));
   mtdTrackingHitToken_ = consumes<MTDTrackingDetSetVector>(iConfig.getParameter<edm::InputTag>("trkHitTag"));
+  mtdSimLayerClustersToken_ = consumes<std::vector<MtdSimLayerCluster> >(iConfig.getParameter<edm::InputTag>("mtdSimLayerClustersTag"));
+
+
+  // -- book histograms
+  h_energyResol_BTL =  fs_->make<TH1F>("h_energyResol_BTL","h_energyResol_BTL", 200, -1, 1);
+  h_energyResol_ETL = fs_->make<TH1F>("h_energyResol_ETL","h_energyResol_ETL", 200, -1, 1);
+
+  h_timeResol_BTL = fs_->make<TH1F>("h_timeResol_BTL","h_timeResol_BTL", 200, -1, 1);
+  h_timeResol_ETL = fs_->make<TH1F>("h_timeResol_ETL","h_timeResol_ETL", 200, -1, 1);
+
+  h_nSimClusPerRecoClus_BTL = fs_->make<TH1F>("h_nSimClusPerRecoClus_BTL","h_nSimClusPerRecoClus_BTL", 5, -0.0, 4.5);
+  h_nSimClusPerRecoClus_ETL = fs_->make<TH1F>("h_nSimClusPerRecoClus_ETL","h_nSimClusPerRecoClus_ETL", 5, -0.0, 4.5);
+
+  h_nRecoClusPerSimClus_BTL = fs_->make<TH1F>("h_nRecoClusPerSimClus_BTL","h_nRecoClusPerSimClus_BTL", 5, -0.0, 4.5);
+  h_nRecoClusPerSimClus_ETL = fs_->make<TH1F>("h_nRecoClusPerSimClus_ETL","h_nRecoClusPerSimClus_ETL", 5, -0.0, 4.5);
+
+  h_etaSimClus = fs_->make<TH1F>("h_etaSimClus","h_etaSimClus", 100, -3.0, 3.0);
+
+  h_etaSimClus_assocToReco = fs_->make<TH1F>("h_etaSimClus_assocToReco","h_etaSimClus_assocToReco", 100, -3.0, 3.0);
 }
 
 TestClusterAssociation::~TestClusterAssociation() {}
@@ -71,47 +121,112 @@ TestClusterAssociation::~TestClusterAssociation() {}
 // ------------ method called once each job just before starting event loop  ------------
 void TestClusterAssociation::beginJob() {
 
+  
 }
 
 
 // ------------ method called for each event  ------------
 void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
+  // -- get the collections
+  auto btlRecoClusH = iEvent.getHandle(btlRecoClusToken_);
+  auto etlRecoClusH = iEvent.getHandle(etlRecoClusToken_);
+  auto mtdTrkHitH = iEvent.getHandle(mtdTrackingHitToken_);
+  auto r2sAssociationMap = iEvent.get(r2sAssociationMapToken_);
+  auto s2rAssociationMap = iEvent.get(s2rAssociationMapToken_);
+
+  auto mtdSimLayerClustersH = iEvent.getHandle(mtdSimLayerClustersToken_);
+  std::vector<MtdSimLayerCluster> mtdSimLayerClusters =  *mtdSimLayerClustersH;
+      
+
+  std::array<edm::Handle<FTLClusterCollection>, 2> inputRecoClusH{{btlRecoClusH, etlRecoClusH}};
+
+  // --- Loop over the RECO clusters ---
+  for (auto const& recoClusH : inputRecoClusH) {
+    for (const auto& DetSetClu : *recoClusH) {
+      for (const auto& cluster : DetSetClu) {
+
+	MTDDetId mtdDetId = cluster.id();	
+	float recoClusEnergy = cluster.energy();
+	float recoClusTime = cluster.time();
+
+	// get the reco cluster ref
+	edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> clusterRef = edmNew::makeRefTo(recoClusH, &cluster);
+
+	// get the corresponding sim cluster ref
+	auto it = std::find_if( r2sAssociationMap.begin(), r2sAssociationMap.end(),
+				[&](const std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>>& p) { return p.first == clusterRef; });
+
+	std::vector<MtdSimLayerClusterRef> simClustersRefs = (*it).second;
+	
+	std::cout << "Number of associated MtdSimLayerclusters: " << simClustersRefs.size() <<std::endl;
+
+	if (mtdDetId.mtdSubDetector() == MTDDetId::BTL)	h_nSimClusPerRecoClus_BTL->Fill(simClustersRefs.size());
+	if (mtdDetId.mtdSubDetector() == MTDDetId::ETL)	h_nSimClusPerRecoClus_ETL->Fill(simClustersRefs.size());
+	
+	for (unsigned int i = 0; i < simClustersRefs.size(); i++){
+	  auto simClusterRef = simClustersRefs[i];
+	  
+	  float simClusEnergy = (*simClusterRef).simLCEnergy();
+	  float simClusTime = (*simClusterRef).simLCTime();
+	  
+	  std::cout << "reco cluster energy = " << recoClusEnergy << "    sim cluster energy = " << simClusEnergy <<std::endl;
+	  std::cout << "reco cluster time = " << recoClusTime << "    sim cluster time = " << simClusTime <<std::endl;
+
+	  // -- BTL
+	  if (mtdDetId.mtdSubDetector() == MTDDetId::BTL){
+	    h_energyResol_BTL->Fill( (0.001*recoClusEnergy-simClusEnergy)/simClusEnergy);
+	    h_timeResol_BTL->Fill(recoClusTime-simClusTime);
+	  }
+	  
+	  // -- ETL
+	  if (mtdDetId.mtdSubDetector() == MTDDetId::ETL){
+	    h_energyResol_ETL->Fill( (0.001*recoClusEnergy-simClusEnergy)/simClusEnergy);
+	    h_timeResol_ETL->Fill(recoClusTime-simClusTime);
+	  }
+	  
+	}
+	  
+      }  // reco cluster loop
+
+    }  // DetSetClu loop
+  }
   
-  auto btlRecCluHandle = makeValid(iEvent.getHandle(btlRecCluToken_));
-  //auto etlRecCluHandle = makeValid(iEvent.getHandle(etlRecCluToken_));
-  auto mtdTrkHitHandle = makeValid(iEvent.getHandle(mtdTrackingHitToken_));
-  auto clusterAssociationMap = iEvent.get(clusterAssociationMapToken_);
+
   
-  // --- Loop over the BTL RECO clusters ---
-  for (const auto& DetSetClu : *btlRecCluHandle) {
-    for (const auto& cluster : DetSetClu) {
+  // --- Loop over the SIM clusters ---    
+  
+  // -- Loop over MtdSimLayerClusters
+  edm::Ref<MtdSimLayerClusterCollection>::key_type simClusIndex = 0;
+  for (auto simClus : mtdSimLayerClusters){
 
-      float recoClusEnergy = cluster.energy();
-      float recoClusTime = cluster.time();
+    // -- get the sim cluster ref
+    edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(mtdSimLayerClustersH, simClusIndex);
 
-      // get the reco cluster ref
-      edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> clusterRef = edmNew::makeRefTo(btlRecCluHandle, &cluster);
+    // -- get the corresponding reco cluster ref
+    auto it = std::find_if( s2rAssociationMap.begin(), s2rAssociationMap.end(),
+			    [&](const std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef>>& p) { return p.first == simClusterRef; });
 
-      // get the corresponding sim cluster ref
-      auto it = std::find_if( clusterAssociationMap.begin(), clusterAssociationMap.end(),
-			      [&](const std::pair<FTLClusterRef, MtdSimLayerClusterRef>& p) { return p.first == clusterRef; });
+    std::vector<FTLClusterRef> recoClustersRefs = (*it).second;
+	
+    std::cout << "Number of associated reco clusters: " << recoClustersRefs.size() <<std::endl;
       
-      auto simClusterRef = (*it).second;
-      
-      float simClusEnergy = (*simClusterRef).simLCEnergy();
-      float simClusTime = (*simClusterRef).simLCTime();
+    if (std::abs(simClus.eta())<1.5 ) h_nRecoClusPerSimClus_BTL->Fill(recoClustersRefs.size());
+    if (std::abs(simClus.eta())>1.5 ) h_nRecoClusPerSimClus_ETL->Fill(recoClustersRefs.size());
 
-      
+    h_etaSimClus->Fill(simClus.eta());
+    if (recoClustersRefs.size()>0) h_etaSimClus_assocToReco->Fill(simClus.eta());
+    
+    
+    simClusIndex++;
 
-      std::cout << "reco cluster energy = " << recoClusEnergy << "    sim cluster energy = " << simClusEnergy <<std::endl;
-      std::cout << "reco cluster time = " << recoClusTime << "    sim cluster time = " << simClusTime <<std::endl;
-      
-    }  // Cluster loop
+  }
 
-  }  // DetSetClu loop
+
 
 }
+
+
 
 
 void TestClusterAssociation::endJob() {}
@@ -121,8 +236,11 @@ void TestClusterAssociation::fillDescriptions(edm::ConfigurationDescriptions& de
   edm::ParameterSetDescription desc;
 
   desc.add<edm::InputTag>("btlRecoClustersTag", edm::InputTag("mtdClusters", "FTLBarrel"));
-  desc.add<edm::InputTag>("clusterAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
+  desc.add<edm::InputTag>("etlRecoClustersTag", edm::InputTag("mtdClusters", "FTLEndcap"));
+  desc.add<edm::InputTag>("r2sAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
+  desc.add<edm::InputTag>("s2rAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
   desc.add<edm::InputTag>("trkHitTag", edm::InputTag("mtdTrackingRecHits"));
+  desc.add<edm::InputTag>("mtdSimLayerClustersTag", edm::InputTag("mix","MergedMtdTruthLC"));
   descriptions.add("TestClusterAssociation", desc);
 }
 

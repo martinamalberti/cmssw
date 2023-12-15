@@ -144,12 +144,12 @@
 
 
   
-  <class name="std::pair<FTLClusterRef, MtdSimLayerClusterRef>" persistent="true" />
-  <class name="std::vector<std::pair<FTLClusterRef, MtdSimLayerClusterRef> >" />
+  <class name="std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef> >" persistent="true" />
+  <class name="std::vector<std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef> > >" />
   <class name="MtdRecoClusterToSimLayerClusterAssociationMap" persistent="true" />
   <class name="edm::Wrapper<MtdRecoClusterToSimLayerClusterAssociationMap>" />
-  <class name="std::pair<MtdSimLayerClusterRef, FTLClusterRef>" persistent="true" />
-  <class name="std::vector<std::pair<MtdSimLayerClusterRef, FTLClusterRef> >" />
+  <class name="std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef> >" persistent="true" />
+  <class name="std::vector<std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef> > >" />
   <class name="MtdSimLayerClusterToRecoClusterAssociationMap" persistent="true" />
   <class name="edm::Wrapper<MtdSimLayerClusterToRecoClusterAssociationMap>" />
   <class name="reco::MtdRecoClusterToSimLayerClusterAssociator" persistent="false"/>

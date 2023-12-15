@@ -53,13 +53,24 @@ namespace SimDataFormats_Associations {
     edm::Wrapper<reco::VertexRecoToSimCollection> wvrtsci;
 
 
-    std::pair<FTLClusterRef, MtdSimLayerClusterRef> dummy13;
+    /*    std::pair<FTLClusterRef, MtdSimLayerClusterRef> dummy13;
     edm::Wrapper<std::pair<FTLClusterRef, MtdSimLayerClusterRef> > dummy14;
     MtdRecoClusterToSimLayerClusterAssociationMap dummy15;
     edm::Wrapper<MtdRecoClusterToSimLayerClusterAssociationMap> dummy16;
 
     std::pair<MtdSimLayerClusterRef, FTLClusterRef> dummy17;
     edm::Wrapper<std::pair<MtdSimLayerClusterRef, FTLClusterRef> > dummy18;
+    MtdSimLayerClusterToRecoClusterAssociationMap dummy19;
+    edm::Wrapper<MtdSimLayerClusterToRecoClusterAssociationMap> dummy20;
+    */
+    
+    std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>> dummy13;
+    edm::Wrapper<std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>> > dummy14;
+    MtdRecoClusterToSimLayerClusterAssociationMap dummy15;
+    edm::Wrapper<MtdRecoClusterToSimLayerClusterAssociationMap> dummy16;
+
+    std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef>> dummy17;
+    edm::Wrapper<std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef>> > dummy18;
     MtdSimLayerClusterToRecoClusterAssociationMap dummy19;
     edm::Wrapper<MtdSimLayerClusterToRecoClusterAssociationMap> dummy20;
     

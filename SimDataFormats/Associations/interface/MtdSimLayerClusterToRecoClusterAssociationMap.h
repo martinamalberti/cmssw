@@ -20,7 +20,7 @@ public:
 
   using key_type = MtdSimLayerClusterRef;
   using mapped_type = FTLClusterRef;
-  using value_type = std::pair<key_type, mapped_type>;
+  using value_type = std::pair<key_type, std::vector<mapped_type>>;
   using map_type = std::vector<value_type>;
   using const_iterator = typename map_type::const_iterator;
   
@@ -29,8 +29,12 @@ public:
   /// Destructor
   ~MtdSimLayerClusterToRecoClusterAssociationMap();
   
-  void emplace_back(const MtdSimLayerClusterRef& simClus, const FTLClusterRef& recoClus) {
-    map_.emplace_back(simClus, recoClus);
+  //void emplace_back(const MtdSimLayerClusterRef& simClus, const FTLClusterRef& recoClus) {
+  //  map_.emplace_back(simClus, recoClus);
+  // }
+
+  void emplace_back(const MtdSimLayerClusterRef& simClus, std::vector<FTLClusterRef>& recoClusVect) {
+    map_.emplace_back(simClus, recoClusVect);
   }
 
   bool empty() const { return map_.empty(); }
