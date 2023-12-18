@@ -97,21 +97,21 @@ TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig)
 
 
   // -- book histograms
-  h_energyResol_BTL =  fs_->make<TH1F>("h_energyResol_BTL","h_energyResol_BTL", 200, -1, 1);
-  h_energyResol_ETL = fs_->make<TH1F>("h_energyResol_ETL","h_energyResol_ETL", 200, -1, 1);
+  h_energyResol_BTL =  fs_->make<TH1F>("h_energyResol_BTL","h_energyResol_BTL", 200, 0, 2);
+  h_energyResol_ETL = fs_->make<TH1F>("h_energyResol_ETL","h_energyResol_ETL", 200, 0, 2);
 
   h_timeResol_BTL = fs_->make<TH1F>("h_timeResol_BTL","h_timeResol_BTL", 200, -1, 1);
   h_timeResol_ETL = fs_->make<TH1F>("h_timeResol_ETL","h_timeResol_ETL", 200, -1, 1);
 
-  h_nSimClusPerRecoClus_BTL = fs_->make<TH1F>("h_nSimClusPerRecoClus_BTL","h_nSimClusPerRecoClus_BTL", 5, -0.0, 4.5);
-  h_nSimClusPerRecoClus_ETL = fs_->make<TH1F>("h_nSimClusPerRecoClus_ETL","h_nSimClusPerRecoClus_ETL", 5, -0.0, 4.5);
+  h_nSimClusPerRecoClus_BTL = fs_->make<TH1F>("h_nSimClusPerRecoClus_BTL","h_nSimClusPerRecoClus_BTL", 5, -0.5, 4.5);
+  h_nSimClusPerRecoClus_ETL = fs_->make<TH1F>("h_nSimClusPerRecoClus_ETL","h_nSimClusPerRecoClus_ETL", 5, -0.5, 4.5);
 
-  h_nRecoClusPerSimClus_BTL = fs_->make<TH1F>("h_nRecoClusPerSimClus_BTL","h_nRecoClusPerSimClus_BTL", 5, -0.0, 4.5);
-  h_nRecoClusPerSimClus_ETL = fs_->make<TH1F>("h_nRecoClusPerSimClus_ETL","h_nRecoClusPerSimClus_ETL", 5, -0.0, 4.5);
+  h_nRecoClusPerSimClus_BTL = fs_->make<TH1F>("h_nRecoClusPerSimClus_BTL","h_nRecoClusPerSimClus_BTL", 5, -0.5, 4.5);
+  h_nRecoClusPerSimClus_ETL = fs_->make<TH1F>("h_nRecoClusPerSimClus_ETL","h_nRecoClusPerSimClus_ETL", 5, -0.5, 4.5);
 
-  h_etaSimClus = fs_->make<TH1F>("h_etaSimClus","h_etaSimClus", 100, -3.0, 3.0);
+  h_etaSimClus = fs_->make<TH1F>("h_etaSimClus","h_etaSimClus", 150, -3.0, 3.0);
 
-  h_etaSimClus_assocToReco = fs_->make<TH1F>("h_etaSimClus_assocToReco","h_etaSimClus_assocToReco", 100, -3.0, 3.0);
+  h_etaSimClus_assocToReco = fs_->make<TH1F>("h_etaSimClus_assocToReco","h_etaSimClus_assocToReco", 150, -3.0, 3.0);
 }
 
 TestClusterAssociation::~TestClusterAssociation() {}
@@ -175,13 +175,13 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
 
 	  // -- BTL
 	  if (mtdDetId.mtdSubDetector() == MTDDetId::BTL){
-	    h_energyResol_BTL->Fill( (0.001*recoClusEnergy-simClusEnergy)/simClusEnergy);
+	    h_energyResol_BTL->Fill( 0.001*recoClusEnergy/simClusEnergy);
 	    h_timeResol_BTL->Fill(recoClusTime-simClusTime);
 	  }
 	  
 	  // -- ETL
 	  if (mtdDetId.mtdSubDetector() == MTDDetId::ETL){
-	    h_energyResol_ETL->Fill( (0.001*recoClusEnergy-simClusEnergy)/simClusEnergy);
+	    h_energyResol_ETL->Fill( 0.001*recoClusEnergy/simClusEnergy);
 	    h_timeResol_ETL->Fill(recoClusTime-simClusTime);
 	  }
 	  
