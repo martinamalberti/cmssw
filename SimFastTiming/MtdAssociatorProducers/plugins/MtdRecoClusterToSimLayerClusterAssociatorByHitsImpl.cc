@@ -161,7 +161,7 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     
     std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
     std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
-    std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<int, float>& pair) {
+    std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {
 										    return pair.first;});
 
     std::vector<FTLClusterRef> recoClusterRefs;
@@ -212,6 +212,8 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
           std::vector<uint64_t> sharedHitIds;
           std::set_intersection(simClusHitIds.begin(), simClusHitIds.end(), recoClusHitIds.begin(), recoClusHitIds.end(), std::back_inserter(sharedHitIds));
 
+	  std::cout << "sim clus hits size = " << simClusHitIds.size() <<std::endl;
+	  std::cout << "reco clus hits size = " << recoClusHitIds.size() <<std::endl;
 	  std::cout << "shared hits size = " << sharedHitIds.size() <<std::endl;
 	  
           float dE = recoClus.energy()*0.001/simClus.simLCEnergy(); // reco cluster energy is in MeV
