@@ -155,4 +155,25 @@
   <class name="reco::MtdRecoClusterToSimLayerClusterAssociator" persistent="false"/>
   <class name="edm::Wrapper<reco::MtdRecoClusterToSimLayerClusterAssociator>" persistent="false"/>
 
+
+
+
+  <class name="reco::MtdSimLayerClusterToTPAssociator" persistent="false"/>
+  <class name="edm::Wrapper<reco::MtdSimLayerClusterToTPAssociator>" persistent="false"/>
+
+  <class name="edm::Wrapper<reco::SimToTPCollectionMtd>" />
+  <class name="edm::Wrapper<reco::TPToSimCollectionMtd>" />
+
+  <class name="reco::SimToTPCollectionMtd" >
+   <field name="transientMap_" transient="true"/>
+  </class>
+  <class name="reco::TPToSimCollectionMtd" >
+   <field name="transientMap_" transient="true"/>
+  </class>
+
+  <class name="edm::helpers::KeyVal<edm::RefProd<std::vector<MtdSimLayerCluster> >, edm::RefProd<std::vector<TrackingParticle> > >" />
+  <class name="edm::helpers::KeyVal<edm::RefProd<std::vector<TrackingParticle> >, edm::RefProd<std::vector<MtdSimLayerCluster> > >" />
+  
+
+  
 </lcgdict>
