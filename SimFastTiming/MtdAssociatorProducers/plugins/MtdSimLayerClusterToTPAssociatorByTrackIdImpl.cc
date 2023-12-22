@@ -52,6 +52,8 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
     EncodedEventId simClusEventId = simClus.eventId();
 
     // -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
+    /* to be added after implementing offset method in MtdSimLayerClusters
+    /*
     std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
     std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
     std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {
@@ -70,9 +72,9 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
       auto it = std::find_if(map_simHitOffsetTrackId[simClusHitIds[i]].begin(), map_simHitOffsetTrackId[simClusHitIds[i]].end(), [](int offset) { return offset != 0;});
       if (it != map_simHitOffsetTrackId[simClusHitIds[i]].end()) hasOffset = true;
     }
-    
     if (hasOffset) continue;
-        
+    */
+    
     // -- loop over the tracking particles
     size_t tpIndex(0);
     for (auto tpIt = trackingParticles.begin(); tpIt != trackingParticles.end(); tpIt++) {
@@ -83,8 +85,8 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
 
       // -- fill the output collection
       if ( tpTrackId == simClusTrackId && tpEventId.rawId() == simClusEventId.rawId() ){
-	LogTrace("MtdSimLayerClusterToTPAssociator") << "MtdSimLayerCluster: index = " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<  " simClusEta = "<< simClus.eta() <<  "  hasTrackIdOffset = "<< hasOffset <<std::endl;
-	LogTrace("MtdSimLayerClusterToTPAssociator") << "  --> Found associated tracking particle:  index = " << tpIndex << "    tpTrackId = " << tpTrackId << " tpEventId = " << tpEventId.rawId() <<std::endl;
+	LogDebug("MtdSimLayerClusterToTPAssociator") << "MtdSimLayerCluster: index = " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<  " simClusEta = "<< simClus.eta();
+	LogDebug("MtdSimLayerClusterToTPAssociator") << "  --> Found associated tracking particle:  index = " << tpIndex << "    tpTrackId = " << tpTrackId << " tpEventId = " << tpEventId.rawId() <<std::endl;
 	outputCollection.insert(simClusterRef, tpRef);
       }
 
@@ -134,6 +136,8 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
       EncodedEventId simClusEventId = simClus.eventId();
       
       // -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
+      /* to be added after implementing offset method in MtdSimLayerClusters
+      /*
       std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
       std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
       std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {
@@ -145,11 +149,12 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
 	if (it != map_simHitOffsetTrackId[simClusHitIds[i]].end()) hasOffset = true;
       }
       if (hasOffset) continue;
-        
+      */
+      
       // -- Fill the output collection
       if ( tpTrackId == simClusTrackId && tpEventId.rawId() == simClusEventId.rawId() ){
-        LogTrace("MtdSimLayerClusterToTPAssociator") << "Tracking particle:  index = " << tpIndex << "  tpTrackId = " << tpTrackId << "  tpEventId = " << tpEventId.rawId();
-	LogTrace("MtdSimLayerClusterToTPAssociator") << "--> Found associated MtdSimLayerCluster: index = " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<  " simClusEta = "<< simClus.eta() <<  "  hasTrackIdOffset = " << hasOffset;
+        LogDebug("MtdSimLayerClusterToTPAssociator") << "Tracking particle:  index = " << tpIndex << "  tpTrackId = " << tpTrackId << "  tpEventId = " << tpEventId.rawId();
+	LogDebug("MtdSimLayerClusterToTPAssociator") << "--> Found associated MtdSimLayerCluster: index = " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<  " simClusEta = "<< simClus.eta();
 
 	outputCollection.insert(tpRef, simClusterRef);
       }

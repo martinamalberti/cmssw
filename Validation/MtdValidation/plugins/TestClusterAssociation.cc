@@ -34,6 +34,7 @@
 
 #include "SimDataFormats/Associations/interface/MtdRecoClusterToSimLayerClusterAssociationMap.h"
 #include "SimDataFormats/Associations/interface/MtdSimLayerClusterToRecoClusterAssociationMap.h"
+#include "SimDataFormats/Associations/interface/MtdSimLayerClusterToTPAssociatorBaseImpl.h"
 
 #include "TTree.h"
 #include "TH1F.h"
@@ -63,7 +64,8 @@ private:
   edm::EDGetTokenT<std::vector<MtdSimLayerCluster>> mtdSimLayerClustersToken_;
   edm::EDGetTokenT<MtdRecoClusterToSimLayerClusterAssociationMap> r2sAssociationMapToken_;
   edm::EDGetTokenT<MtdSimLayerClusterToRecoClusterAssociationMap> s2rAssociationMapToken_;
-
+  edm::EDGetTokenT<reco::SimToTPCollectionMtd> sim2TPAssociationMapToken_;
+  edm::EDGetTokenT<reco::TPToSimCollectionMtd> tp2SimAssociationMapToken_;
 
   // --  Output histos
   edm::Service<TFileService> fs_;
@@ -92,9 +94,10 @@ TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig)
   etlRecoClusToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("etlRecoClustersTag"));
   r2sAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(iConfig.getParameter<edm::InputTag>("r2sAssociationMapTag"));
   s2rAssociationMapToken_ = consumes<MtdSimLayerClusterToRecoClusterAssociationMap>(iConfig.getParameter<edm::InputTag>("s2rAssociationMapTag"));
+  sim2TPAssociationMapToken_ = consumes<reco::SimToTPCollectionMtd>(iConfig.getParameter<edm::InputTag>("sim2TPAssociationMapTag"));
+  tp2SimAssociationMapToken_ = consumes<reco::TPToSimCollectionMtd>(iConfig.getParameter<edm::InputTag>("tp2SimAssociationMapTag"));
   mtdTrackingHitToken_ = consumes<MTDTrackingDetSetVector>(iConfig.getParameter<edm::InputTag>("trkHitTag"));
   mtdSimLayerClustersToken_ = consumes<std::vector<MtdSimLayerCluster> >(iConfig.getParameter<edm::InputTag>("mtdSimLayerClustersTag"));
-
 
   // -- book histograms
   h_energyResol_BTL =  fs_->make<TH1F>("h_energyResol_BTL","h_energyResol_BTL", 200, 0, 2);
@@ -134,11 +137,12 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
   auto mtdTrkHitH = iEvent.getHandle(mtdTrackingHitToken_);
   auto r2sAssociationMap = iEvent.get(r2sAssociationMapToken_);
   auto s2rAssociationMap = iEvent.get(s2rAssociationMapToken_);
+  auto sim2TPAssociationMap = iEvent.get(sim2TPAssociationMapToken_);
+  auto tp2SimAssociationMap = iEvent.get(tp2SimAssociationMapToken_);
 
   auto mtdSimLayerClustersH = iEvent.getHandle(mtdSimLayerClustersToken_);
   std::vector<MtdSimLayerCluster> mtdSimLayerClusters =  *mtdSimLayerClustersH;
       
-
   std::array<edm::Handle<FTLClusterCollection>, 2> inputRecoClusH{{btlRecoClusH, etlRecoClusH}};
 
   // --- Loop over the RECO clusters ---
@@ -153,7 +157,7 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
 	// get the reco cluster ref
 	edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> clusterRef = edmNew::makeRefTo(recoClusH, &cluster);
 
-	// get the corresponding sim cluster ref
+	// get the corresponding sim clusters ref
 	auto it = std::find_if( r2sAssociationMap.begin(), r2sAssociationMap.end(),
 				[&](const std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>>& p) { return p.first == clusterRef; });
 
@@ -184,8 +188,18 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
 	    h_energyResol_ETL->Fill( 0.001*recoClusEnergy/simClusEnergy);
 	    h_timeResol_ETL->Fill(recoClusTime-simClusTime);
 	  }
+
+	  // -- check matching with tracking particles
+	  auto found = sim2TPAssociationMap.find(simClusterRef);
+	  if (found == sim2TPAssociationMap.end()) cout<< "Sim cluster not matched to any TP"<<std::endl;
+	  if (found != sim2TPAssociationMap.end()) {
+	    cout << "Sim layer cluster matched to a tracking particle"<<std::endl;
+	    for (const auto& tpRef : found->val) {
+	      cout <<  (*tpRef).g4Tracks()[0].trackId() << std::endl;
+	    }
+	  }
 	  
-	}
+	} // end loop over simClustersrefs
 	  
       }  // reco cluster loop
 
@@ -193,8 +207,6 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
   }
   
 
-  
-  // --- Loop over the SIM clusters ---    
   
   // -- Loop over MtdSimLayerClusters
   edm::Ref<MtdSimLayerClusterCollection>::key_type simClusIndex = 0;
@@ -224,6 +236,9 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
 
 
 
+  // loop over tracking particles Ref
+  
+
 }
 
 
@@ -239,6 +254,8 @@ void TestClusterAssociation::fillDescriptions(edm::ConfigurationDescriptions& de
   desc.add<edm::InputTag>("etlRecoClustersTag", edm::InputTag("mtdClusters", "FTLEndcap"));
   desc.add<edm::InputTag>("r2sAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
   desc.add<edm::InputTag>("s2rAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
+  desc.add<edm::InputTag>("sim2TPAssociationMapTag", edm::InputTag("mtdSimLayerClusterToTPAssociation"));
+  desc.add<edm::InputTag>("tp2SimAssociationMapTag", edm::InputTag("mtdSimLayerClusterToTPAssociation"));
   desc.add<edm::InputTag>("trkHitTag", edm::InputTag("mtdTrackingRecHits"));
   desc.add<edm::InputTag>("mtdSimLayerClustersTag", edm::InputTag("mix","MergedMtdTruthLC"));
   descriptions.add("TestClusterAssociation", desc);

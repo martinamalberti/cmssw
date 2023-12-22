@@ -15,10 +15,11 @@
 
 #include <map>
 
-void fillSimHitTkIdOffsetMap(edm::Handle<CrossingFrame<PSimHit>> btlSimHitsH_,
-                             edm::Handle<CrossingFrame<PSimHit>> etlSimHitsH_,
-			     mtd::MTDGeomUtil geomTools_,
-			     std::unordered_map<uint64_t, std::vector<int>>& offsetMap) {
+void fillSimHitTkIdMap(edm::Handle<CrossingFrame<PSimHit>> btlSimHitsH_,
+		       edm::Handle<CrossingFrame<PSimHit>> etlSimHitsH_,
+		       mtd::MTDGeomUtil geomTools_,
+		       std::unordered_map<uint64_t, std::vector<int>>& tkIdMap,
+		       std::unordered_map<uint64_t, std::vector<int>>& offsetMap) {
 
   using namespace angle_units::operators;
 
@@ -45,6 +46,7 @@ void fillSimHitTkIdOffsetMap(edm::Handle<CrossingFrame<PSimHit>> btlSimHitsH_,
       uniqueId |= pixel.first << 16;
       uniqueId |= pixel.second;
       //std::cout << id.rawId() << "   uniqueID = " << uniqueId <<std::endl;
+      tkIdMap[uniqueId].push_back(simHit.trackId());
       offsetMap[uniqueId].push_back(simHit.offsetTrackId());
     }
   }

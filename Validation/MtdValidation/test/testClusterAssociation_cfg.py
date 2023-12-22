@@ -31,7 +31,7 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre1/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAsocciationMaps.root')
+    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre1/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi.root')
 )
 
 
@@ -45,6 +45,8 @@ process.clusterAssociation = cms.EDAnalyzer('TestClusterAssociation',
     etlRecoClustersTag = cms.InputTag('mtdClusters', 'FTLEndcap'),
     r2sAssociationMapTag = cms.InputTag('mtdRecoClusterToSimLayerClusterAssociation'),
     s2rAssociationMapTag = cms.InputTag('mtdRecoClusterToSimLayerClusterAssociation'),
+    sim2TPAssociationMapTag = cms.InputTag('mtdSimLayerClusterToTPAssociation'),
+    tp2SimAssociationMapTag = cms.InputTag('mtdSimLayerClusterToTPAssociation'),
     mtdSimLayerClustersTag = cms.InputTag('mix','MergedMtdTruthLC'),
     trkHitTag = cms.InputTag('mtdTrackingRecHits')
 )
