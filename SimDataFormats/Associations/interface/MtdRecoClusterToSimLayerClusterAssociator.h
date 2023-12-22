@@ -28,19 +28,15 @@ namespace reco {
     /// Associate RecoCluster to MtdSimLayerCluster
     reco::RecoToSimCollectionMtd associateRecoToSim(const edm::Handle<FTLClusterCollection> &btlRecoClusH,
 						    const edm::Handle<FTLClusterCollection> &etlRecoClusH,
-						    const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-						    const edm::Handle<FTLRecHitCollection> &btlRecHitsH,
-						    const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const {
-      return m_impl->associateRecoToSim(btlRecoClusH, etlRecoClusH, simClusH, btlRecHitsH, etlRecHitsH);
+						    const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const {
+      return m_impl->associateRecoToSim(btlRecoClusH, etlRecoClusH, simClusH);
     };
 
     /// Associate MtdSimLayerCluster to RecoCluster
     reco::SimToRecoCollectionMtd associateSimToReco(const edm::Handle<FTLClusterCollection> &btlRecoClusH,
 						    const edm::Handle<FTLClusterCollection> &etlRecoClusH,
-						    const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-						    const edm::Handle<FTLRecHitCollection> &btlRecHitsH,
-                                                    const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const {
-      return m_impl->associateSimToReco(btlRecoClusH, etlRecoClusH, simClusH, btlRecHitsH, etlRecHitsH);
+						    const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const {
+      return m_impl->associateSimToReco(btlRecoClusH, etlRecoClusH, simClusH);
     };
 
   private:

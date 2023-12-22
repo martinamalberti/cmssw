@@ -6,15 +6,13 @@ namespace reco {
 
   reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorBaseImpl::associateRecoToSim(
       const edm::Handle<FTLClusterCollection> &btlRecoClusH, const edm::Handle<FTLClusterCollection> &etlRecoClusH,
-      const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-      const edm::Handle<FTLRecHitCollection> &btlRecHitsH, const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const {
+      const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const {
     return reco::RecoToSimCollectionMtd();
   }
 
   reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorBaseImpl::associateSimToReco(
       const edm::Handle<FTLClusterCollection> &btlRecoClusH, const edm::Handle<FTLClusterCollection> &etlRecoClusH,
-      const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-      const edm::Handle<FTLRecHitCollection> &btlRecHitsH, const edm::Handle<FTLRecHitCollection> &etlRecHitsH) const {
+      const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const {
     return reco::SimToRecoCollectionMtd();
   }
 

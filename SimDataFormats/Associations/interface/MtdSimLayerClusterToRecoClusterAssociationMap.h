@@ -28,10 +28,6 @@ public:
   MtdSimLayerClusterToRecoClusterAssociationMap();
   /// Destructor
   ~MtdSimLayerClusterToRecoClusterAssociationMap();
-  
-  //void emplace_back(const MtdSimLayerClusterRef& simClus, const FTLClusterRef& recoClus) {
-  //  map_.emplace_back(simClus, recoClus);
-  // }
 
   void emplace_back(const MtdSimLayerClusterRef& simClus, std::vector<FTLClusterRef>& recoClusVect) {
     map_.emplace_back(simClus, recoClusVect);

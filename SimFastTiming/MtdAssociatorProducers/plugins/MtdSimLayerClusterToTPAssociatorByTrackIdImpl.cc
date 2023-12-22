@@ -33,15 +33,16 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
   SimToTPCollectionMtd outputCollection(productGetter_);
 
   // -- Fill maps of trackIdOffset per cell 
+  std::unordered_map<uint64_t, std::vector<int> > map_simHitTrackId;
   std::unordered_map<uint64_t, std::vector<int> > map_simHitOffsetTrackId;
-  fillSimHitTkIdOffsetMap(btlSimHitsH_,etlSimHitsH_, geomTools_, map_simHitOffsetTrackId);
+  fillSimHitTkIdMap(btlSimHitsH_,etlSimHitsH_, geomTools_, map_simHitTrackId, map_simHitOffsetTrackId);
 
   // -- get the collections
   const auto& simClusters  = *simClusH.product();
   const auto& trackingParticles = *trackingParticleH.product();
 
   // -- loop over sim clusters and get the trackId, eventId
-  std::cout << " *** Found " << simClusters.size() << " sim layer clusters in the event" << std::endl;
+  LogTrace("MtdSimLayerClusterToTPAssociator") << " Found " << simClusters.size() << " sim layer clusters in the event";
   
   size_t simClusIndex(0);
   for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
@@ -50,20 +51,19 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
     unsigned int simClusTrackId = simClus.g4Tracks()[0].trackId();
     EncodedEventId simClusEventId = simClus.eventId();
 
-    //std::cout << "sim cluster " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<std::endl;
-
     // -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
     std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
     std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
     std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {
 										    return pair.first;});
 
+    //std::cout << " Sim layer cluster " << simClusIndex <<  " has " << simClusHitIds.size() << " sim Hits" << std::endl;
     //for (unsigned int i = 0; i < simClusHitIds.size(); i++){
     //  std::cout << "   Sim clus hit Id = " << simClusHitIds[i] <<std::endl;
     //  for (auto offset : map_simHitOffsetTrackId[simClusHitIds[i]]){
     //  	std::cout << "      -- TrackIdOffset = " << offset  <<std::endl;
     //  }
-    // }
+    //}
     
     bool hasOffset = false;
     for (unsigned int i = 0; i < simClusHitIds.size(); i++){
@@ -83,8 +83,8 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
 
       // -- fill the output collection
       if ( tpTrackId == simClusTrackId && tpEventId.rawId() == simClusEventId.rawId() ){
-	std::cout << " MTD SimLayerCluster " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<  " simClusEta = "<< simClus.eta() <<  " has trackIdOffset = "<< hasOffset <<std::endl;
-	std::cout << " Found associated tracking particle:  index = " << tpIndex << "    tpTrackId = " << tpTrackId << " tpEventId = " << tpEventId.rawId() <<std::endl;
+	LogTrace("MtdSimLayerClusterToTPAssociator") << "MtdSimLayerCluster: index = " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<  " simClusEta = "<< simClus.eta() <<  "  hasTrackIdOffset = "<< hasOffset <<std::endl;
+	LogTrace("MtdSimLayerClusterToTPAssociator") << "  --> Found associated tracking particle:  index = " << tpIndex << "    tpTrackId = " << tpTrackId << " tpEventId = " << tpEventId.rawId() <<std::endl;
 	outputCollection.insert(simClusterRef, tpRef);
       }
 
@@ -108,9 +108,10 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
 
   TPToSimCollectionMtd outputCollection(productGetter_);
 
-  // -- Fill maps of trackIdOffset per cell 
+  // -- Fill maps of trackIdOffset per cell
+  std::unordered_map<uint64_t, std::vector<int> > map_simHitTrackId;
   std::unordered_map<uint64_t, std::vector<int> > map_simHitOffsetTrackId;
-  fillSimHitTkIdOffsetMap(btlSimHitsH_,etlSimHitsH_, geomTools_, map_simHitOffsetTrackId);
+  fillSimHitTkIdMap(btlSimHitsH_,etlSimHitsH_, geomTools_, map_simHitTrackId, map_simHitOffsetTrackId);
 
   // -- get the collections
   const auto& simClusters  = *simClusH.product();
@@ -123,8 +124,6 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
     TrackingParticleRef tpRef = edm::Ref<TrackingParticleCollection>(trackingParticleH, tpIndex);
     unsigned int tpTrackId = tp.g4Tracks()[0].trackId();
     EncodedEventId tpEventId = tp.eventId();
-
-    //std::cout << "*** tracking particle " << tpIndex << "   tpTrackId = " << tpTrackId << " tpEventId = " << tpEventId.rawId() <<std::endl;
 
     // -- loop over MtdSimLayerClusters
     size_t simClusIndex(0);
@@ -145,11 +144,13 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
 	auto it = std::find_if(map_simHitOffsetTrackId[simClusHitIds[i]].begin(), map_simHitOffsetTrackId[simClusHitIds[i]].end(), [](int offset) { return offset != 0;});
 	if (it != map_simHitOffsetTrackId[simClusHitIds[i]].end()) hasOffset = true;
       }
-    
       if (hasOffset) continue;
         
       // -- Fill the output collection
       if ( tpTrackId == simClusTrackId && tpEventId.rawId() == simClusEventId.rawId() ){
+        LogTrace("MtdSimLayerClusterToTPAssociator") << "Tracking particle:  index = " << tpIndex << "  tpTrackId = " << tpTrackId << "  tpEventId = " << tpEventId.rawId();
+	LogTrace("MtdSimLayerClusterToTPAssociator") << "--> Found associated MtdSimLayerCluster: index = " << simClusIndex << "   simClusTrackId = " << simClusTrackId << " simClusEventId = " << simClusEventId.rawId() <<  " simClusEta = "<< simClus.eta() <<  "  hasTrackIdOffset = " << hasOffset;
+
 	outputCollection.insert(tpRef, simClusterRef);
       }
       simClusIndex++;
