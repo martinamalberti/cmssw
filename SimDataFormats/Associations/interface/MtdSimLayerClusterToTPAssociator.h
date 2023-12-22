@@ -26,7 +26,7 @@ namespace reco {
     // ---------- const member functions ---------------------
     /// Associate MtdSimLayerCluster to TrackingParticle
     reco::SimToTPCollectionMtd associateSimToTP(const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-						const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
+						const edm::Handle<TrackingParticleCollection> &trackingParticleH)const {
       return m_impl->associateSimToTP(simClusH, trackingParticleH);
     };
 

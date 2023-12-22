@@ -23,10 +23,6 @@ namespace reco {
   
   typedef edm::AssociationMap<edm::OneToMany<MtdSimLayerClusterCollection, TrackingParticleCollection> > SimToTPCollectionMtd;
   typedef edm::AssociationMap<edm::OneToMany<TrackingParticleCollection, MtdSimLayerClusterCollection> > TPToSimCollectionMtd;
-
-  //typedef edm::AssociationMap<edm::OneToManyWithQualityGeneric<MtdSimLayerClusterCollection, TrackingParticleCollection, int>> SimToTPCollectionMtd;
-  //typedef edm::AssociationMap<edm::OneToManyWithQualityGeneric<TrackingParticleCollection, MtdSimLayerClusterCollection, int>> TPToSimCollectionMtd;
-  
   
   class MtdSimLayerClusterToTPAssociatorBaseImpl {
   public:

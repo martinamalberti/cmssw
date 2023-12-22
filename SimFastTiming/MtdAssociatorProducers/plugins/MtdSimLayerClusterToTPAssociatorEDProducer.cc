@@ -63,8 +63,6 @@ void MtdSimLayerClusterToTPAssociatorEDProducer::produce(edm::StreamID, edm::Eve
   edm::Handle<TrackingParticleCollection> trackingParticles;
   iEvent.getByToken(tpToken_, trackingParticles);
 
-
-  // associate sim layer clus to tracking particle
   reco::SimToTPCollectionMtd simToTPColl = theAssociator->associateSimToTP(simClusters, trackingParticles);
   reco::TPToSimCollectionMtd tpToSimColl = theAssociator->associateTPToSim(simClusters, trackingParticles);
 

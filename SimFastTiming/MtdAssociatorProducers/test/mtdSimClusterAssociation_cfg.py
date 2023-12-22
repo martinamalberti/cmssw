@@ -38,25 +38,17 @@ process.source = cms.Source("PoolSource",
     )
 )
 
+process.mix.digitizers = cms.PSet()
+for a in process.aliases: delattr(process, a)
+
 
 # -- Association map producer
-from SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociationByUniqueId_cfi import mtdSimLayerClusterToTPAssociationByUniqueId
-from SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociation_cfi import mtdSimLayerClusterToTPAssociation
-
-process.mtdSimLayerClusterToTPAssociatorByUniqueId = mtdSimLayerClusterToTPAssociationByUniqueId.clone()
-process.mtdSimLayerClusterToTPAssociation  =  mtdSimLayerClusterToTPAssociation.clone()
-
-process.associationProducers = cms.Task( process.mtdSimLayerClusterToTPAssociatorByUniqueId,
-                                         process.mtdSimLayerClusterToTPAssociation)
-
-#process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociationByUniqueId_cfi')
-#process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociation_cfi')
-#process.associationProducers = cms.Task( process.mtdSimLayerClusterToTPAssociationByUniqueId,
-#                                         process.mtdSimLayerClusterAssociationToTPAssociation)
+process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociatorByTrackId_cfi')
+process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociation_cfi')
+associationProducers = cms.Sequence( process.mtdSimLayerClusterToTPAssociatorByTrackId + process.mtdSimLayerClusterToTPAssociation)
 
 
-
-process.p = cms.Path(process.associationProducers)
+process.p = cms.Path(process.mix + associationProducers)
 
 process.out = cms.OutputModule("PoolOutputModule", 
         outputCommands = cms.untracked.vstring(

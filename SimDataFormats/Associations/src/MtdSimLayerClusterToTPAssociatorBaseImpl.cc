@@ -12,7 +12,7 @@ namespace reco {
 
   reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorBaseImpl::associateTPToSim(
       const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-      const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
+      const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {							     
     return reco::TPToSimCollectionMtd();
   }
 

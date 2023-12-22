@@ -33,7 +33,8 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        '/store/relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_2026D98noPU-v1/2590000/1a275880-2806-45d6-af7a-403f6d6fc19b.root'
+        #'/store/relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_2026D98noPU-v1/2590000/1a275880-2806-45d6-af7a-403f6d6fc19b.root'
+        '/store/relval/CMSSW_14_0_0_pre1/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_2026D98noPU-v1/2590000/475f5113-6436-4ee4-b266-c6ac0b527126.root'
     )
 )
 
@@ -62,8 +63,9 @@ process.out = cms.OutputModule("PoolOutputModule",
         'keep *_*_*_*',
         'keep mtdRecoClusterToSimLayerClusterAssociation_*_*_*',
         ),
-     fileName = cms.untracked.string('OutputWithAsocciationMaps.root')
- )
+    #fileName = cms.untracked.string('OutputWithAsocciationMaps.root')
+    fileName = cms.untracked.string('OutputWithAssocciationMaps_SinglePi.root')
+)
  
 
 process.ep = cms.EndPath(process.out)
