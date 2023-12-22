@@ -30,6 +30,10 @@ void fillSimHitTkIdOffsetMap(edm::Handle<CrossingFrame<PSimHit>> btlSimHitsH_,
     // -- loop over sim hits
     for (const auto& simHit : simHits) {
       DetId id = simHit.detUnitId();
+
+      // --- Use only hits compatible with the in-time bunch-crossing
+      if (simHit.tof() < 0 || simHit.tof() > 25.) continue;
+
       // -- Get an unique id: for BTL the detId is unique (one for each crystal), for ETL the detId is not enough
       //    also row and column are needed. An unique number is created from detId, row, col
       // -  Get row and column

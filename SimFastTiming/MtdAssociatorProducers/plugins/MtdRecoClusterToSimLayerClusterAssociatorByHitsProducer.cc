@@ -67,7 +67,8 @@ void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::fillDescriptions(e
   desc.add<double>("energyCut", 9999.);
   desc.add<double>("timeCut", 9999.);
   
-  cfg.add("mtdClusterAssociatorByHits", desc);
+  //cfg.add("mtdClusterAssociatorByHits", desc);
+  cfg.add("mtdRecoClusterToSimLayerClusterAssociatorByHits", desc);
 }
 
 //define this as a plug-in

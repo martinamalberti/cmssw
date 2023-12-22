@@ -33,38 +33,32 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        #'/store/relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_2026D98noPU-v1/2590000/1a275880-2806-45d6-af7a-403f6d6fc19b.root'
-        '/store/relval/CMSSW_14_0_0_pre1/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_2026D98noPU-v1/2590000/475f5113-6436-4ee4-b266-c6ac0b527126.root'
+        '/store/relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_2026D98noPU-v1/2590000/1a275880-2806-45d6-af7a-403f6d6fc19b.root'
+        #'/store/relval/CMSSW_14_0_0_pre1/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_2026D98noPU-v1/2590000/475f5113-6436-4ee4-b266-c6ac0b527126.root'
     )
 )
 
+process.mix.digitizers = cms.PSet()
+for a in process.aliases: delattr(process, a)
 
 # -- Association map producer
-from SimFastTiming.MtdAssociatorProducers.mtdClusterAssociationByHits_cfi import mtdRecoClusterToSimLayerClusterAssociationByHits as mtdClusterAssociatorByHitsProducer
-from SimFastTiming.MtdAssociatorProducers.mtdClusterAssociation_cfi import mtdRecoClusterToSimLayerClusterAssociation
-
-process.mtdClusterAssociatorByHitsProducer = mtdClusterAssociatorByHitsProducer.clone()
-process.mtdRecoClusterToSimLayerClusterAssociation  =  mtdRecoClusterToSimLayerClusterAssociation.clone()
-
-process.associationProducers = cms.Task( process.mtdClusterAssociatorByHitsProducer,
-                                         process.mtdRecoClusterToSimLayerClusterAssociation)
-
-#process.load('SimFastTiming.MtdAssociatorProducers.mtdClusterAssociationByHits_cfi')
-#process.load('SimFastTiming.MtdAssociatorProducers.mtdClusterAssociation_cfi')
-#process.associationProducers = cms.Task( process.mtdRecoClusterToSimLayerClusterAssociationByHits,
-#                                         process.mtdRecoClusterToSimLayerClusterAssociation)
+process.load('SimFastTiming.MtdAssociatorProducers.mtdRecoClusterToSimLayerClusterAssociatorByHits_cfi')
+process.load('SimFastTiming.MtdAssociatorProducers.mtdRecoClusterToSimLayerClusterAssociation_cfi')
+process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociatorByTrackId_cfi')
+process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociation_cfi')
+associationProducers = cms.Sequence( process.mtdRecoClusterToSimLayerClusterAssociatorByHits + process.mtdRecoClusterToSimLayerClusterAssociation + process.mtdSimLayerClusterToTPAssociatorByTrackId + process.mtdSimLayerClusterToTPAssociation)
 
 
-
-process.p = cms.Path(process.associationProducers)
+process.p = cms.Path(process.mix + associationProducers)
 
 process.out = cms.OutputModule("PoolOutputModule", 
         outputCommands = cms.untracked.vstring(
         'keep *_*_*_*',
         'keep mtdRecoClusterToSimLayerClusterAssociation_*_*_*',
+        'keep mtdSimLayerClusterToTPAssociation_*_*_*',
         ),
-    #fileName = cms.untracked.string('OutputWithAsocciationMaps.root')
-    fileName = cms.untracked.string('OutputWithAssocciationMaps_SinglePi.root')
+    fileName = cms.untracked.string('OutputWithAssociationMaps.root')
+    #fileName = cms.untracked.string('OutputWithAssocciationMaps_SinglePi.root')
 )
  
 
