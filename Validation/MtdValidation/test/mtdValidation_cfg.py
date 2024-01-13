@@ -21,7 +21,7 @@ process.load("Configuration.StandardSequences.Reconstruction_cff")
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 #Setup FWK for multithreaded
-process.options.numberOfThreads = 4
+process.options.numberOfThreads = 1
 process.options.numberOfStreams = 0
 process.options.numberOfConcurrentLuminosityBlocks = 0
 process.options.eventSetup.numberOfConcurrentIOVs = 1
@@ -30,9 +30,15 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
     reportEvery = cms.untracked.int32(10),
 )
 
+process.Timing = cms.Service("Timing",
+  #summaryOnly = cms.untracked.bool(False),                                                                                                                                                                               
+  #useJobReport = cms.untracked.bool(True)                                                                                                                                                                                
+)
+
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step3.root'
+#        'file:step3.root'
+'/store//relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_2026D98PU200-v1/2590000/3c20ae49-f4b0-472f-aa85-3dade4e7a32c.root'
     )
 )
 

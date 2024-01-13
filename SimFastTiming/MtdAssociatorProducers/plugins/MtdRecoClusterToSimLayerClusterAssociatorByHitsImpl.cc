@@ -52,29 +52,30 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     std::transform(detIdsAndRows.begin(), detIdsAndRows.end(), detIds.begin(), [](const std::pair<uint32_t, std::pair<uint8_t, uint8_t>>& pair) {
                                                                                  return pair.first;} );
     
-    for (unsigned int i = 0; i < detIds.size(); i++){
-      std::cout << "Sim cluster index " << simClusIndex << "   hit id: " << detIds[i] << std::endl; 
-    }
+    //for (unsigned int i = 0; i < detIds.size(); i++){
+    //  LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << "Sim cluster index " << simClusIndex << "   hit id: " << detIds[i]; 
+    //}
 
-    if ( MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::BTL) {
-      BTLDetId thisDetId = detIds[0];
-      BTLDetId btlId = thisDetId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topo_->getMTDTopologyMode()));
-      simClusIdsMap[btlId.rawId()].push_back(simClusterRef);
-      std::cout << "BTL cluster,  detId = " << btlId << std::endl;
-      std::cout << "BTL cluster,  detId = " << btlId.rawId() << std::endl;
+    // get the id of the sensor module 
+    if (MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::BTL) {
+      BTLDetId detId = detIds[0];
+      DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topo_->getMTDTopologyMode()));
+      simClusIdsMap[geoId.rawId()].push_back(simClusterRef);
+      LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << "BTL cluster,  detId = " << geoId;
     }
-    
-    if ( MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::ETL) {
-      ETLDetId thisDetId = detIds[0];
-      ETLDetId etlId = thisDetId.geographicalId();
-      simClusIdsMap[etlId.rawId()].push_back(simClusterRef);
-      //std::cout << "ETL cluster,  detId = "	<< etlId.rawId() << std::endl;
+    if (MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::ETL) {
+	ETLDetId detId = detIds[0];
+	DetId geoId = detId.geographicalId();
+	simClusIdsMap[geoId.rawId()].push_back(simClusterRef);
+	LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl")<< "ETL cluster,  detId = " << geoId << std::endl;
     }
 
     simClusIndex++;
     
   }
 
+
+  
   for (auto const& recoClusH : inputRecoClusH) {
     // -- loop over detSetVec
     for (const auto& detSet : *recoClusH) { 
@@ -124,7 +125,6 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	// -- loop over sim clusters and if this reco clus shares some hits
         std::vector<MtdSimLayerClusterRef> simClusterRefs;
         simClusterRefs.clear();
-
 		
 	for  ( auto simClusterRef : simClusIdsMap[clusId.rawId()] ){
 	  auto simClus = *simClusterRef;
@@ -154,48 +154,6 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	    
 	  }
 	} // -- end loop over sim clus refs
-
-	
-	/*	
-	edm::Ref<MtdSimLayerClusterCollection>::key_type simClusIndex = 0;
-	std::vector<MtdSimLayerClusterRef> simClusterRefs;
-	simClusterRefs.clear();
-
-	for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
-	  auto simClus = *simClusIt;
-	  
-	  std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
-	  std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
-	  std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {
-											  return pair.first;});
-
-	  // -- Get shared hits
-	  std::vector<uint64_t> sharedHitIds;
-	  std::set_intersection(recoClusHitIds.begin(), recoClusHitIds.end(), simClusHitIds.begin(), simClusHitIds.end(), std::back_inserter(sharedHitIds));
-
-	  if (sharedHitIds.empty()) continue;
-	      
-	  float dE = recoClus.energy()*0.001/simClus.simLCEnergy(); // reco cluster energy is in MeV
-	  float dtSig = std::abs((recoClus.time()-simClus.simLCTime())/recoClus.timeError());
-
-	  // -- If the sim and reco clusters have common hits, fill the std:vector of sim clusters refs 
-	  if (!sharedHitIds.empty() && dE < energyCut_ && dtSig < timeCut_){ // at least one hit in common + requirement on energy and time compatibility  	
-
-	    edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex); 
-	    simClusterRefs.push_back(simClusterRef);
-
-	    LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << "RecoToSim --> Found " << sharedHitIds.size() << " shared hits";
-	    LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << "E_recoClus = " << recoClus.energy() << "   E_simClus = " << simClus.simLCEnergy() << "   E_recoClus/E_simClus = " << dE;
-	    LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << "(t_recoClus-t_simClus)/sigma_t = " << dtSig;
-	    
-	  }
-	  	  
-	  simClusIndex++;
-	  
-	  
-	}// -- end loop over sim clus
-	*/
-	
 	
 	// -- Now fill the output collection
 	edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> recoClusterRef = edmNew::makeRefTo(recoClusH, &recoClus); 
@@ -237,10 +195,6 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     std::vector<uint32_t> detIds(detIdsAndRows.size());
     std::transform(detIdsAndRows.begin(), detIdsAndRows.end(), detIds.begin(), [](const std::pair<uint32_t, std::pair<uint8_t, uint8_t>>& pair) {return pair.first;});
 
-    //for (unsigned int i = 0; i < detIds.size(); i++){
-    //  std::cout << "Sim cluster index " << simClusIndex << "   hit id: " << detIds[i] << std::endl;
-    //}
-
     DetId simClusId;
     if ( MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::BTL) {
       BTLDetId thisDetId = detIds[0];
@@ -262,8 +216,6 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 
 	if (detSet.id() != simClusId.rawId())  continue;
 	
-	std::cout << simClusId.rawId() <<  "   " << detSet.id() <<std::endl;
-
 	// -- loop over reco clusters
 	for (const auto& recoClus : detSet) {
  	  MTDDetId clusId = recoClus.id();
@@ -330,6 +282,6 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     
   } // -- end loop over sim clusters
   
-  
   return outputCollection;
+
 }
