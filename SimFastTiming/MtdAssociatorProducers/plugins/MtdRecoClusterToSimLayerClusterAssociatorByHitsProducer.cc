@@ -11,6 +11,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
 
+#include "Geometry/MTDNumberingBuilder/interface/MTDTopology.h"
 #include "MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl.h"
 
 //
@@ -28,6 +29,7 @@ private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
   edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
+  edm::ESGetToken<MTDTopology, MTDTopologyRcd> topoToken_;
   const double energyCut_;
   const double timeCut_;
 };
@@ -39,7 +41,8 @@ MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::MtdRecoClusterToSimLaye
 
   btlRecHitsToken_ = consumes<FTLRecHitCollection>(ps.getParameter<edm::InputTag>("btlRecHitsTag"));
   etlRecHitsToken_ = consumes<FTLRecHitCollection>(ps.getParameter<edm::InputTag>("etlRecHitsTag"));
-
+  topoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
+ 
   // Register the product
   produces<reco::MtdRecoClusterToSimLayerClusterAssociator>();
 
@@ -52,8 +55,8 @@ MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::~MtdRecoClusterToSimLay
 
 
 void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::produce(edm::StreamID,
-								 edm::Event &iEvent,
-								 const edm::EventSetup &es) const {
+								      edm::Event &iEvent,
+								      const edm::EventSetup &es) const {
 
   edm::Handle<FTLRecHitCollection> btlRecHitsH;
   iEvent.getByToken(btlRecHitsToken_, btlRecHitsH);
@@ -61,7 +64,10 @@ void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::produce(edm::Strea
   edm::Handle<FTLRecHitCollection> etlRecHitsH;
   iEvent.getByToken(etlRecHitsToken_, etlRecHitsH);
 
-  auto impl = std::make_unique<MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl>(iEvent.productGetter(), btlRecHitsH, etlRecHitsH, energyCut_, timeCut_);
+  auto topologyHandle = es.getTransientHandle(topoToken_);
+  const MTDTopology* topology = topologyHandle.product();
+  
+  auto impl = std::make_unique<MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl>(iEvent.productGetter(), btlRecHitsH, etlRecHitsH, topology, energyCut_, timeCut_);
   auto toPut = std::make_unique<reco::MtdRecoClusterToSimLayerClusterAssociator>(std::move(impl));
   iEvent.put(std::move(toPut));
   
