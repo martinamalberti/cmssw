@@ -1,7 +1,9 @@
 // Author: Aurora Perego, Fabio Cossutti - aurora.perego@cern.ch, fabio.cossutti@ts.infn.it
 // Date: 05/2023
 
-#define DEBUG false
+//#define DEBUG false
+#define DEBUG true
+#define PRINT_DEBUG true
 
 #if DEBUG
 #pragma GCC diagnostic pop
@@ -193,6 +195,7 @@ namespace {
         output_.pSimClusters->emplace_back(*vertex_property.simTrack);
         auto &simcluster = output_.pSimClusters->back();
         std::unordered_map<uint64_t, float> acc_energy;
+	std::cout << " trackIdx = " << trackIdx << "   simTrackDetIdEnergyMap_.size = " << simTrackDetIdEnergyMap_[trackIdx].size() <<std::endl;
         for (auto const &hit_and_energy : simTrackDetIdEnergyMap_[trackIdx]) {
           acc_energy[hit_and_energy.first] += hit_and_energy.second;
         }
@@ -758,9 +761,25 @@ void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<uint64_t, const PSim
       LocalPoint simscaled(convertMmToCm(position.x()), convertMmToCm(position.y()), convertMmToCm(position.z()));
       std::pair<uint8_t, uint8_t> pixel = geomTools_.pixelInModule(id, simscaled);
       // create the unique id
-      uint64_t uniqueId = static_cast<uint64_t>(id.rawId()) << 32;
+      //uint64_t uniqueId = static_cast<uint64_t>(id.rawId()) << 32;
+      //uniqueId |= pixel.first << 16;
+      //uniqueId |= pixel.second;
+      // Get sensor module id
+      DetId geoId;
+      MTDDetId mtdId = MTDDetId(id);
+      if (mtdId.mtdSubDetector() == MTDDetId::BTL) {
+	BTLDetId detId(id.rawId());
+	geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
+      }
+      if (mtdId.mtdSubDetector() == MTDDetId::ETL) {
+	ETLDetId detId(id.rawId());
+	geoId = detId.geographicalId();
+      }
+      // create the unique id
+      uint64_t uniqueId = static_cast<uint64_t>(geoId) << 32;
       uniqueId |= pixel.first << 16;
       uniqueId |= pixel.second;
+
 
       simTrackDetIdEnergyMap[simHit.trackId()][uniqueId] += simHit.energyLoss();
       m_detIdToTotalSimEnergy[uniqueId] += simHit.energyLoss();
@@ -769,7 +788,7 @@ void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<uint64_t, const PSim
           simHit.tof() < simTrackDetIdTimeMap[simHit.trackId()][uniqueId]) {
         simTrackDetIdTimeMap[simHit.trackId()][uniqueId] = simHit.tof();
       }
-
+      
 #ifdef PRINT_DEBUG
       IfLogDebug(DEBUG, messageCategory_)
           << "hitId " << id.rawId() << " from track " << simHit.trackId() << " in layer " << geomTools_.layer(id)
