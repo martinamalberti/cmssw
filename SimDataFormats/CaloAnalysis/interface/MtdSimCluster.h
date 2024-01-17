@@ -97,6 +97,49 @@ public:
     ++nsimhits_;
   }
 
+  // --  for backward compatibility
+  //std::vector<uint64_t> newForm(){
+  void newForm(){ 
+    static const uint32_t kMTDsubdOffset = 23;
+    static const uint32_t kMTDsubdMask = 0x3;
+    static constexpr uint32_t kBTLRUOffset = 6;
+    static constexpr uint32_t kBTLRUMask = 0x3;
+    static constexpr uint32_t kBTLCrystalMask = 0x3F;
+    static constexpr uint32_t kCrystalsPerModuleV2 = 16;
+    
+    for (size_t i = 0; i < mtdHits_.size(); ++i) {
+      
+      // - Get detId, row, column from old format
+      uint32_t rawid = mtdHits_[i] >> 32;
+      uint8_t row = static_cast<uint8_t>(mtdHits_[i] >> 16);
+      uint8_t col = static_cast<uint8_t>(mtdHits_[i]); 
+            
+      uint32_t newid = 0;
+      // - Change bit content only for BTL ( MTD subdetector BTL/ETL : bit 24-23) 
+      if ( ((rawid >> kMTDsubdOffset) & kMTDsubdMask ) == 1 ){ 
+	
+	// - check bit 6-7: if = 0 --> old barphiflat geometry, if !=0 V2, V3 geometry
+	if ( ((rawid >> kBTLRUOffset) & kBTLRUMask ) == 0){
+	  //newid = 0;
+	}
+	else {
+	  newid = (~kBTLCrystalMask & rawid) | kCrystalsPerModuleV2;
+	}
+	
+	std::cout << "old Id = " <<  rawid << "  new Id = " << newid << std::endl;
+		
+	// - Create the unique id in the new format
+	uint64_t uniqueIdNew = static_cast<uint64_t>(newid) << 32;
+	uniqueIdNew |= row << 16;
+	uniqueIdNew |= col;
+
+	mtdHits_[i] = uniqueIdNew;
+      }	
+    }
+    //return mtdHits_;
+  }
+  
+    
 protected:
   std::vector<uint64_t> mtdHits_;
   std::vector<float> times_;

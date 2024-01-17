@@ -19,9 +19,9 @@ namespace edm {
 class MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl : public reco::MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
 public:
   explicit MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const &,
-							       const edm::Handle<FTLRecHitCollection>&,
-							       const edm::Handle<FTLRecHitCollection>&,
-							       const MTDTopology*,
+							       //const edm::Handle<FTLRecHitCollection>&,
+							       //const edm::Handle<FTLRecHitCollection>&,
+							       //const MTDTopology*,
 							       double,
 							       double);
 
@@ -37,9 +37,9 @@ public:
   
 private:
   edm::EDProductGetter const *productGetter_;
-  const edm::Handle<FTLRecHitCollection> btlRecHitsH_;
-  const edm::Handle<FTLRecHitCollection> etlRecHitsH_;
-  const MTDTopology* topo_;
+  //const edm::Handle<FTLRecHitCollection> btlRecHitsH_;
+  //const edm::Handle<FTLRecHitCollection> etlRecHitsH_;
+  //const MTDTopology* topo_;
   const double energyCut_;
   const double timeCut_;
 };

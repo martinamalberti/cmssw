@@ -105,6 +105,13 @@ private:
   TH1F *h_timeSimClus_BTL;
   TH1F *h_timeSimClus_ETL;
 
+
+  TH1F *h_energySimClus_TPmatched_BTL;
+  TH1F *h_energySimClus_TPmatched_ETL;
+
+  TH1F *h_timeSimClus_TPmatched_BTL;
+  TH1F *h_timeSimClus_TPmatched_ETL;
+
   TH1F *h_etaSimClus;
   TH1F *h_etaSimClus_assocToReco;
 
@@ -162,7 +169,13 @@ TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig)
 
   h_timeSimClus_BTL = fs_->make<TH1F>("h_timeSimClus_BTL","h_timeSimClus_BTL", 100, 0., 25.0);
   h_timeSimClus_ETL = fs_->make<TH1F>("h_timeSimClus_ETL","h_timeSimClus_ETL", 100, 0., 25.0);
-  
+
+  h_energySimClus_TPmatched_BTL = fs_->make<TH1F>("h_energySimClus_TPmatched_BTL","h_energySimClus_TPmatched_BTL", 200, 0., 20.0);
+  h_energySimClus_TPmatched_ETL = fs_->make<TH1F>("h_energySimClus_TPmatched_ETL","h_energySimClus_TPmatched_ETL", 200, 0., 20.0);
+
+  h_timeSimClus_TPmatched_BTL = fs_->make<TH1F>("h_timeSimClus_TPmatched_BTL","h_timeSimClus_TPmatched_BTL", 100, 0., 25.0);
+  h_timeSimClus_TPmatched_ETL = fs_->make<TH1F>("h_timeSimClus_TPmatched_ETL","h_timeSimClus_TPmatched_ETL", 100, 0., 25.0);
+
   h_etaSimClus = fs_->make<TH1F>("h_etaSimClus","h_etaSimClus", 150, -3.0, 3.0);
   h_etaSimClus_assocToReco = fs_->make<TH1F>("h_etaSimClus_assocToReco","h_etaSimClus_assocToReco", 150, -3.0, 3.0);
 }
@@ -234,10 +247,10 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
 	std::vector<MtdSimLayerClusterRef> simClustersRefs = (*it).second;
 	
 	//std::cout << "Number of associated MtdSimLayerclusters: " << simClustersRefs.size() <<std::endl;
-	  
+	
 	if (mtdDetId.mtdSubDetector() == MTDDetId::BTL)	h_nSimClusPerRecoClus_BTL->Fill(simClustersRefs.size());
 	if (mtdDetId.mtdSubDetector() == MTDDetId::ETL)	h_nSimClusPerRecoClus_ETL->Fill(simClustersRefs.size());
-	
+  
 	for (unsigned int i = 0; i < simClustersRefs.size(); i++){
 	  auto simClusterRef = simClustersRefs[i];
 	  
@@ -282,7 +295,7 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
 	  }
 	  
 	} // end loop over simClustersrefs
-	  
+	
       }  // reco cluster loop
 
     }  // DetSetClu loop
@@ -297,36 +310,76 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
     // -- get the sim cluster ref
     edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(mtdSimLayerClustersH, simClusIndex);
 
+    float simClusEnergy = (*simClusterRef).simLCEnergy();
+    float simClusTime = (*simClusterRef).simLCTime();
+
+    std::vector<std::pair<uint32_t, std::pair<uint8_t, uint8_t>>> detIdsAndRows = simClus.detIds_and_rows();
+    std::vector<uint32_t> detIds(detIdsAndRows.size());
+    std::transform(detIdsAndRows.begin(), detIdsAndRows.end(), detIds.begin(), [](const std::pair<uint32_t, std::pair<uint8_t, uint8_t>>& pair) {
+                                                                                 return pair.first;} );
+
+    bool isBTL = (MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::BTL) ;
+    bool isETL = (MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::ETL) ;
+        
+    
     // -- get the corresponding reco cluster ref
     auto it = std::find_if( s2rAssociationMap.begin(), s2rAssociationMap.end(),
 			    [&](const std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef>>& p) { return p.first == simClusterRef; });
 
     std::vector<FTLClusterRef> recoClustersRefs = (*it).second;
-	
-    //std::cout << "Number of associated reco clusters: " << recoClustersRefs.size() <<std::endl;
 
-    if (std::abs(simClus.eta())<1.5 ) h_nRecoClusPerSimClus_BTL->Fill(recoClustersRefs.size());
-    if (std::abs(simClus.eta())>1.5 ) h_nRecoClusPerSimClus_ETL->Fill(recoClustersRefs.size());
-
+  
     h_etaSimClus->Fill(simClus.eta());
     if (recoClustersRefs.size()>0) h_etaSimClus_assocToReco->Fill(simClus.eta());
-    
-    
-    if (std::abs(simClus.eta())<1.5 ) {
-	h_energySimClus_BTL ->Fill(simClus.simLCEnergy()*1000);
-	if (simClus.simLCEnergy()*1000 > 1.)	h_timeSimClus_BTL ->Fill(simClus.simLCTime());
-      }
-    if (std::abs(simClus.eta())>1.5 ) {
+
+    if ( isBTL ) {
+      h_nRecoClusPerSimClus_BTL->Fill(recoClustersRefs.size()); 
+      h_energySimClus_BTL ->Fill(simClus.simLCEnergy()*1000);
+      //if (simClus.simLCEnergy()*1000 > 1.) h_timeSimClus_BTL ->Fill(simClus.simLCTime());
+      h_timeSimClus_BTL ->Fill(simClus.simLCTime()); 
+    }
+    if (isETL) {
+      h_nRecoClusPerSimClus_ETL->Fill(recoClustersRefs.size());
       h_energySimClus_ETL ->Fill(simClus.simLCEnergy()*1000); // GeV -> MeV
       h_timeSimClus_ETL ->Fill(simClus.simLCTime());
     }
     
-    simClusIndex++;
+        
+    // -- check matching with tracking particles
+    auto found = sim2TPAssociationMap.find(simClusterRef);
+    bool matched = true;
+    if ( found == sim2TPAssociationMap.end() ){
+      //std::cout << " Sim cluster not matched to any TP : pdgId = " << simClus.pdgId() <<std::endl;
+      matched = false;
+    }
+    
+    std::cout << simClusIndex << "  " 
+	      << detIds[0] 
+	      << "   energy = " << simClus.simLCEnergy()*1000 
+	      << "   trackId " << simClus.g4Tracks()[0].trackId() << "  evId " << simClus.eventId().rawId()
+	      << "   trackPdgId " << simClus.pdgId() 
+	      << "   trackP " << simClus.p() 
+	      << "   trackPt " << simClus.pt() 
+	      << "   matched to TP " << matched <<std::endl;
 
+
+      
+    if (found != sim2TPAssociationMap.end()) {
+      if ( isBTL ) {
+	//if (simClus.simLCEnergy()*1000 > 1.) h_timeSimClus_TPmatched_BTL->Fill(simClus.simLCTime());
+	h_timeSimClus_TPmatched_BTL->Fill(simClus.simLCTime());
+	h_energySimClus_TPmatched_BTL->Fill(simClus.simLCEnergy()*1000);
+      }
+      if (isETL) {
+	h_timeSimClus_TPmatched_ETL->Fill(simClus.simLCTime());
+	h_energySimClus_TPmatched_ETL->Fill(simClus.simLCEnergy()*1000);
+      }
+    }
+    
+    simClusIndex++;
   }
 
 
-  // loop over tracking particles Ref
   
 
 }

@@ -27,9 +27,9 @@ public:
   
 private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
-  edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
-  edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
-  edm::ESGetToken<MTDTopology, MTDTopologyRcd> topoToken_;
+  //edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
+  //edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
+  //edm::ESGetToken<MTDTopology, MTDTopologyRcd> topoToken_;
   const double energyCut_;
   const double timeCut_;
 };
@@ -39,9 +39,9 @@ MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::MtdRecoClusterToSimLaye
   : energyCut_(ps.getParameter<double>("energyCut")), 
     timeCut_(ps.getParameter<double>("timeCut"))  {
 
-  btlRecHitsToken_ = consumes<FTLRecHitCollection>(ps.getParameter<edm::InputTag>("btlRecHitsTag"));
-  etlRecHitsToken_ = consumes<FTLRecHitCollection>(ps.getParameter<edm::InputTag>("etlRecHitsTag"));
-  topoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
+  //btlRecHitsToken_ = consumes<FTLRecHitCollection>(ps.getParameter<edm::InputTag>("btlRecHitsTag"));
+  //etlRecHitsToken_ = consumes<FTLRecHitCollection>(ps.getParameter<edm::InputTag>("etlRecHitsTag"));
+  //topoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
  
   // Register the product
   produces<reco::MtdRecoClusterToSimLayerClusterAssociator>();
@@ -58,7 +58,8 @@ void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::produce(edm::Strea
 								      edm::Event &iEvent,
 								      const edm::EventSetup &es) const {
 
-  edm::Handle<FTLRecHitCollection> btlRecHitsH;
+  /*
+    edm::Handle<FTLRecHitCollection> btlRecHitsH;
   iEvent.getByToken(btlRecHitsToken_, btlRecHitsH);
 
   edm::Handle<FTLRecHitCollection> etlRecHitsH;
@@ -68,6 +69,8 @@ void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::produce(edm::Strea
   const MTDTopology* topology = topologyHandle.product();
   
   auto impl = std::make_unique<MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl>(iEvent.productGetter(), btlRecHitsH, etlRecHitsH, topology, energyCut_, timeCut_);
+  */
+  auto impl = std::make_unique<MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl>(iEvent.productGetter(), energyCut_, timeCut_);
   auto toPut = std::make_unique<reco::MtdRecoClusterToSimLayerClusterAssociator>(std::move(impl));
   iEvent.put(std::move(toPut));
   
@@ -76,8 +79,8 @@ void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::produce(edm::Strea
 
 void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::fillDescriptions(edm::ConfigurationDescriptions &cfg) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("btlRecHitsTag", edm::InputTag("mtdClusters:FTLBarrel"));
-  desc.add<edm::InputTag>("etlRecHitsTag", edm::InputTag("mtdClusters:FTLEndcap"));
+  //desc.add<edm::InputTag>("btlRecHitsTag", edm::InputTag("mtdClusters:FTLBarrel"));
+  //desc.add<edm::InputTag>("etlRecHitsTag", edm::InputTag("mtdClusters:FTLEndcap"));
   desc.add<double>("energyCut", 9999.);
   desc.add<double>("timeCut", 9999.);
   

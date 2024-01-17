@@ -11,15 +11,15 @@ using namespace std;
 /* Constructor */
 
 MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl::MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const& productGetter,
-													 const edm::Handle<FTLRecHitCollection>& btlRecHitsH,
-													 const edm::Handle<FTLRecHitCollection>& etlRecHitsH,
-													 const MTDTopology* topo,
+													 //const edm::Handle<FTLRecHitCollection>& btlRecHitsH,
+													 //const edm::Handle<FTLRecHitCollection>& etlRecHitsH,
+													 //const MTDTopology* topo,
 													 double energyCut,
 													 double timeCut)
 : productGetter_(&productGetter),
-  btlRecHitsH_(btlRecHitsH),
-  etlRecHitsH_(etlRecHitsH),
-  topo_(topo),
+  //btlRecHitsH_(btlRecHitsH),
+  //etlRecHitsH_(etlRecHitsH),
+  //topo_(topo),
   energyCut_(energyCut),
   timeCut_(timeCut){}
 
@@ -42,10 +42,10 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     
   // -- create temporary map  DetId, SimClusterRef (praticamente ... il DetSetVector dei poveri)
   std::map< uint32_t, std::vector<MtdSimLayerClusterRef>> simClusIdsMap;
-  edm::Ref<MtdSimLayerClusterCollection>::key_type simClusIndex = 0;
   for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
+
     auto simClus = *simClusIt;
-    edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex);
+    edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIt-simClusters.begin());
 
     std::vector<std::pair<uint32_t, std::pair<uint8_t, uint8_t>>> detIdsAndRows = simClus.detIds_and_rows();
     std::vector<uint32_t> detIds(detIdsAndRows.size());
@@ -56,8 +56,9 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     //  LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << "Sim cluster index " << simClusIndex << "   hit id: " << detIds[i]; 
     //}
 
-    // get the id of the sensor module 
-    if (MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::BTL) {
+    // build map using th eid of the sensor module as key
+    /*
+      if (MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::BTL) {
       BTLDetId detId = detIds[0];
       DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topo_->getMTDTopologyMode()));
       simClusIdsMap[geoId.rawId()].push_back(simClusterRef);
@@ -68,9 +69,11 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	DetId geoId = detId.geographicalId();
 	simClusIdsMap[geoId.rawId()].push_back(simClusterRef);
 	LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl")<< "ETL cluster,  detId = " << geoId << std::endl;
-    }
+	}*/
 
-    simClusIndex++;
+
+    simClusIdsMap[detIds[0]].push_back(simClusterRef);                                                                                                                                                                  
+    LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl")<< "Sim cluster  detId = " << detIds[0] << std::endl;   
     
   }
 
@@ -86,10 +89,10 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	
 	LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << "Reco cluster : " << clusId;
 
-	auto recHitsH = btlRecHitsH_;
-  	if (clusId.mtdSubDetector() == MTDDetId::ETL) {
-	  recHitsH = etlRecHitsH_;
-	}
+	//auto recHitsH = btlRecHitsH_;
+  	//if (clusId.mtdSubDetector() == MTDDetId::ETL) {
+	//  recHitsH = etlRecHitsH_;
+	//}
 	
 	std::vector<uint64_t> recoClusHitIds;
 
@@ -98,6 +101,16 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	  int hit_row = recoClus.minHitRow() + recoClus.hitOffset()[ihit * 2];
 	  int hit_col = recoClus.minHitCol() + recoClus.hitOffset()[ihit * 2 + 1];
 
+	  // -- Get an unique id from sensor module detId , row, column
+	  uint64_t uniqueId = static_cast<uint64_t>(clusId.rawId()) << 32;
+	  uniqueId |= hit_row << 16;
+	  uniqueId |= hit_col;
+	  recoClusHitIds.push_back(uniqueId);
+	  LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << " ======= cluster raw Id : " << clusId.rawId()
+									  << "  row : " << hit_row << "   column: " <<  hit_col
+									  << " recHit uniqueId : " << uniqueId;
+	  
+	  /*
 	  for (auto recHit : *recHitsH) {
 	    MTDDetId hitId(recHit.id().rawId());
 	    
@@ -119,10 +132,13 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 									    << "  row : " << recHit.row() << "   column: " <<  recHit.column()
 									    << " recHit uniqueId : " << uniqueId;
 	  }
+	  */
+
+
 	}// end loop over rec hits in reco cluster
 	
 
-	// -- loop over sim clusters and if this reco clus shares some hits
+	// -- loop over sim clusters and check if this reco clus shares some hits
         std::vector<MtdSimLayerClusterRef> simClusterRefs;
         simClusterRefs.clear();
 		
@@ -181,8 +197,6 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
   std::array<edm::Handle<FTLClusterCollection>, 2> inputH{{btlRecoClusH, etlRecoClusH}};
   
   // -- loop over MtdSimLayerClusters
-  edm::Ref<MtdSimLayerClusterCollection>::key_type simClusIndex = 0;
-  
   for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
     auto simClus = *simClusIt;
 
@@ -195,7 +209,9 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     std::vector<uint32_t> detIds(detIdsAndRows.size());
     std::transform(detIdsAndRows.begin(), detIdsAndRows.end(), detIds.begin(), [](const std::pair<uint32_t, std::pair<uint8_t, uint8_t>>& pair) {return pair.first;});
 
-    DetId simClusId;
+    DetId simClusId  = detIds[0];
+    
+    /*DetId simClusId;
     if ( MTDDetId(detIds[0]).mtdSubDetector() == MTDDetId::BTL) {
       BTLDetId thisDetId = detIds[0];
       simClusId = thisDetId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topo_->getMTDTopologyMode()));
@@ -204,7 +220,7 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
       ETLDetId thisDetId = detIds[0];
       simClusId = thisDetId.geographicalId();
     }
-
+    */
 
     std::vector<FTLClusterRef> recoClusterRefs;
     recoClusterRefs.clear();
@@ -220,8 +236,8 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	for (const auto& recoClus : detSet) {
  	  MTDDetId clusId = recoClus.id();
 
-	  auto recHitsH = btlRecHitsH_;
-	  if (clusId.mtdSubDetector() == MTDDetId::ETL) recHitsH = etlRecHitsH_;
+	  //auto recHitsH = btlRecHitsH_;
+	  //if (clusId.mtdSubDetector() == MTDDetId::ETL) recHitsH = etlRecHitsH_;
 	  
 	  std::vector<uint64_t> recoClusHitIds;
 	  
@@ -229,7 +245,17 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	  for (int ihit = 0; ihit < recoClus.size(); ++ihit) {
 	    int hit_row = recoClus.minHitRow() + recoClus.hitOffset()[ihit * 2];
 	    int hit_col = recoClus.minHitCol() + recoClus.hitOffset()[ihit * 2 + 1];
-	    
+
+	  // -- Get an unique id from sensor module detId , row, column  
+	  uint64_t uniqueId = static_cast<uint64_t>(clusId.rawId()) << 32;
+	  uniqueId |= hit_row << 16;
+	  uniqueId |= hit_col;
+	  recoClusHitIds.push_back(uniqueId);
+	  LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl") << " ======= cluster raw Id : " << clusId.rawId()
+									  << "  row : " << hit_row << "   column: " <<  hit_col
+									  << " recHit uniqueId : " << uniqueId;
+
+	  /*
 	    for (auto recHit : *recHitsH) {
 	      MTDDetId hitId(recHit.id().rawId());
 	      
@@ -248,6 +274,9 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 	      uniqueId |= recHit.column();
 	      recoClusHitIds.push_back(uniqueId);
 	    }
+	    */
+
+	    
 	  } // -- end loop over hits in the reco clus
 	  
 	  // -- Get shared hits
@@ -275,11 +304,9 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     }
 
     // -- Now fill the output collection
-    edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex); 
+    edm::Ref<MtdSimLayerClusterCollection> simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIt-simClusters.begin()); 
     outputCollection.emplace_back(simClusterRef, recoClusterRefs);
-  
-    simClusIndex++;
-    
+      
   } // -- end loop over sim clusters
   
   return outputCollection;
