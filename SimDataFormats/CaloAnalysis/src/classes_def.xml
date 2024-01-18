@@ -32,7 +32,8 @@
     <version ClassVersion="4" checksum="1001786642"/>
     <version ClassVersion="3" checksum="1001786642"/> 
     <ioread sourceClass = "MtdSimCluster" version="[-3]" targetClass="MtdSimCluster" source="" target="">
-    <![CDATA[ newObj->newForm();
+    <![CDATA[ 
+	     newObj->newForm();
     ]]>
     </ioread> 
   </class>
