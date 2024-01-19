@@ -4,10 +4,6 @@
 
 #include "MtdSimLayerClusterToTPAssociatorByTrackIdImpl.h"
 
-#include "DataFormats/ForwardDetId/interface/BTLDetId.h"
-#include "DataFormats/ForwardDetId/interface/ETLDetId.h"
-
-#include "SimFastTiming/MtdAssociatorProducers/interface/MtdAssociatorTools.h"
 
 using namespace reco;
 using namespace std;
@@ -25,7 +21,7 @@ MtdSimLayerClusterToTPAssociatorByTrackIdImpl::MtdSimLayerClusterToTPAssociatorB
 reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associateSimToTP(
       const edm::Handle<MtdSimLayerClusterCollection>& simClusH,
       const edm::Handle<TrackingParticleCollection>& trackingParticleH) const {
-
+  
   SimToTPCollectionMtd outputCollection(productGetter_);
 
   // -- get the collections
@@ -41,36 +37,31 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
     TrackingParticleRef tpRef = edm::Ref<TrackingParticleCollection>(trackingParticleH, tpIt-trackingParticles.begin());
     tpIdMap[std::make_pair(tpTrackId, tpEventId.rawId())] = tpRef ;
   }
-
+  
+  
   // -- loop over sim clusters and get the trackId, eventId
 
   LogDebug("MtdSimLayerClusterToTPAssociator") << " Found " << simClusters.size() << " MtdSimLayerClusters in the event";
 
-  //size_t simClusIndex(0);
   for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
     auto simClus = *simClusIt;
     size_t simClusIndex = simClusIt - simClusters.begin();
     MtdSimLayerClusterRef simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIndex);
     unsigned int simClusTrackId = simClus.g4Tracks()[0].trackId();
     EncodedEventId simClusEventId = simClus.eventId();
-
-    std::cout << simClusIndex
-	      << "   energy " << simClus.simLCEnergy()
-	      << "   trackId " << simClus.g4Tracks()[0].trackId() << "  evId " << simClus.eventId().rawId()
-	      << std::endl;
     
     // -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
     /*    !!!!!  need to implement offset method in MtdSimLayerClusters 
      */
-
+    
     std::pair uniqueId = std::make_pair(simClusTrackId, simClusEventId.rawId());
     auto it = tpIdMap.find(uniqueId);
-
+    
     if ( it != tpIdMap.end() ) {
-        
+      
       TrackingParticleRef tpRef = tpIdMap[uniqueId];
       outputCollection.insert(simClusterRef, tpRef);
-    
+      
       LogDebug("MtdSimLayerClusterToTPAssociator::associateSimToTP") << "MtdSimLayerCluster: index = " << simClusIndex << "   simClus TrackId = " << simClusTrackId << " simClus EventId = " << simClusEventId.rawId() << " simClus Eta = "<< simClus.eta() << " simClus Phi = " << simClus.phi() << "  simClus Time = " << simClus.simLCTime() <<  "  simClus Energy = " << simClus.simLCEnergy() << std::endl;                                            
       LogDebug("MtdSimLayerClusterToTPAssociator::associateSimToTP") << "  --> Found associated tracking particle:  tp TrackId = " << (*tpRef).g4Tracks()[0].trackId() << " tp EventId = " << (*tpRef).eventId().rawId() << std::endl;
       
@@ -95,14 +86,13 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
   const auto& trackingParticles = *trackingParticleH.product();
 
   // -- Loop over MtdSimLayerClusters and build a temporary map of trackId, eventId --> simClusterRef
-  // - this should be a vect fof simclus refs
-  std::map<std::pair<unsigned int, uint32_t>, MtdSimLayerClusterRef> simClusIdMap;
+    std::map<std::pair<unsigned int, uint32_t>, std::vector<MtdSimLayerClusterRef>> simClusIdMap;
   for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
     auto simClus = *simClusIt;
     unsigned int simClusTrackId = simClus.g4Tracks()[0].trackId();
     EncodedEventId simClusEventId = simClus.eventId();
     MtdSimLayerClusterRef simClusterRef = edm::Ref<MtdSimLayerClusterCollection>(simClusH, simClusIt-simClusters.begin());
-    simClusIdMap[std::make_pair(simClusTrackId, simClusEventId.rawId())] = simClusterRef;
+    simClusIdMap[std::make_pair(simClusTrackId, simClusEventId.rawId())].push_back(simClusterRef);
   }
   
   // -- Loop over the tracking particles
@@ -118,17 +108,19 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
 
     if ( it != simClusIdMap.end() ) {
 
-      MtdSimLayerClusterRef simClusterRef = simClusIdMap[uniqueId];
-      // -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
-      /*    !!!!!  need to implement offset method in MtdSimLayerClusters
-       */
-      outputCollection.insert(tpRef, simClusterRef);
+      for (unsigned int i = 0; i < simClusIdMap[uniqueId].size(); i++){
+
+	MtdSimLayerClusterRef simClusterRef = simClusIdMap[uniqueId][i];
+	// -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
+	/*    !!!!!  need to implement offset method in MtdSimLayerClusters
+	 */
+	outputCollection.insert(tpRef, simClusterRef);
     
-      LogDebug("MtdSimLayerClusterToTPAssociator") << "Tracking particle:  index = " << tpIndex << "  tp TrackId = " << tpTrackId << "  tp EventId = " << tpEventId.rawId();
-      LogDebug("MtdSimLayerClusterToTPAssociator") << " --> Found associated MtdSimLayerCluster:  simClus TrackId = " << (*simClusterRef).g4Tracks()[0].trackId() << " simClus EventId = " << (*simClusterRef).eventId().rawId() <<  " simClus Eta = "<< (*simClusterRef).eta() << " simClus Phi = " << (*simClusterRef).phi() << "  simClus Time = " << (*simClusterRef).simLCTime() <<  "  simClus Energy = " << (*simClusterRef).simLCEnergy() << std::endl;
-      
+	LogDebug("MtdSimLayerClusterToTPAssociator") << "Tracking particle:  index = " << tpIndex << "  tp TrackId = " << tpTrackId << "  tp EventId = " << tpEventId.rawId();
+	LogDebug("MtdSimLayerClusterToTPAssociator") << " --> Found associated MtdSimLayerCluster:  simClus TrackId = " << (*simClusterRef).g4Tracks()[0].trackId() << " simClus EventId = " << (*simClusterRef).eventId().rawId() <<  " simClus Eta = "<< (*simClusterRef).eta() << " simClus Phi = " << (*simClusterRef).phi() << "  simClus Time = " << (*simClusterRef).simLCTime() <<  "  simClus Energy = " << (*simClusterRef).simLCEnergy() << std::endl;
+	
+      }
     }
-    
   }
   
   return outputCollection;

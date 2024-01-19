@@ -335,7 +335,6 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
     if ( isBTL ) {
       h_nRecoClusPerSimClus_BTL->Fill(recoClustersRefs.size()); 
       h_energySimClus_BTL ->Fill(simClus.simLCEnergy()*1000);
-      //if (simClus.simLCEnergy()*1000 > 1.) h_timeSimClus_BTL ->Fill(simClus.simLCTime());
       h_timeSimClus_BTL ->Fill(simClus.simLCTime()); 
     }
     if (isETL) {
@@ -352,17 +351,30 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
       //std::cout << " Sim cluster not matched to any TP : pdgId = " << simClus.pdgId() <<std::endl;
       matched = false;
     }
+
     
-    std::cout << simClusIndex << "  " 
-	      << detIds[0] 
-	      << "   energy = " << simClus.simLCEnergy()*1000 
-	      << "   trackId " << simClus.g4Tracks()[0].trackId() << "  evId " << simClus.eventId().rawId()
-	      << "   trackPdgId " << simClus.pdgId() 
-	      << "   trackP " << simClus.p() 
-	      << "   trackPt " << simClus.pt() 
-	      << "   matched to TP " << matched <<std::endl;
+    //if (simClus.simLCEnergy()*1000> 1 && !matched){ 
+    if (isETL){
+      std::cout << simClusIndex << "  " 
+		<< detIds[0] 
+		<< "   energy = " << simClus.simLCEnergy()*1000
+		<< "   evId " << simClus.eventId().rawId()
+		<< "   simClus.g4Tracks.trackId " << simClus.g4Tracks()[0].trackId() 
+		<< "   trackPdgId " << simClus.pdgId() 
+		<< "   trackP " << simClus.p() 
+		<< "   trackPt " << simClus.pt() 
+		<< "   matched to TP " << matched <<std::endl;
 
-
+      for ( unsigned int i = 0; i < simClus.g4Tracks().size(); i++ ){
+	std::cout << "   simClus.g4Tracks.track trackId " << simClus.g4Tracks()[i].trackId() 
+		  << "   simClus.g4Tracks.track pT " << simClus.g4Tracks()[i].momentum().Pt() 
+		  << "   simClus.g4Tracks.track P " << simClus.g4Tracks()[i].momentum().P() 
+		  << "   simClus.g4Tracks.track E " << simClus.g4Tracks()[i].momentum().E() 
+		  << "   simClus.g4Tracks.track type " << simClus.g4Tracks()[i].type() 
+		  << std::endl;
+      }
+    }
+   
       
     if (found != sim2TPAssociationMap.end()) {
       if ( isBTL ) {

@@ -1,11 +1,6 @@
 #include <vector>
 #include <memory>
 
-#include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
-#include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
-#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
-#include "Geometry/MTDGeometryBuilder/interface/MTDGeomUtil.h"
-
 #include "SimDataFormats/Associations/interface/MtdSimLayerClusterToTPAssociator.h"
 
 namespace edm {
@@ -14,12 +9,7 @@ namespace edm {
 
 class MtdSimLayerClusterToTPAssociatorByTrackIdImpl : public reco::MtdSimLayerClusterToTPAssociatorBaseImpl {
 public:
-  explicit MtdSimLayerClusterToTPAssociatorByTrackIdImpl(edm::EDProductGetter const &
-							 //,
-							 //const edm::Handle<CrossingFrame<PSimHit>> &,
-							 //const edm::Handle<CrossingFrame<PSimHit>> &,
-							 //mtd::MTDGeomUtil &
-							 );
+  explicit MtdSimLayerClusterToTPAssociatorByTrackIdImpl(edm::EDProductGetter const &);
   
   reco::SimToTPCollectionMtd associateSimToTP(
       const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
@@ -32,9 +22,6 @@ public:
 private:
 
   edm::EDProductGetter const *productGetter_;
-  //edm::Handle<CrossingFrame<PSimHit>> btlSimHitsH_;
-  //edm::Handle<CrossingFrame<PSimHit>> etlSimHitsH_;
-  //mtd::MTDGeomUtil geomTools_;
 
 };
 
