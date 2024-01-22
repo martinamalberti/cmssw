@@ -1,5 +1,6 @@
 <use name="FWCore/Framework"/>
 <use name="FWCore/ParameterSet"/>
+<use name="CommonTools/UtilAlgos"/>
 <use name="Geometry/MTDGeometryBuilder"/>
 <use name="RecoLocalFastTime/Records"/>
 <use name="RecoLocalFastTime/FTLClusterizer"/>
@@ -21,6 +22,8 @@
 <use name="SimGeneral/HepPDTRecord"/>
 <use name="Geometry/Records"/>
 <use name="SimDataFormats/TrackingAnalysis"/>
+<use name="SimDataFormats/CaloAnalysis"/>
+<use name="SimDataFormats/Associations"/>
 <use name="SimTracker/VertexAssociation"/>
 <use name="clhep"/>
 <use name="boost"/>
