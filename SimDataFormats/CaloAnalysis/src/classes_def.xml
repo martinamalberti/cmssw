@@ -28,14 +28,7 @@
   <class name="SimClusterRefProd"/>
   <class name="SimClusterContainer"/>
 
-  <class name="MtdSimCluster" ClassVersion="3">
-    <version ClassVersion="3" checksum="1001786642"/>
-  </class>
-  <ioread sourceClass = "MtdSimCluster" version="[-3]" targetClass="MtdSimCluster" source="" target="">
-    <![CDATA[ 
-	     newObj->newForm();
-    ]]>
-  </ioread> 
+  <class name="MtdSimCluster"/>
   <class name="MtdSimClusterCollection"/>
   <class name="edm::Wrapper<MtdSimClusterCollection>"/>
   <class name="MtdSimClusterRef"/>
