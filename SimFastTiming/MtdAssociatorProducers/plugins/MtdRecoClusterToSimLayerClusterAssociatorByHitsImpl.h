@@ -1,7 +1,7 @@
 #include <vector>
 #include <memory>
 
-#include "DataFormats/FTLRecHit/interface/FTLRecHitCollections.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeomUtil.h"
 #include "SimDataFormats/Associations/interface/MtdRecoClusterToSimLayerClusterAssociator.h"
 
 namespace edm {
@@ -10,7 +10,7 @@ namespace edm {
 
 class MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl : public reco::MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
 public:
-  explicit MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const &, double, double);
+  explicit MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const &, double, double, mtd::MTDGeomUtil &);
 
   reco::RecoToSimCollectionMtd associateRecoToSim(
       const edm::Handle<FTLClusterCollection> &btlRecoClusH,
@@ -26,5 +26,7 @@ private:
   edm::EDProductGetter const *productGetter_;
   const double energyCut_;
   const double timeCut_;
+  mtd::MTDGeomUtil geomTools_;
+
 };
 

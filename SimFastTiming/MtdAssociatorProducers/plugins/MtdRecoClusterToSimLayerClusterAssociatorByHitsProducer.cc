@@ -11,7 +11,10 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
 
-#include "Geometry/MTDNumberingBuilder/interface/MTDTopology.h"
+#include "Geometry/MTDCommonData/interface/MTDTopologyMode.h"
+#include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
+
 #include "MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl.h"
 
 //
@@ -29,13 +32,18 @@ private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
   const double energyCut_;
   const double timeCut_;
+  edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> geomToken_;
+  edm::ESGetToken<MTDTopology, MTDTopologyRcd> topoToken_;
 };
 
 
 MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer(const edm::ParameterSet &ps)
   : energyCut_(ps.getParameter<double>("energyCut")), 
-    timeCut_(ps.getParameter<double>("timeCut"))  {
+    timeCut_(ps.getParameter<double>("timeCut")){
 
+  geomToken_ = esConsumes<MTDGeometry, MTDDigiGeometryRecord>();
+  topoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
+   
   // Register the product
   produces<reco::MtdRecoClusterToSimLayerClusterAssociator>();
 
@@ -51,7 +59,17 @@ void MtdRecoClusterToSimLayerClusterAssociatorByHitsProducer::produce(edm::Strea
 								      edm::Event &iEvent,
 								      const edm::EventSetup &es) const {
 
-  auto impl = std::make_unique<MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl>(iEvent.productGetter(), energyCut_, timeCut_);
+  auto geometryHandle = es.getTransientHandle(geomToken_);
+  const MTDGeometry* geom = geometryHandle.product();
+
+  auto topologyHandle = es.getTransientHandle(topoToken_);
+  const MTDTopology* topology = topologyHandle.product();
+
+  mtd::MTDGeomUtil geomTools_;
+  geomTools_.setGeometry(geom);
+  geomTools_.setTopology(topology);
+
+  auto impl = std::make_unique<MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl>(iEvent.productGetter(), energyCut_, timeCut_, geomTools_);
   auto toPut = std::make_unique<reco::MtdRecoClusterToSimLayerClusterAssociator>(std::move(impl));
   iEvent.put(std::move(toPut));
   

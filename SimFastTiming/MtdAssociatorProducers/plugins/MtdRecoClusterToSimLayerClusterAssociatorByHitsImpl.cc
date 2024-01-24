@@ -11,10 +11,12 @@ using namespace std;
 
 MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl::MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const& productGetter,
 													 double energyCut,
-													 double timeCut)
+													 double timeCut,
+													 mtd::MTDGeomUtil &geomTools)
 : productGetter_(&productGetter),
   energyCut_(energyCut),
-  timeCut_(timeCut){}
+  timeCut_(timeCut),
+  geomTools_(geomTools){}
 
 
 //
@@ -44,14 +46,17 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
     std::vector<uint32_t> detIds(detIdsAndRows.size());
     std::transform(detIdsAndRows.begin(), detIdsAndRows.end(), detIds.begin(), [](const std::pair<uint32_t, std::pair<uint8_t, uint8_t>>& pair) {
                                                                                  return pair.first;} );
-    
-    simClusIdsMap[detIds[0]].push_back(simClusterRef);                                                                                                                                                                  
-    LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl")<< "Sim cluster  detId = " << detIds[0] << std::endl;   
+
+    // -- get the sensor module id from the first hit id of the MtdSimCluster
+    DetId id(detIds[0]);
+    uint32_t modId = geomTools_.sensorModuleId(id);
+    simClusIdsMap[modId].push_back(simClusterRef);
+
+    LogDebug("MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl")<< "Sim cluster  detId = " << modId << std::endl;   
     
   }
 
 
-  
   for (auto const& recoClusH : inputRecoClusH) {
     // -- loop over detSetVec
     for (const auto& detSet : *recoClusH) { 
@@ -86,12 +91,20 @@ reco::RecoToSimCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
 		
 	for  ( auto simClusterRef : simClusIdsMap[clusId.rawId()] ){
 	  auto simClus = *simClusterRef;
-
-	  std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
-	  std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
-	  std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {
-											  return pair.first;});
 	  
+	  // get the hit ids of hits in the SimCluster
+	  std::vector<std::pair<uint32_t, std::pair<uint8_t, uint8_t>>> detIdsAndRows = simClus.detIds_and_rows();
+	  std::vector<uint64_t> simClusHitIds(detIdsAndRows.size());
+	  for (unsigned int i = 0; i < detIdsAndRows.size(); i++){
+	    DetId id(detIdsAndRows[i].first);
+	    uint32_t modId = geomTools_.sensorModuleId(id);
+	    // build the unique id from sensor module detId , row, column
+	    uint64_t uniqueId = static_cast<uint64_t>(modId) << 32;
+	    uniqueId |= detIdsAndRows[i].second.first << 16;
+	    uniqueId |= detIdsAndRows[i].second.second;
+	    simClusHitIds.push_back(uniqueId);
+	  }
+	  	  
 	  // -- Get shared hits
 	  std::vector<uint64_t> sharedHitIds;
 	  std::set_intersection(recoClusHitIds.begin(), recoClusHitIds.end(), simClusHitIds.begin(), simClusHitIds.end(), std::back_inserter(sharedHitIds));
@@ -141,17 +154,22 @@ reco::SimToRecoCollectionMtd MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
   // -- loop over MtdSimLayerClusters
   for (auto simClusIt = simClusters.begin(); simClusIt != simClusters.end(); simClusIt++){
     auto simClus = *simClusIt;
-
-    // - get the uniqueIds of the hits in the sim layer cluster
-    std::vector<std::pair<uint64_t, float>> hitsAndFrac = simClus.hits_and_fractions();
-    std::vector<uint64_t> simClusHitIds(hitsAndFrac.size());
-    std::transform(hitsAndFrac.begin(), hitsAndFrac.end(), simClusHitIds.begin(), [](const std::pair<uint64_t, float>& pair) {return pair.first;} );
-
+    
+    // get the hit ids of hits in the SimCluster
     std::vector<std::pair<uint32_t, std::pair<uint8_t, uint8_t>>> detIdsAndRows = simClus.detIds_and_rows();
-    std::vector<uint32_t> detIds(detIdsAndRows.size());
-    std::transform(detIdsAndRows.begin(), detIdsAndRows.end(), detIds.begin(), [](const std::pair<uint32_t, std::pair<uint8_t, uint8_t>>& pair) {return pair.first;});
+    std::vector<uint64_t> simClusHitIds(detIdsAndRows.size());
+    uint32_t modId = 0;
+    for (unsigned int i = 0; i < detIdsAndRows.size(); i++){
+      DetId id(detIdsAndRows[i].first);
+      modId = geomTools_.sensorModuleId(id);
+      // build the unique id from sensor module detId , row, column
+      uint64_t uniqueId = static_cast<uint64_t>(modId) << 32;
+      uniqueId |= detIdsAndRows[i].second.first << 16;
+      uniqueId |= detIdsAndRows[i].second.second;
+      simClusHitIds.push_back(uniqueId);
+    }
 
-    DetId simClusId  = detIds[0];
+    DetId simClusId(modId);
     
     std::vector<FTLClusterRef> recoClusterRefs;
     
