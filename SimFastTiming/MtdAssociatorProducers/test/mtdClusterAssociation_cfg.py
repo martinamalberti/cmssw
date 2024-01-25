@@ -19,7 +19,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', ''
 process.load('RecoLocalFastTime.FTLClusterizer.MTDCPEESProducer_cfi')
 process.load("Configuration.StandardSequences.Reconstruction_cff")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 #Setup FWK for multithreaded
 process.options.numberOfThreads = 1
@@ -32,10 +32,10 @@ process.MessageLogger.cerr.threshold = 'DEBUG'
 process.MessageLogger.debugModules = ['mtdRecoClusterToSimLayerClusterAssociatorByHits','mtdRecoClusterToSimLayerClusterAssociation']
 #process.MessageLogger.debugModules = ['*']
 
-process.Timing = cms.Service("Timing",
+#process.Timing = cms.Service("Timing",
   #summaryOnly = cms.untracked.bool(False),
   #useJobReport = cms.untracked.bool(True)
-)
+#)
 
 process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
     reportEvery = cms.untracked.int32(1),
@@ -47,8 +47,9 @@ process.source = cms.Source("PoolSource",
         #'/store/relval/CMSSW_14_0_0_pre2/RelValSingleMuPt10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_STD_2026D98_noPU-v1/2590000/1095a786-6fc3-4cd1-a159-89175f5c868a.root'
         #'file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre1/mywork/24807.0_SingleMuPt10+2026D98/step3.root'
         # SingleMu, PU200        
-        '/store//relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_2026D98PU200-v1/2590000/3c20ae49-f4b0-472f-aa85-3dade4e7a32c.root'
+        #'/store//relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_2026D98PU200-v1/2590000/3c20ae49-f4b0-472f-aa85-3dade4e7a32c.root'
         # SinglePi, noPU        
+        'file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/mywork/24906.0_SinglePiFlatPt0p7To10+2026D98/step3.root'
         #'/store/relval/CMSSW_14_0_0_pre2/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_STD_2026D98_noPU-v1/2590000/25725b7e-b5a1-4c83-ae86-733c4a04c9d0.root'
         # SinglePi, PU200
         #'/store/relval/CMSSW_14_0_0_pre1/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_2026D98PU200-v1/2590000/e81370bc-b36a-4c6b-9427-01a1badfc188.root'        
@@ -81,8 +82,9 @@ process.out = cms.OutputModule("PoolOutputModule",
             'keep *_mtdSimLayerClusterToTPAssociation_*_*',
         ),
     #fileName = cms.untracked.string('OutputWithAssociationMaps_SingleMu_noPU.root')
-    fileName = cms.untracked.string('OutputWithAssociationMaps_SingleMu_PU200.root')
+    #fileName = cms.untracked.string('OutputWithAssociationMaps_SingleMu_PU200.root')
     #fileName = cms.untracked.string('OutputWithAssociationMaps_SinglePi_noPU.root')
+    fileName = cms.untracked.string('OutputWithAssociationMaps_SinglePi_noPU_new.root')
     #fileName = cms.untracked.string('OutputWithAssociationMaps_SinglePi_PU200.root')
 )
  

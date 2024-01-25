@@ -97,9 +97,21 @@ public:
     ++nsimhits_;
   }
 
+  
+  void setTrackIdOffset(unsigned int offset) {
+    idOffset_ =  offset;
+  }
+
+  unsigned int trackIdOffset() const {
+    return idOffset_;
+  }
+
+  
+  
 protected:
   std::vector<uint64_t> mtdHits_;
   std::vector<float> times_;
+  unsigned int idOffset_{0};
 };
 
 #endif

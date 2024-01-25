@@ -188,8 +188,32 @@ namespace {
       auto const vertex_property = get(vertex_name, g, u);
       if (!vertex_property.simTrack)
         return;
-      auto trackIdx = vertex_property.simTrack->trackId();
-      IfLogDebug(DEBUG, messageCategoryGraph_)
+      // -- loop over possible trackIdOffsets to save also sim clusters from non-direct hits
+      for (unsigned int offset = 0; offset < 4; offset++){
+	auto trackIdx = vertex_property.simTrack->trackId();
+	std::cout << "  original trackIdx = " << trackIdx << "   offset = " << offset <<  " new trackIdx = " <<  offset * (static_cast<int>(PSimHit::k_tidOffset))+ trackIdx << std::endl; 
+	trackIdx+= offset * (static_cast<int>(PSimHit::k_tidOffset));
+	IfLogDebug(DEBUG, messageCategoryGraph_)
+          << " Found " << simHitBarcodeToIndex_.count(trackIdx) << " associated simHits" << std::endl;
+	if (simHitBarcodeToIndex_.count(trackIdx)) {
+	  output_.pSimClusters->emplace_back(*vertex_property.simTrack);
+	  auto &simcluster = output_.pSimClusters->back();
+	  std::unordered_map<uint64_t, float> acc_energy;
+	  std::cout << " trackIdx = " << trackIdx << "   simTrackDetIdEnergyMap_.size = " << simTrackDetIdEnergyMap_[trackIdx].size()
+		    << "   simTrackDetIdTimeMap_.size = " << simTrackDetIdTimeMap_[trackIdx].size() << std::endl;
+	  for (auto const &hit_and_energy : simTrackDetIdEnergyMap_[trackIdx]) {
+	    acc_energy[hit_and_energy.first] += hit_and_energy.second;
+	  }
+	  for (auto const &hit_and_energy : acc_energy) {
+	    simcluster.addHitAndFraction(hit_and_energy.first, hit_and_energy.second);
+	    simcluster.addHitEnergy(hit_and_energy.second);
+	    simcluster.addHitTime(simTrackDetIdTimeMap_[simcluster.g4Tracks()[0].trackId()+offset * (static_cast<int>(PSimHit::k_tidOffset))][hit_and_energy.first]);
+	    simcluster.setTrackIdOffset(offset);
+	  }
+	}
+      }	
+      /*
+	  IfLogDebug(DEBUG, messageCategoryGraph_)
           << " Found " << simHitBarcodeToIndex_.count(trackIdx) << " associated simHits" << std::endl;
       if (simHitBarcodeToIndex_.count(trackIdx)) {
         output_.pSimClusters->emplace_back(*vertex_property.simTrack);
@@ -205,7 +229,9 @@ namespace {
           simcluster.addHitTime(simTrackDetIdTimeMap_[simcluster.g4Tracks()[0].trackId()][hit_and_energy.first]);
         }
       }
+	*/
     }
+
     template <typename Edge, typename Graph>
     void examine_edge(Edge e, const Graph &g) {
       auto src = source(e, g);
@@ -454,6 +480,7 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       SimLCz = 0.;
       tmpLC.addCluIndex(SC_index);
       tmpLC.computeClusterTime();
+      tmpLC.setTrackIdOffset(sc.trackIdOffset());// add trackIdoffset
       output_.pMtdSimLayerClusters->push_back(tmpLC);
       LC_indices.push_back(LC_index);
       LC_index++;
