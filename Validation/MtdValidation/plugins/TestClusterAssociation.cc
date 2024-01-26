@@ -146,17 +146,17 @@ TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig)
   h_trackIdOffset_simMatched_BTL = fs_->make<TH1F>("h_trackIdOffset_simMatched_BTL","h_trackIdOffset_simMatched_BTL", 4, -0.5, 3.5);
   h_trackIdOffset_simMatched_ETL = fs_->make<TH1F>("h_trackIdOffset_simMatched_ETL","h_trackIdOffset_simMatched_ETL", 4, -0.5, 3.5);
   
-  h_energy_BTL_all = fs_->make<TH1F>("h_energy_BTL_all","h_energy_BTL_all", 200, 0, 20);
-  h_energy_ETL_all = fs_->make<TH1F>("h_energy_ETL_all","h_energy_ETL_all", 200, 0, 20);
+  h_energy_BTL_all = fs_->make<TH1F>("h_energy_BTL_all","h_energy_BTL_all", 100, 0, 20);
+  h_energy_ETL_all = fs_->make<TH1F>("h_energy_ETL_all","h_energy_ETL_all", 200, 0, 1);
 
-  h_energy_simMatched_BTL = fs_->make<TH1F>("h_energy_simMatched_BTL","h_energy_simMatched_BTL", 200, 0, 20);
-  h_energy_simMatched_ETL = fs_->make<TH1F>("h_energy_simMatched_ETL","h_energy_simMatched_ETL", 200, 0, 20);
+  h_energy_simMatched_BTL = fs_->make<TH1F>("h_energy_simMatched_BTL","h_energy_simMatched_BTL", 100, 0, 20);
+  h_energy_simMatched_ETL = fs_->make<TH1F>("h_energy_simMatched_ETL","h_energy_simMatched_ETL", 200, 0, 1);
 
-  h_energy_simMatched_directHits_BTL = fs_->make<TH1F>("h_energy_simMatched_directHits_BTL","h_energy_simMatched_directHits_BTL", 200, 0, 20);
-  h_energy_simMatched_directHits_ETL = fs_->make<TH1F>("h_energy_simMatched_directHits_ETL","h_energy_simMatched_directHits_ETL", 200, 0, 20);
+  h_energy_simMatched_directHits_BTL = fs_->make<TH1F>("h_energy_simMatched_directHits_BTL","h_energy_simMatched_directHits_BTL", 100, 0, 20);
+  h_energy_simMatched_directHits_ETL = fs_->make<TH1F>("h_energy_simMatched_directHits_ETL","h_energy_simMatched_directHits_ETL", 200, 0, 1);
 
-  h_energy_TPmatched_BTL = fs_->make<TH1F>("h_energy_TPmatched_BTL","h_energy_TPmatched_BTL", 200, 0, 20);
-  h_energy_TPmatched_ETL = fs_->make<TH1F>("h_energy_TPmatched_ETL","h_energy_TPmatched_ETL", 200, 0, 20);
+  h_energy_TPmatched_BTL = fs_->make<TH1F>("h_energy_TPmatched_BTL","h_energy_TPmatched_BTL", 100, 0, 20);
+  h_energy_TPmatched_ETL = fs_->make<TH1F>("h_energy_TPmatched_ETL","h_energy_TPmatched_ETL", 200, 0, 1);
   
   h_time_BTL_all = fs_->make<TH1F>("h_time_BTL_all","h_time_BTL_all", 100, 0, 25);
   h_time_ETL_all = fs_->make<TH1F>("h_time_ETL_all","h_time_ETL_all", 100, 0, 25);
@@ -170,8 +170,8 @@ TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig)
   h_time_TPmatched_BTL = fs_->make<TH1F>("h_time_TPmatched_BTL","h_time_TPmatched_BTL", 100, 0, 25);
   h_time_TPmatched_ETL = fs_->make<TH1F>("h_time_TPmatched_ETL","h_time_TPmatched_ETL", 100, 0, 25);
 
-  h_energyResol_BTL =  fs_->make<TH1F>("h_energyResol_BTL","h_energyResol_BTL", 800, 0, 4);
-  h_energyResol_ETL = fs_->make<TH1F>("h_energyResol_ETL","h_energyResol_ETL", 800, 0, 4);
+  h_energyResol_BTL =  fs_->make<TH1F>("h_energyResol_BTL","h_energyResol_BTL", 400, 0, 4);
+  h_energyResol_ETL = fs_->make<TH1F>("h_energyResol_ETL","h_energyResol_ETL", 400, 0, 4);
 
   h_timeResol_BTL = fs_->make<TH1F>("h_timeResol_BTL","h_timeResol_BTL", 200, -1, 1);
   h_timeResol_ETL = fs_->make<TH1F>("h_timeResol_ETL","h_timeResol_ETL", 200, -1, 1);
@@ -182,14 +182,14 @@ TestClusterAssociation::TestClusterAssociation(const edm::ParameterSet& iConfig)
   h_nRecoClusPerSimClus_BTL = fs_->make<TH1F>("h_nRecoClusPerSimClus_BTL","h_nRecoClusPerSimClus_BTL", 5, -0.5, 4.5);
   h_nRecoClusPerSimClus_ETL = fs_->make<TH1F>("h_nRecoClusPerSimClus_ETL","h_nRecoClusPerSimClus_ETL", 5, -0.5, 4.5);
 
-  h_energySimClus_BTL = fs_->make<TH1F>("h_energySimClus_BTL","h_energySimClus_BTL", 200, 0., 20.0);
-  h_energySimClus_ETL = fs_->make<TH1F>("h_energySimClus_ETL","h_energySimClus_ETL", 200, 0., 20.0);
+  h_energySimClus_BTL = fs_->make<TH1F>("h_energySimClus_BTL","h_energySimClus_BTL", 100, 0, 20);
+  h_energySimClus_ETL = fs_->make<TH1F>("h_energySimClus_ETL","h_energySimClus_ETL", 200, 0, 1);
 
   h_timeSimClus_BTL = fs_->make<TH1F>("h_timeSimClus_BTL","h_timeSimClus_BTL", 100, 0., 25.0);
   h_timeSimClus_ETL = fs_->make<TH1F>("h_timeSimClus_ETL","h_timeSimClus_ETL", 100, 0., 25.0);
 
-  h_energySimClus_TPmatched_BTL = fs_->make<TH1F>("h_energySimClus_TPmatched_BTL","h_energySimClus_TPmatched_BTL", 200, 0., 20.0);
-  h_energySimClus_TPmatched_ETL = fs_->make<TH1F>("h_energySimClus_TPmatched_ETL","h_energySimClus_TPmatched_ETL", 200, 0., 20.0);
+  h_energySimClus_TPmatched_BTL = fs_->make<TH1F>("h_energySimClus_TPmatched_BTL","h_energySimClus_TPmatched_BTL", 100, 0, 20);
+  h_energySimClus_TPmatched_ETL = fs_->make<TH1F>("h_energySimClus_TPmatched_ETL","h_energySimClus_TPmatched_ETL", 200, 0, 1);
 
   h_timeSimClus_TPmatched_BTL = fs_->make<TH1F>("h_timeSimClus_TPmatched_BTL","h_timeSimClus_TPmatched_BTL", 100, 0., 25.0);
   h_timeSimClus_TPmatched_ETL = fs_->make<TH1F>("h_timeSimClus_TPmatched_ETL","h_timeSimClus_TPmatched_ETL", 100, 0., 25.0);
@@ -396,23 +396,20 @@ void TestClusterAssociation::analyze(const edm::Event& iEvent, const edm::EventS
       //std::cout << " Sim cluster not matched to any TP : pdgId = " << simClus.pdgId() <<std::endl;
       matched = false;
     }
-
     
-    //if (simClus.simLCEnergy()*1000> 1 && !matched){ 
+    //if (!matched && isBTL){
+    if (isETL && (simClus.pdgId()==11 || simClus.pdgId()==22) ){
+    std::cout << simClusIndex << "  " 
+	      << detIds[0] 
+	      << "   energy [MeV] = " << simClus.simLCEnergy()*1000
+	      << "   evId " << simClus.eventId().rawId()
+	      << "   simClus.g4Tracks.trackId " << simClus.g4Tracks()[0].trackId() 
+	      << "   trackPdgId " << simClus.pdgId() 
+	      << "   trackP " << simClus.p() 
+	      << "   trackPt " << simClus.pt() 
+	      << "   trackEta " << simClus.eta() 
+	      << "   matched to TP " << matched <<std::endl;
     
-    //if (isETL && !matched){
-    if ( simClus.pdgId() == 22) {
-      std::cout << simClusIndex << "  " 
-		<< detIds[0] 
-		<< "   energy = " << simClus.simLCEnergy()*1000
-		<< "   evId " << simClus.eventId().rawId()
-		<< "   simClus.g4Tracks.trackId " << simClus.g4Tracks()[0].trackId() 
-		<< "   trackPdgId " << simClus.pdgId() 
-		<< "   trackP " << simClus.p() 
-		<< "   trackPt " << simClus.pt() 
-		<< "   trackEta " << simClus.eta() 
-		<< "   matched to TP " << matched <<std::endl;
-
       /*for ( unsigned int i = 0; i < simClus.g4Tracks().size(); i++ ){
 	std::cout << "   simClus.g4Tracks.track trackId " << simClus.g4Tracks()[i].trackId() 
 		  << "   simClus.g4Tracks.track pT " << simClus.g4Tracks()[i].momentum().Pt() 

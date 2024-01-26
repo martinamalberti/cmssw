@@ -32,11 +32,14 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SingleMu_noPU.root')
-    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SingleMu_PU200.root')
+    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SingleMu_PU200.root')
     #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi_noPU.root')
-    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi_noPU_new.root')
     #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi_PU200.root')
-)
+
+    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SingleMu_noPU_new.root')
+    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi_noPU_new.root')
+
+                            )
 
 
 process.mix.digitizers = cms.PSet()
@@ -59,10 +62,13 @@ process.clusterAssociation = cms.EDAnalyzer('TestClusterAssociation',
 # Output TFile
 process.TFileService = cms.Service('TFileService',
    #fileName = cms.string('clusterAssociationTest_SingleMu_noPU.root')
-   #fileName = cms.string('clusterAssociationTest_SingleMu_PU200.root')
+   fileName = cms.string('clusterAssociationTest_SingleMu_PU200.root')
    #fileName = cms.string('clusterAssociationTest_SinglePi_noPU.root')
-   fileName = cms.string('clusterAssociationTest_SinglePi_noPU_new.root')
    #fileName = cms.string('clusterAssociationTest_SinglePi_PU200.root')
-)
+
+   #fileName = cms.string('clusterAssociationTest_SingleMu_noPU_new.root')
+   #fileName = cms.string('clusterAssociationTest_SinglePi_noPU_new.root')
+
+                                   )
 
 process.p = cms.Path(process.mix + process.clusterAssociation)

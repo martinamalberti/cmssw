@@ -51,8 +51,9 @@ reco::SimToTPCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
     EncodedEventId simClusEventId = simClus.eventId();
     
     // -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
-    /*    !!!!!  need to implement offset method in MtdSimLayerClusters 
-     */
+    /* 
+       if (simClus.trackIdOffset() != 0 ) continue; 
+    */
     
     std::pair uniqueId = std::make_pair(simClusTrackId, simClusEventId.rawId());
     auto it = tpIdMap.find(uniqueId);
@@ -112,8 +113,10 @@ reco::TPToSimCollectionMtd MtdSimLayerClusterToTPAssociatorByTrackIdImpl::associ
 
 	MtdSimLayerClusterRef simClusterRef = simClusIdMap[uniqueId][i];
 	// -- Check the trackId offset of the sim hits and keep only clusters with "direct" hits (offset == 0)    
-	/*    !!!!!  need to implement offset method in MtdSimLayerClusters
-	 */
+	/*
+	  if (simClus.trackIdOffset() != 0 ) continue; 
+	*/
+	
 	outputCollection.insert(tpRef, simClusterRef);
     
 	LogDebug("MtdSimLayerClusterToTPAssociator") << "Tracking particle:  index = " << tpIndex << "  tp TrackId = " << tpTrackId << "  tp EventId = " << tpEventId.rawId();
