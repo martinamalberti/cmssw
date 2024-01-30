@@ -65,6 +65,7 @@
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingVertexContainer.h"
 #include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
+#include "SimDataFormats/Associations/interface/MtdSimLayerClusterToTPAssociatorBaseImpl.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "SimGeneral/HepPDTRecord/interface/ParticleDataTable.h"
@@ -137,6 +138,7 @@ private:
   edm::EDGetTokenT<TrackingParticleCollection> trackingParticleCollectionToken_;
   edm::EDGetTokenT<reco::SimToRecoCollection> simToRecoAssociationToken_;
   edm::EDGetTokenT<reco::RecoToSimCollection> recoToSimAssociationToken_;
+  edm::EDGetTokenT<reco::TPToSimCollectionMtd> tp2SimAssociationMapToken_;
   edm::EDGetTokenT<CrossingFrame<PSimHit>> btlSimHitsToken_;
   edm::EDGetTokenT<CrossingFrame<PSimHit>> etlSimHitsToken_;
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
@@ -245,6 +247,7 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
       consumes<reco::SimToRecoCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"));
   recoToSimAssociationToken_ =
       consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"));
+  tp2SimAssociationMapToken_ = consumes<reco::TPToSimCollectionMtd>(iConfig.getParameter<edm::InputTag>("tp2SimAssociationMapTag"));
   btlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("btlSimHits"));
   etlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("etlSimHits"));
   btlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("btlRecHits"));
@@ -283,8 +286,12 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   std::unordered_map<uint32_t, MTDHit> m_etlHits;
   std::unordered_map<uint32_t, std::set<unsigned long int>> m_btlTrkPerCell;
   std::unordered_map<uint32_t, std::set<unsigned long int>> m_etlTrkPerCell;
-  std::map<TrackingParticleRef, std::vector<uint32_t>> m_tp2detid;
-
+  /* 
+     std::map<TrackingParticleRef, std::vector<uint32_t>> m_tp2detid;
+  */
+  
+  auto tp2SimAssociationMap = iEvent.get(tp2SimAssociationMapToken_);
+  
   const auto& tMtd = iEvent.get(tmtdToken_);
   const auto& SigmatMtd = iEvent.get(SigmatmtdToken_);
   const auto& t0Src = iEvent.get(t0SrcToken_);
@@ -344,7 +351,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   }
 
   //Fill map of DetId per ref to TP
-
+  /*
   auto tpHandle = makeValid(iEvent.getHandle(trackingParticleCollectionToken_));
   TrackingParticleCollection tpColl = *(tpHandle.product());
   size_t tpindex(0);
@@ -380,6 +387,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       }
     }
   }
+  */
 
   unsigned int index = 0;
 
@@ -554,8 +562,11 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       meTrackPtTot_->Fill(trackGen.pt());
       meTrackEtaTot_->Fill(std::abs(trackGen.eta()));
       if (tp_info != nullptr && mvaTPSel(**tp_info)) {
-        const bool withMTD = (m_tp2detid.find(*tp_info) != m_tp2detid.end());
-        LogDebug("MtdTracksValidation") << "Matched with selected TP, MTD sim hits association: " << withMTD;
+        //const bool withMTD = (m_tp2detid.find(*tp_info) != m_tp2detid.end());
+	// check if this TP is matched to a MtdSimLayerCluster
+	auto simClustersRefs = tp2SimAssociationMap.find(*tp_info);
+	const bool withMTD = (simClustersRefs != tp2SimAssociationMap.end());
+	LogDebug("MtdTracksValidation") << "Matched with selected TP, MTD sim hits association: " << withMTD;
         if (noCrack) {
           meTrackMatchedTPEffPtTot_->Fill(trackGen.pt());
           if (withMTD) {
@@ -1021,6 +1032,7 @@ void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<edm::InputTag>("inputTagH", edm::InputTag("generatorSmeared"));
   desc.add<edm::InputTag>("SimTag", edm::InputTag("mix", "MergedTrackTruth"));
   desc.add<edm::InputTag>("TPtoRecoTrackAssoc", edm::InputTag("trackingParticleRecoTrackAsssociation"));
+  desc.add<edm::InputTag>("tp2SimAssociationMapTag", edm::InputTag("mtdSimLayerClusterToTPAssociation"));
   desc.add<edm::InputTag>("btlSimHits", edm::InputTag("mix", "g4SimHitsFastTimerHitsBarrel"));
   desc.add<edm::InputTag>("etlSimHits", edm::InputTag("mix", "g4SimHitsFastTimerHitsEndcap"));
   desc.add<edm::InputTag>("btlRecHits", edm::InputTag("mtdRecHits", "FTLBarrel"));
