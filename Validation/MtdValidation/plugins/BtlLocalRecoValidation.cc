@@ -526,7 +526,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
         Local3DPoint cluLocalPosSIM(cluLocXSIM / cluEneSIM, cluLocYSIM / cluEneSIM, cluLocZSIM / cluEneSIM);
         const auto& cluGlobalPosSIM = genericDet->toGlobal(cluLocalPosSIM);
-
+	
         float time_res = cluster.time() - cluTimeSIM;
         float energy_res = cluster.energy() - cluEneSIM;
         meCluTimeRes_->Fill(time_res);
@@ -631,7 +631,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 	for (unsigned int i = 0; i < simClustersRefs.size(); i++){
           auto simClusterRef = simClustersRefs[i];
 
-	  float simClusEnergy = (*simClusterRef).simLCEnergy()*1000.; // GeV --> MeV
+	  float simClusEnergy = convertUnitsTo(0.001_MeV, (*simClusterRef).simLCEnergy()); // GeV --> MeV
           float simClusTime = (*simClusterRef).simLCTime();
 	  LocalPoint simClusLocalPos = (*simClusterRef).simLCPos();
 	  const auto& simClusGlobalPos = genericDet->toGlobal(simClusLocalPos);
@@ -644,11 +644,6 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 	  float z_res = global_point.z() - simClusGlobalPos.z();
 	  float xlocal_res = local_point.x() - simClusLocalPos.x();
 	  float ylocal_res = local_point.y() - simClusLocalPos.y();
-
-	  std::cout << std::endl;
-	  std::cout << "Local x  reco clus : " << local_point.x() << "    sim clus : " << simClusLocalPos.x() <<  std::endl;
-	  std::cout << "Local y  reco clus : " << local_point.y() << "    sim clus : " << simClusLocalPos.y() <<  std::endl;
-	  std::cout << "Local z  reco clus : " << local_point.z() << "    sim clus : " << simClusLocalPos.z() <<  std::endl;
 	  
 	  // -- Fill for direct hits
 	  if (idOffset == 0){

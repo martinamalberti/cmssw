@@ -481,11 +481,6 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         float x_res = global_point.x() - cluGlobalPosSIM.x();
         float y_res = global_point.y() - cluGlobalPosSIM.y();
         float z_res = global_point.z() - cluGlobalPosSIM.z();
-
-	std::cout << "Using sim hits " << std::endl;
-	std::cout << "Global x  reco clus : " << global_point.x() << "    sim clus : " << cluGlobalPosSIM.x() <<  std::endl;
-	std::cout << "Global y  reco clus : " << global_point.y() << "    sim clus : " << cluGlobalPosSIM.y() <<  std::endl;
-	std::cout << "Global z  reco clus : " << global_point.z() << "    sim clus : " << cluGlobalPosSIM.z() <<  std::endl;
 	
         meCluTimeRes_[iside]->Fill(time_res);
         meCluEnergyRes_[iside]->Fill(energy_res);
@@ -524,9 +519,9 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         for (unsigned int i = 0; i < simClustersRefs.size(); i++){
           auto simClusterRef = simClustersRefs[i];
 
-          float simClusEnergy = (*simClusterRef).simLCEnergy()*1000.; // GeV --> MeV
+          float simClusEnergy = convertUnitsTo(0.001_MeV, (*simClusterRef).simLCEnergy()); // GeV --> MeV
           float simClusTime = (*simClusterRef).simLCTime();
-          LocalPoint simClusLocalPos = (*simClusterRef).simLCPos();
+	  LocalPoint simClusLocalPos = (*simClusterRef).simLCPos();
           const auto& simClusGlobalPos = genericDet->toGlobal(simClusLocalPos);
 	  
 	  float time_res = cluster.time() - simClusTime;
@@ -534,14 +529,6 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 	  float x_res = global_point.x() - simClusGlobalPos.x();
 	  float y_res = global_point.y() - simClusGlobalPos.y();
 	  float z_res = global_point.z() - simClusGlobalPos.z();
-
-	  std::cout << "Using MtdSimLayerClusters" <<std::endl;
-          std::cout << "Local x  reco clus : " << local_point.x() << "    sim clus : " << simClusLocalPos.x() <<  std::endl;
-          std::cout << "Local y  reco clus : " << local_point.y() << "    sim clus : " << simClusLocalPos.y() <<  std::endl;
-          std::cout << "Local z  reco clus : " << local_point.z() << "    sim clus : " << simClusLocalPos.z() <<  std::endl;
-	  std::cout << "Global x  reco clus : " << global_point.x() << "    sim clus : " << simClusGlobalPos.x() <<  std::endl;
-          std::cout << "Global y  reco clus : " << global_point.y() << "    sim clus : " << simClusGlobalPos.y() <<  std::endl;
-          std::cout << "Global z  reco clus : " << global_point.z() << "    sim clus : " << simClusGlobalPos.z() <<  std::endl;
 	  
 	  meCluTimeRes_simLC_[iside]->Fill(time_res);
 	  meCluEnergyRes_simLC_[iside]->Fill(energy_res);
