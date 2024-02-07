@@ -6,7 +6,6 @@
 #include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerClusterFwd.h"
 
-
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -17,13 +16,12 @@
  */
 class MtdSimLayerClusterToRecoClusterAssociationMap {
 public:
-
   using key_type = MtdSimLayerClusterRef;
   using mapped_type = FTLClusterRef;
   using value_type = std::pair<key_type, std::vector<mapped_type>>;
   using map_type = std::vector<value_type>;
   using const_iterator = typename map_type::const_iterator;
-  
+
   /// Constructor
   MtdSimLayerClusterToRecoClusterAssociationMap();
   /// Destructor
@@ -45,9 +43,6 @@ public:
 
 private:
   map_type map_;
-
 };
-
-
 
 #endif

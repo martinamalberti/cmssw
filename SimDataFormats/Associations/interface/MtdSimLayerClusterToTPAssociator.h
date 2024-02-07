@@ -18,21 +18,22 @@ namespace reco {
     MtdSimLayerClusterToTPAssociator() = default;
     MtdSimLayerClusterToTPAssociator(MtdSimLayerClusterToTPAssociator &&) = default;
     MtdSimLayerClusterToTPAssociator &operator=(MtdSimLayerClusterToTPAssociator &&) = default;
-    MtdSimLayerClusterToTPAssociator(const MtdSimLayerClusterToTPAssociator &) = delete;                   // stop default
-    const MtdSimLayerClusterToTPAssociator &operator=(const MtdSimLayerClusterToTPAssociator &) = delete;  // stop default
+    MtdSimLayerClusterToTPAssociator(const MtdSimLayerClusterToTPAssociator &) = delete;  // stop default
+    const MtdSimLayerClusterToTPAssociator &operator=(const MtdSimLayerClusterToTPAssociator &) =
+        delete;  // stop default
 
     ~MtdSimLayerClusterToTPAssociator() = default;
 
     // ---------- const member functions ---------------------
     /// Associate MtdSimLayerCluster to TrackingParticle
     reco::SimToTPCollectionMtd associateSimToTP(const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-						const edm::Handle<TrackingParticleCollection> &trackingParticleH)const {
+                                                const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
       return m_impl->associateSimToTP(simClusH, trackingParticleH);
     };
 
     /// Associate TrackingParticle to MtdSimLayerCluster
     reco::TPToSimCollectionMtd associateTPToSim(const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-						const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
+                                                const edm::Handle<TrackingParticleCollection> &trackingParticleH) const {
       return m_impl->associateTPToSim(simClusH, trackingParticleH);
     };
 
@@ -40,6 +41,6 @@ namespace reco {
     // ---------- member data --------------------------------
     std::unique_ptr<MtdSimLayerClusterToTPAssociatorBaseImpl> m_impl;
   };
-}  
+}  // namespace reco
 
 #endif

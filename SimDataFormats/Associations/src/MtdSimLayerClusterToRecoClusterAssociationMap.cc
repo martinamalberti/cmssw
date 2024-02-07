@@ -3,5 +3,3 @@
 MtdSimLayerClusterToRecoClusterAssociationMap::MtdSimLayerClusterToRecoClusterAssociationMap() {}
 
 MtdSimLayerClusterToRecoClusterAssociationMap::~MtdSimLayerClusterToRecoClusterAssociationMap() {}
-
-

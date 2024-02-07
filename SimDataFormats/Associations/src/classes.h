@@ -52,18 +52,17 @@ namespace SimDataFormats_Associations {
     reco::VertexRecoToSimCollection vrtsc;
     reco::VertexRecoToSimCollection::const_iterator vrtsci;
     edm::Wrapper<reco::VertexRecoToSimCollection> wvrtsci;
-    
+
     std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>> dummy13;
-    edm::Wrapper<std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>> > dummy14;
+    edm::Wrapper<std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>>> dummy14;
     MtdRecoClusterToSimLayerClusterAssociationMap dummy15;
     edm::Wrapper<MtdRecoClusterToSimLayerClusterAssociationMap> dummy16;
 
     std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef>> dummy17;
-    edm::Wrapper<std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef>> > dummy18;
+    edm::Wrapper<std::pair<MtdSimLayerClusterRef, std::vector<FTLClusterRef>>> dummy18;
     MtdSimLayerClusterToRecoClusterAssociationMap dummy19;
     edm::Wrapper<MtdSimLayerClusterToRecoClusterAssociationMap> dummy20;
 
     edm::Wrapper<reco::MtdSimLayerClusterToTPAssociator> dummy21;
-        
   };
 }  // namespace SimDataFormats_Associations

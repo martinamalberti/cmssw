@@ -15,44 +15,36 @@
 
 #include "MtdSimLayerClusterToTPAssociatorByTrackIdImpl.h"
 
-
 //
 // Class declaration
 //
 
 class MtdSimLayerClusterToTPAssociatorByTrackIdProducer : public edm::global::EDProducer<> {
 public:
-  explicit MtdSimLayerClusterToTPAssociatorByTrackIdProducer (const edm::ParameterSet &);
+  explicit MtdSimLayerClusterToTPAssociatorByTrackIdProducer(const edm::ParameterSet &);
   ~MtdSimLayerClusterToTPAssociatorByTrackIdProducer() override;
 
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
-  
+
 private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
 };
 
-
-MtdSimLayerClusterToTPAssociatorByTrackIdProducer::MtdSimLayerClusterToTPAssociatorByTrackIdProducer(const edm::ParameterSet &pset)
-{
+MtdSimLayerClusterToTPAssociatorByTrackIdProducer::MtdSimLayerClusterToTPAssociatorByTrackIdProducer(
+    const edm::ParameterSet &pset) {
   // Register the product
   produces<reco::MtdSimLayerClusterToTPAssociator>();
-    
 }
-
 
 MtdSimLayerClusterToTPAssociatorByTrackIdProducer::~MtdSimLayerClusterToTPAssociatorByTrackIdProducer() {}
 
-
 void MtdSimLayerClusterToTPAssociatorByTrackIdProducer::produce(edm::StreamID,
-								edm::Event &iEvent,
-								const edm::EventSetup &es) const {
-
+                                                                edm::Event &iEvent,
+                                                                const edm::EventSetup &es) const {
   auto impl = std::make_unique<MtdSimLayerClusterToTPAssociatorByTrackIdImpl>(iEvent.productGetter());
   auto toPut = std::make_unique<reco::MtdSimLayerClusterToTPAssociator>(std::move(impl));
   iEvent.put(std::move(toPut));
-  
 }
-
 
 void MtdSimLayerClusterToTPAssociatorByTrackIdProducer::fillDescriptions(edm::ConfigurationDescriptions &cfg) {
   edm::ParameterSetDescription desc;

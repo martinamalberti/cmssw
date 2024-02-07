@@ -17,7 +17,6 @@
 
 #include "FWCore/Utilities/interface/EDGetToken.h"
 
-
 //
 // class decleration
 //
@@ -26,10 +25,10 @@ class MtdSimLayerClusterToTPAssociatorEDProducer : public edm::global::EDProduce
 public:
   explicit MtdSimLayerClusterToTPAssociatorEDProducer(const edm::ParameterSet &);
   ~MtdSimLayerClusterToTPAssociatorEDProducer() override;
-  
+
 private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
-  
+
   edm::EDGetTokenT<MtdSimLayerClusterCollection> simClustersToken_;
   edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
   edm::EDGetTokenT<reco::MtdSimLayerClusterToTPAssociator> associatorToken_;
@@ -39,8 +38,8 @@ MtdSimLayerClusterToTPAssociatorEDProducer::MtdSimLayerClusterToTPAssociatorEDPr
   produces<reco::SimToTPCollectionMtd>();
   produces<reco::TPToSimCollectionMtd>();
 
-  simClustersToken_  = consumes<MtdSimLayerClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimClustersTag"));
-  tpToken_  = consumes<TrackingParticleCollection>(pset.getParameter<edm::InputTag>("trackingParticlesTag"));
+  simClustersToken_ = consumes<MtdSimLayerClusterCollection>(pset.getParameter<edm::InputTag>("mtdSimClustersTag"));
+  tpToken_ = consumes<TrackingParticleCollection>(pset.getParameter<edm::InputTag>("trackingParticlesTag"));
   associatorToken_ = consumes<reco::MtdSimLayerClusterToTPAssociator>(pset.getParameter<edm::InputTag>("associator"));
 }
 
@@ -51,12 +50,14 @@ MtdSimLayerClusterToTPAssociatorEDProducer::~MtdSimLayerClusterToTPAssociatorEDP
 //
 
 // ------------ method called to produce the data  ------------
-void MtdSimLayerClusterToTPAssociatorEDProducer::produce(edm::StreamID, edm::Event &iEvent, const edm::EventSetup &iSetup) const {
+void MtdSimLayerClusterToTPAssociatorEDProducer::produce(edm::StreamID,
+                                                         edm::Event &iEvent,
+                                                         const edm::EventSetup &iSetup) const {
   using namespace edm;
 
   edm::Handle<reco::MtdSimLayerClusterToTPAssociator> theAssociator;
   iEvent.getByToken(associatorToken_, theAssociator);
-  
+
   edm::Handle<MtdSimLayerClusterCollection> simClusters;
   iEvent.getByToken(simClustersToken_, simClusters);
 

@@ -8,9 +8,13 @@ namespace edm {
   class EDProductGetter;
 }
 
-class MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl : public reco::MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
+class MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl
+    : public reco::MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
 public:
-  explicit MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const &, double, double, mtd::MTDGeomUtil &);
+  explicit MtdRecoClusterToSimLayerClusterAssociatorByHitsImpl(edm::EDProductGetter const &,
+                                                               double,
+                                                               double,
+                                                               mtd::MTDGeomUtil &);
 
   reco::RecoToSimCollectionMtd associateRecoToSim(
       const edm::Handle<FTLClusterCollection> &btlRecoClusH,
@@ -21,12 +25,10 @@ public:
       const edm::Handle<FTLClusterCollection> &btlRecoClusH,
       const edm::Handle<FTLClusterCollection> &etlRecoClusH,
       const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const override;
-  
+
 private:
   edm::EDProductGetter const *productGetter_;
   const double energyCut_;
   const double timeCut_;
   mtd::MTDGeomUtil geomTools_;
-
 };
-

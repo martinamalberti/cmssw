@@ -33,9 +33,7 @@ public:
   }
 
   /** @brief add hit position*/
-  void addHitPosition(LocalPoint pos) {
-    positions_.emplace_back(pos);
-  }
+  void addHitPosition(LocalPoint pos) { positions_.emplace_back(pos); }
 
   /** @brief Returns list of hit IDs and fractions for this SimCluster */
   std::vector<std::pair<uint64_t, float>> hits_and_fractions() const {
@@ -118,17 +116,10 @@ public:
     ++nsimhits_;
   }
 
-  
-  void setTrackIdOffset(unsigned int offset) {
-    idOffset_ =  offset;
-  }
+  void setTrackIdOffset(unsigned int offset) { idOffset_ = offset; }
 
-  unsigned int trackIdOffset() const {
-    return idOffset_;
-  }
+  unsigned int trackIdOffset() const { return idOffset_; }
 
-  
-  
 protected:
   std::vector<uint64_t> mtdHits_;
   std::vector<float> times_;

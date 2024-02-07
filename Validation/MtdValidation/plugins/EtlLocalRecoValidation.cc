@@ -70,7 +70,7 @@ private:
 
   edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
   edm::EDGetTokenT<FTLUncalibratedRecHitCollection> etlUncalibRecHitsToken_;
-  edm::EDGetTokenT<CrossingFrame<PSimHit> > etlSimHitsToken_;
+  edm::EDGetTokenT<CrossingFrame<PSimHit>> etlSimHitsToken_;
   edm::EDGetTokenT<FTLClusterCollection> etlRecCluToken_;
   edm::EDGetTokenT<MTDTrackingDetSetVector> mtdTrackingHitToken_;
   edm::EDGetTokenT<MtdRecoClusterToSimLayerClusterAssociationMap> r2sAssociationMapToken_;
@@ -178,10 +178,11 @@ EtlLocalRecoValidation::EtlLocalRecoValidation(const edm::ParameterSet& iConfig)
   if (uncalibRecHitsPlots_)
     etlUncalibRecHitsToken_ =
         consumes<FTLUncalibratedRecHitCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsTag"));
-  etlSimHitsToken_ = consumes<CrossingFrame<PSimHit> >(iConfig.getParameter<edm::InputTag>("simHitsTag"));
+  etlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("simHitsTag"));
   etlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recCluTag"));
   mtdTrackingHitToken_ = consumes<MTDTrackingDetSetVector>(iConfig.getParameter<edm::InputTag>("trkHitTag"));
-  r2sAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(iConfig.getParameter<edm::InputTag>("r2sAssociationMapTag"));
+  r2sAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(
+      iConfig.getParameter<edm::InputTag>("r2sAssociationMapTag"));
 }
 
 EtlLocalRecoValidation::~EtlLocalRecoValidation() {}
@@ -201,7 +202,7 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   auto etlSimHitsHandle = makeValid(iEvent.getHandle(etlSimHitsToken_));
   auto etlRecCluHandle = makeValid(iEvent.getHandle(etlRecCluToken_));
   auto mtdTrkHitHandle = makeValid(iEvent.getHandle(mtdTrackingHitToken_));
-  auto r2sAssociationMap = iEvent.get(r2sAssociationMapToken_);
+  const auto& r2sAssociationMap = iEvent.get(r2sAssociationMapToken_);
   MixCollection<PSimHit> etlSimHits(etlSimHitsHandle.product());
 
 #ifdef EDM_ML_DEBUG
@@ -481,7 +482,7 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         float x_res = global_point.x() - cluGlobalPosSIM.x();
         float y_res = global_point.y() - cluGlobalPosSIM.y();
         float z_res = global_point.z() - cluGlobalPosSIM.z();
-	
+
         meCluTimeRes_[iside]->Fill(time_res);
         meCluEnergyRes_[iside]->Fill(energy_res);
         meCluXRes_[iside]->Fill(x_res);
@@ -507,50 +508,49 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         meUnmatchedCluEnergy_[iside]->Fill(std::log10(cluster.energy()));
       }
 
-
       // --- Fill the cluster resolution histograms using MtdSimLayerClusters as mtd truth
       edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster> clusterRef = edmNew::makeRefTo(etlRecCluHandle, &cluster);
-      auto it = std::find_if( r2sAssociationMap.begin(), r2sAssociationMap.end(),
-                              [&](const std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>>& p) { return p.first == clusterRef; });
+      auto it = std::find_if(
+          r2sAssociationMap.begin(),
+          r2sAssociationMap.end(),
+          [&](const std::pair<FTLClusterRef, std::vector<MtdSimLayerClusterRef>>& p) { return p.first == clusterRef; });
 
-      if ( it != r2sAssociationMap.end() ){
-
-	std::vector<MtdSimLayerClusterRef> simClustersRefs = (*it).second;
-        for (unsigned int i = 0; i < simClustersRefs.size(); i++){
+      if (it != r2sAssociationMap.end()) {
+        std::vector<MtdSimLayerClusterRef> simClustersRefs = (*it).second;
+        for (unsigned int i = 0; i < simClustersRefs.size(); i++) {
           auto simClusterRef = simClustersRefs[i];
 
-          float simClusEnergy = convertUnitsTo(0.001_MeV, (*simClusterRef).simLCEnergy()); // GeV --> MeV
+          float simClusEnergy = convertUnitsTo(0.001_MeV, (*simClusterRef).simLCEnergy());  // GeV --> MeV
           float simClusTime = (*simClusterRef).simLCTime();
-	  LocalPoint simClusLocalPos = (*simClusterRef).simLCPos();
+          LocalPoint simClusLocalPos = (*simClusterRef).simLCPos();
           const auto& simClusGlobalPos = genericDet->toGlobal(simClusLocalPos);
-	  
-	  float time_res = cluster.time() - simClusTime;
-	  float energy_res = cluster.energy() - simClusEnergy;
-	  float x_res = global_point.x() - simClusGlobalPos.x();
-	  float y_res = global_point.y() - simClusGlobalPos.y();
-	  float z_res = global_point.z() - simClusGlobalPos.z();
-	  
-	  meCluTimeRes_simLC_[iside]->Fill(time_res);
-	  meCluEnergyRes_simLC_[iside]->Fill(energy_res);
-	  meCluXRes_simLC_[iside]->Fill(x_res);
-	  meCluYRes_simLC_[iside]->Fill(y_res);
-	  meCluZRes_simLC_[iside]->Fill(z_res);
 
-	  meCluTPullvsEta_simLC_[iside]->Fill(simClusGlobalPos.eta(), time_res / cluster.timeError());
-	  meCluTPullvsE_simLC_[iside]->Fill(simClusEnergy, time_res / cluster.timeError());
+          float time_res = cluster.time() - simClusTime;
+          float energy_res = cluster.energy() - simClusEnergy;
+          float x_res = global_point.x() - simClusGlobalPos.x();
+          float y_res = global_point.y() - simClusGlobalPos.y();
+          float z_res = global_point.z() - simClusGlobalPos.z();
 
-	  if (matchClu && comp != nullptr) {
-	    meCluXPull_simLC_[iside]->Fill(x_res / std::sqrt(comp->globalPositionError().cxx()));
-	    meCluYPull_simLC_[iside]->Fill(y_res / std::sqrt(comp->globalPositionError().cyy()));
-	  }
-	  if (optionalPlots_) {
-	    meCluYXLocalSim_simLC_[iside]->Fill(simClusLocalPos.x(), simClusLocalPos.y());
-	  }
-	  
-	}// loop over MtdSimLayerClusters
-	
+          meCluTimeRes_simLC_[iside]->Fill(time_res);
+          meCluEnergyRes_simLC_[iside]->Fill(energy_res);
+          meCluXRes_simLC_[iside]->Fill(x_res);
+          meCluYRes_simLC_[iside]->Fill(y_res);
+          meCluZRes_simLC_[iside]->Fill(z_res);
+
+          meCluTPullvsEta_simLC_[iside]->Fill(simClusGlobalPos.eta(), time_res / cluster.timeError());
+          meCluTPullvsE_simLC_[iside]->Fill(simClusEnergy, time_res / cluster.timeError());
+
+          if (matchClu && comp != nullptr) {
+            meCluXPull_simLC_[iside]->Fill(x_res / std::sqrt(comp->globalPositionError().cxx()));
+            meCluYPull_simLC_[iside]->Fill(y_res / std::sqrt(comp->globalPositionError().cyy()));
+          }
+          if (optionalPlots_) {
+            meCluYXLocalSim_simLC_[iside]->Fill(simClusLocalPos.x(), simClusLocalPos.y());
+          }
+
+        }  // loop over MtdSimLayerClusters
       }
-      
+
     }  // cluster loop
 
   }  // DetSetClu loop
@@ -1097,87 +1097,139 @@ void EtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
                                        200,
                                        -1.1,
                                        1.1);
-    meCluYXLocalSim_simLC_[0] = ibook.book2D("EtlCluYXLocalSimZneg_simLC",
-					     "ETL cluster local Y vs X (-Z, MtdSimLayerClusters);X^{local}_{SIM} [cm];Y^{local}_{SIM} [cm]",
-					     200,
-					     -2.2,
-					     2.2,
-					     200,
-					     -1.1,
-					     1.1);
-    meCluYXLocalSim_simLC_[1] = ibook.book2D("EtlCluYXLocalSimZpos_simLC",
-					     "ETL cluster local Y vs X (+Z, MtdSimLayerClusters);X^{local}_{SIM} [cm];Y^{local}_{SIM} [cm]",
-					     200,
-					     -2.2,
-					     2.2,
-					     200,
-					     -1.1,
-					     1.1);
+    meCluYXLocalSim_simLC_[0] =
+        ibook.book2D("EtlCluYXLocalSimZneg_simLC",
+                     "ETL cluster local Y vs X (-Z, MtdSimLayerClusters);X^{local}_{SIM} [cm];Y^{local}_{SIM} [cm]",
+                     200,
+                     -2.2,
+                     2.2,
+                     200,
+                     -1.1,
+                     1.1);
+    meCluYXLocalSim_simLC_[1] =
+        ibook.book2D("EtlCluYXLocalSimZpos_simLC",
+                     "ETL cluster local Y vs X (+Z, MtdSimLayerClusters);X^{local}_{SIM} [cm];Y^{local}_{SIM} [cm]",
+                     200,
+                     -2.2,
+                     2.2,
+                     200,
+                     -1.1,
+                     1.1);
   }
 
   // resolution plots using MtdSimLayerClusters as truth
-  meCluTimeRes_simLC_[0] =
-    ibook.book1D("EtlCluTimeResZneg_simLC", "ETL cluster time resolution (MtdSimLayerClusters, -Z);T_{RECO}-T_{SIM} [ns]", 100, -0.5, 0.5);
-  meCluTimeRes_simLC_[1] =
-    ibook.book1D("EtlCluTimeResZpos_simLC", "ETL cluster time resolution (MtdSimLayerClusters, +Z);T_{RECO}-T_{SIM} [MeV]", 100, -0.5, 0.5);
-  meCluEnergyRes_simLC_[0] =
-    ibook.book1D("EtlCluEnergyResZneg_simLC", "ETL cluster energy resolution (MtdSimLayerClusters, -Z);E_{RECO}-E_{SIM}", 100, -0.5, 0.5);
-  meCluEnergyRes_simLC_[1] =
-    ibook.book1D("EtlCluEnergyResZpos_simLC", "ETL cluster energy resolution (MtdSimLayerClusters, +Z);E_{RECO}-E_{SIM}", 100, -0.5, 0.5);
-  
-  meCluTPullvsE_simLC_[0] =
-    ibook.bookProfile("EtlCluTPullvsEZneg_simLC",
-		      "ETL cluster time pull vs E (MtdSimLayerClusters, -Z);E_{SIM} [MeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
-		      25,
-		      0.,
-		      0.5,
-		      -5.,
-		      5.,
-		      "S");
-  meCluTPullvsE_simLC_[1] =
-      ibook.bookProfile("EtlCluTPullvsEZpos_simLC",
-                        "ETL cluster time pull vs E (MtdSimLayerClusters, +Z);E_{SIM} [MeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
-                        25,
-                        0.,
-                        0.5,
-                        -5.,
-                        5.,
-                        "S");
-  meCluTPullvsEta_simLC_[0] =
-      ibook.bookProfile("EtlCluTPullvsEtaZneg_simLC",
-                        "ETL cluster time pull vs #eta (MtdSimLayerClusters, -Z);|#eta_{RECO}|;(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
-                        30,
-                        -3.,
-                        -1.65,
-                        -5.,
-                        5.,
-                        "S");
-  meCluTPullvsEta_simLC_[1] =
-      ibook.bookProfile("EtlCluTPullvsEtaZpos_simLC",
-                        "ETL cluster time pull vs #eta (MtdSimLayerClusters, +Z);|#eta_{RECO}|;(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
-                        30,
-                        1.65,
-                        3.,
-                        -5.,
-                        5.,
-                        "S");
-  meCluXRes_simLC_[0] = ibook.book1D("EtlCluXResZneg_simLC", "ETL cluster X resolution (MtdSimLayerClusters, -Z);X_{RECO}-X_{SIM} [cm]", 100, -0.1, 0.1);
-  meCluXRes_simLC_[1] = ibook.book1D("EtlCluXResZpos_simLC", "ETL cluster X resolution (MtdSimLayerClusters, +Z);X_{RECO}-X_{SIM} [cm]", 100, -0.1, 0.1);
-  meCluYRes_simLC_[0] = ibook.book1D("EtlCluYResZneg_simLC", "ETL cluster Y resolution (MtdSimLayerClusters, -Z);Y_{RECO}-Y_{SIM} [cm]", 100, -0.1, 0.1);
-  meCluYRes_simLC_[1] = ibook.book1D("EtlCluYResZpos_simLC", "ETL cluster Y resolution (MtdSimLayerClusters, +Z);Y_{RECO}-Y_{SIM} [cm]", 100, -0.1, 0.1);
-  meCluZRes_simLC_[0] =
-    ibook.book1D("EtlCluZResZneg_simLC", "ETL cluster Z resolution (MtdSimLayerClusters, -Z);Z_{RECO}-Z_{SIM} [cm]", 100, -0.003, 0.003);
-  meCluZRes_simLC_[1] =
-    ibook.book1D("EtlCluZResZpos_simLC", "ETL cluster Z resolution (MtdSimLayerClusters, +Z);Z_{RECO}-Z_{SIM} [cm]", 100, -0.003, 0.003);
+  meCluTimeRes_simLC_[0] = ibook.book1D("EtlCluTimeResZneg_simLC",
+                                        "ETL cluster time resolution (MtdSimLayerClusters, -Z);T_{RECO}-T_{SIM} [ns]",
+                                        100,
+                                        -0.5,
+                                        0.5);
+  meCluTimeRes_simLC_[1] = ibook.book1D("EtlCluTimeResZpos_simLC",
+                                        "ETL cluster time resolution (MtdSimLayerClusters, +Z);T_{RECO}-T_{SIM} [MeV]",
+                                        100,
+                                        -0.5,
+                                        0.5);
+  meCluEnergyRes_simLC_[0] = ibook.book1D("EtlCluEnergyResZneg_simLC",
+                                          "ETL cluster energy resolution (MtdSimLayerClusters, -Z);E_{RECO}-E_{SIM}",
+                                          100,
+                                          -0.5,
+                                          0.5);
+  meCluEnergyRes_simLC_[1] = ibook.book1D("EtlCluEnergyResZpos_simLC",
+                                          "ETL cluster energy resolution (MtdSimLayerClusters, +Z);E_{RECO}-E_{SIM}",
+                                          100,
+                                          -0.5,
+                                          0.5);
+
+  meCluTPullvsE_simLC_[0] = ibook.bookProfile(
+      "EtlCluTPullvsEZneg_simLC",
+      "ETL cluster time pull vs E (MtdSimLayerClusters, -Z);E_{SIM} [MeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
+      25,
+      0.,
+      0.5,
+      -5.,
+      5.,
+      "S");
+  meCluTPullvsE_simLC_[1] = ibook.bookProfile(
+      "EtlCluTPullvsEZpos_simLC",
+      "ETL cluster time pull vs E (MtdSimLayerClusters, +Z);E_{SIM} [MeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
+      25,
+      0.,
+      0.5,
+      -5.,
+      5.,
+      "S");
+  meCluTPullvsEta_simLC_[0] = ibook.bookProfile(
+      "EtlCluTPullvsEtaZneg_simLC",
+      "ETL cluster time pull vs #eta (MtdSimLayerClusters, -Z);|#eta_{RECO}|;(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
+      30,
+      -3.,
+      -1.65,
+      -5.,
+      5.,
+      "S");
+  meCluTPullvsEta_simLC_[1] = ibook.bookProfile(
+      "EtlCluTPullvsEtaZpos_simLC",
+      "ETL cluster time pull vs #eta (MtdSimLayerClusters, +Z);|#eta_{RECO}|;(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
+      30,
+      1.65,
+      3.,
+      -5.,
+      5.,
+      "S");
+  meCluXRes_simLC_[0] = ibook.book1D("EtlCluXResZneg_simLC",
+                                     "ETL cluster X resolution (MtdSimLayerClusters, -Z);X_{RECO}-X_{SIM} [cm]",
+                                     100,
+                                     -0.1,
+                                     0.1);
+  meCluXRes_simLC_[1] = ibook.book1D("EtlCluXResZpos_simLC",
+                                     "ETL cluster X resolution (MtdSimLayerClusters, +Z);X_{RECO}-X_{SIM} [cm]",
+                                     100,
+                                     -0.1,
+                                     0.1);
+  meCluYRes_simLC_[0] = ibook.book1D("EtlCluYResZneg_simLC",
+                                     "ETL cluster Y resolution (MtdSimLayerClusters, -Z);Y_{RECO}-Y_{SIM} [cm]",
+                                     100,
+                                     -0.1,
+                                     0.1);
+  meCluYRes_simLC_[1] = ibook.book1D("EtlCluYResZpos_simLC",
+                                     "ETL cluster Y resolution (MtdSimLayerClusters, +Z);Y_{RECO}-Y_{SIM} [cm]",
+                                     100,
+                                     -0.1,
+                                     0.1);
+  meCluZRes_simLC_[0] = ibook.book1D("EtlCluZResZneg_simLC",
+                                     "ETL cluster Z resolution (MtdSimLayerClusters, -Z);Z_{RECO}-Z_{SIM} [cm]",
+                                     100,
+                                     -0.003,
+                                     0.003);
+  meCluZRes_simLC_[1] = ibook.book1D("EtlCluZResZpos_simLC",
+                                     "ETL cluster Z resolution (MtdSimLayerClusters, +Z);Z_{RECO}-Z_{SIM} [cm]",
+                                     100,
+                                     -0.003,
+                                     0.003);
   meCluXPull_simLC_[0] =
-    ibook.book1D("EtlCluXPullZneg_simLC", "ETL cluster X pull (MtdSimLayerClusters, -Z);X_{RECO}-X_{SIM}/sigmaX_[RECO] [cm]", 100, -5., 5.);
+      ibook.book1D("EtlCluXPullZneg_simLC",
+                   "ETL cluster X pull (MtdSimLayerClusters, -Z);X_{RECO}-X_{SIM}/sigmaX_[RECO] [cm]",
+                   100,
+                   -5.,
+                   5.);
   meCluXPull_simLC_[1] =
-    ibook.book1D("EtlCluXPullZpos_simLC", "ETL cluster X pull (MtdSimLayerClusters, +Z);X_{RECO}-X_{SIM}/sigmaX_[RECO] [cm]", 100, -5., 5.);
+      ibook.book1D("EtlCluXPullZpos_simLC",
+                   "ETL cluster X pull (MtdSimLayerClusters, +Z);X_{RECO}-X_{SIM}/sigmaX_[RECO] [cm]",
+                   100,
+                   -5.,
+                   5.);
   meCluYPull_simLC_[0] =
-    ibook.book1D("EtlCluYPullZneg_simLC", "ETL cluster Y pull (MtdSimLayerClusters, -Z);Y_{RECO}-Y_{SIM}/sigmaY_[RECO] [cm]", 100, -5., 5.);
+      ibook.book1D("EtlCluYPullZneg_simLC",
+                   "ETL cluster Y pull (MtdSimLayerClusters, -Z);Y_{RECO}-Y_{SIM}/sigmaY_[RECO] [cm]",
+                   100,
+                   -5.,
+                   5.);
   meCluYPull_simLC_[1] =
-    ibook.book1D("EtlCluYPullZpos_simLC", "ETL cluster Y pull (MtdSimLayerClusters, +Z);Y_{RECO}-Y_{SIM}/sigmaY_[RECO] [cm]", 100, -5., 5.);
-  
+      ibook.book1D("EtlCluYPullZpos_simLC",
+                   "ETL cluster Y pull (MtdSimLayerClusters, +Z);Y_{RECO}-Y_{SIM}/sigmaY_[RECO] [cm]",
+                   100,
+                   -5.,
+                   5.);
+
   meUnmatchedCluEnergy_[0] = ibook.book1D(
       "EtlUnmatchedCluEnergyNeg", "ETL unmatched cluster log10(energy) (-Z);log10(E_{RECO} [MeV])", 5, -3, 2);
   meUnmatchedCluEnergy_[1] = ibook.book1D(

@@ -44,7 +44,7 @@ namespace mtd {
     int crystalInModule(const DetId&) const;
 
     uint32_t sensorModuleId(const DetId& id) const;
-    
+
     // 4-vector helper functions using GlobalPoint
     float eta(const GlobalPoint& position, const float& vertex_z = 0.) const;
     float phi(const GlobalPoint& position) const;

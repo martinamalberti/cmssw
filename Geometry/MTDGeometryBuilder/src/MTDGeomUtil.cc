@@ -165,8 +165,7 @@ uint32_t MTDGeomUtil::sensorModuleId(const DetId& id) const {
     BTLDetId detId(id);
     DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology_->getMTDTopologyMode()));
     return (geoId.rawId());
-  }
-  else {
+  } else {
     ETLDetId detId(id);
     DetId geoId = detId.geographicalId();
     return (geoId.rawId());

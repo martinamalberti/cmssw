@@ -12,7 +12,7 @@ namespace reco {
 
   using RecoToSimCollectionMtd = MtdRecoClusterToSimLayerClusterAssociationMap;
   using SimToRecoCollectionMtd = MtdSimLayerClusterToRecoClusterAssociationMap;
-    
+
   class MtdRecoClusterToSimLayerClusterAssociatorBaseImpl {
   public:
     /// Constructor
@@ -21,17 +21,17 @@ namespace reco {
     virtual ~MtdRecoClusterToSimLayerClusterAssociatorBaseImpl();
 
     /// Associate a MtdRecoCluster to MtdSimLayerClusters
-    virtual reco::RecoToSimCollectionMtd associateRecoToSim(const edm::Handle<FTLClusterCollection> &btlRecoClusH,
-							    const edm::Handle<FTLClusterCollection> &etlRecoClusH,
-							    const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const;
+    virtual reco::RecoToSimCollectionMtd associateRecoToSim(
+        const edm::Handle<FTLClusterCollection> &btlRecoClusH,
+        const edm::Handle<FTLClusterCollection> &etlRecoClusH,
+        const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const;
 
     /// Associate a MtdSimLayerClusters to MtdRecoClusters
-    virtual reco::SimToRecoCollectionMtd associateSimToReco(const edm::Handle<FTLClusterCollection> &btlRecoClusH,
-                                                            const edm::Handle<FTLClusterCollection> &etlRecoClusH,
-							    const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const;
-							 
+    virtual reco::SimToRecoCollectionMtd associateSimToReco(
+        const edm::Handle<FTLClusterCollection> &btlRecoClusH,
+        const edm::Handle<FTLClusterCollection> &etlRecoClusH,
+        const edm::Handle<MtdSimLayerClusterCollection> &simClusH) const;
   };
 }  // namespace reco
 
 #endif
- 

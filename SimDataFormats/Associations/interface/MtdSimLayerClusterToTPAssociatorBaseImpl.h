@@ -20,10 +20,12 @@
 #include "DataFormats/Common/interface/AssociationMap.h"
 
 namespace reco {
-  
-  typedef edm::AssociationMap<edm::OneToMany<MtdSimLayerClusterCollection, TrackingParticleCollection> > SimToTPCollectionMtd;
-  typedef edm::AssociationMap<edm::OneToMany<TrackingParticleCollection, MtdSimLayerClusterCollection> > TPToSimCollectionMtd;
-  
+
+  typedef edm::AssociationMap<edm::OneToMany<MtdSimLayerClusterCollection, TrackingParticleCollection> >
+      SimToTPCollectionMtd;
+  typedef edm::AssociationMap<edm::OneToMany<TrackingParticleCollection, MtdSimLayerClusterCollection> >
+      TPToSimCollectionMtd;
+
   class MtdSimLayerClusterToTPAssociatorBaseImpl {
   public:
     /// Constructor
@@ -32,14 +34,15 @@ namespace reco {
     virtual ~MtdSimLayerClusterToTPAssociatorBaseImpl();
 
     /// Associate a MtdSimLayerCluster to TrackingParticle
-    virtual SimToTPCollectionMtd associateSimToTP(const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-						  const edm::Handle<TrackingParticleCollection> &trackingParticleH) const;
+    virtual SimToTPCollectionMtd associateSimToTP(
+        const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
+        const edm::Handle<TrackingParticleCollection> &trackingParticleH) const;
 
     /// Associate a TrackingParticle to MtdSimLayerCluster
-    virtual TPToSimCollectionMtd associateTPToSim(const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
-						  const edm::Handle<TrackingParticleCollection> &trackingParticleH) const;
-    
+    virtual TPToSimCollectionMtd associateTPToSim(
+        const edm::Handle<MtdSimLayerClusterCollection> &simClusH,
+        const edm::Handle<TrackingParticleCollection> &trackingParticleH) const;
   };
-}
+}  // namespace reco
 
 #endif

@@ -247,7 +247,8 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
       consumes<reco::SimToRecoCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"));
   recoToSimAssociationToken_ =
       consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"));
-  tp2SimAssociationMapToken_ = consumes<reco::TPToSimCollectionMtd>(iConfig.getParameter<edm::InputTag>("tp2SimAssociationMapTag"));
+  tp2SimAssociationMapToken_ =
+      consumes<reco::TPToSimCollectionMtd>(iConfig.getParameter<edm::InputTag>("tp2SimAssociationMapTag"));
   btlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("btlSimHits"));
   etlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("etlSimHits"));
   btlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("btlRecHits"));
@@ -289,9 +290,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   /* 
      std::map<TrackingParticleRef, std::vector<uint32_t>> m_tp2detid;
   */
-  
-  auto tp2SimAssociationMap = iEvent.get(tp2SimAssociationMapToken_);
-  
+
+  const auto& tp2SimAssociationMap = iEvent.get(tp2SimAssociationMapToken_);
+
   const auto& tMtd = iEvent.get(tmtdToken_);
   const auto& SigmatMtd = iEvent.get(SigmatmtdToken_);
   const auto& t0Src = iEvent.get(t0SrcToken_);
@@ -563,10 +564,10 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       meTrackEtaTot_->Fill(std::abs(trackGen.eta()));
       if (tp_info != nullptr && mvaTPSel(**tp_info)) {
         //const bool withMTD = (m_tp2detid.find(*tp_info) != m_tp2detid.end());
-	// check if this TP is matched to a MtdSimLayerCluster
-	auto simClustersRefs = tp2SimAssociationMap.find(*tp_info);
-	const bool withMTD = (simClustersRefs != tp2SimAssociationMap.end());
-	LogDebug("MtdTracksValidation") << "Matched with selected TP, MTD sim hits association: " << withMTD;
+        // check if this TP is matched to a MtdSimLayerCluster
+        auto simClustersRefs = tp2SimAssociationMap.find(*tp_info);
+        const bool withMTD = (simClustersRefs != tp2SimAssociationMap.end());
+        LogDebug("MtdTracksValidation") << "Matched with selected TP, MTD sim hits association: " << withMTD;
         if (noCrack) {
           meTrackMatchedTPEffPtTot_->Fill(trackGen.pt());
           if (withMTD) {
