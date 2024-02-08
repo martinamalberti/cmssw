@@ -30,20 +30,32 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
     reportEvery = cms.untracked.int32(10),
 )
 
-process.Timing = cms.Service("Timing",
-  #summaryOnly = cms.untracked.bool(False),                                                                                                                                                                               
-  #useJobReport = cms.untracked.bool(True)                                                                                                                                                                                
-)
+#process.Timing = cms.Service("Timing",
+  #summaryOnly = cms.untracked.bool(False),
+  #useJobReport = cms.untracked.bool(True)
+#)
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-#        'file:step3.root'
-'/store//relval/CMSSW_14_0_0_pre1/RelValSingleMuPt10/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_2026D98PU200-v1/2590000/3c20ae49-f4b0-472f-aa85-3dade4e7a32c.root'
+        'file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/mywork/24807.0_SingleMuPt10+2026D98/step3.root'
+    #'/store/relval/CMSSW_14_0_0_pre2/RelValSingleMuPt10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_STD_2026D98_noPU-v1/2590000/1095a786-6fc3-4cd1-a159-89175f5c868a.root'
     )
 )
 
 process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)
+
+# --- Cluster associations maps producers
+process.load('SimFastTiming.MtdAssociatorProducers.mtdRecoClusterToSimLayerClusterAssociatorByHits_cfi')
+process.load('SimFastTiming.MtdAssociatorProducers.mtdRecoClusterToSimLayerClusterAssociation_cfi')
+process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociatorByTrackId_cfi')
+process.load('SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociation_cfi')
+clusterAssociationProducers = cms.Sequence(
+    process.mtdRecoClusterToSimLayerClusterAssociatorByHits +
+    process.mtdRecoClusterToSimLayerClusterAssociation +
+    process.mtdSimLayerClusterToTPAssociatorByTrackId +
+    process.mtdSimLayerClusterToTPAssociation
+)
 
 # --- BTL Validation
 process.load("Validation.MtdValidation.btlSimHitsValid_cfi")
@@ -69,7 +81,9 @@ process.load("Validation.MtdValidation.vertices4DValid_cfi")
 # process.mtdTracksValid.optionalPlots = True
 # process.vertices4DValid.optionalPlots = True
 
-process.validation = cms.Sequence(btlValidation + etlValidation + process.mtdTracksValid + process.mtdEleIsoValid + process.vertices4DValid)
+#process.validation = cms.Sequence(clusterAssociationProducers + btlValidation + etlValidation + process.mtdTracksValid + process.mtdEleIsoValid + process.vertices4DValid)
+
+process.validation = cms.Sequence(clusterAssociationProducers + btlValidation + etlValidation)
 
 process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
     dataset = cms.untracked.PSet(
