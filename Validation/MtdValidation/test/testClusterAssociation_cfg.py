@@ -31,20 +31,25 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
-    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SingleMu_noPU.root')
-    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SingleMu_PU200.root')
-    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi_noPU.root')
-    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi_PU200.root')
-
-    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SingleMu_noPU_new.root')
-    #fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre2/src/SimFastTiming/MtdAssociatorProducers/test/OutputWithAssociationMaps_SinglePi_noPU_new.root')
-
-                            )
+    fileNames = cms.untracked.vstring(
+        'file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_14_0_0_pre3/mywork/24906.0_SinglePiFlatPt0p7To10+2026D98/step3.root'
+    )
+)
 
 
 process.mix.digitizers = cms.PSet()
 for a in process.aliases: delattr(process, a)
 
+# --- Cluster associations maps producers
+process.load("SimFastTiming.MtdAssociatorProducers.mtdRecoClusterToSimLayerClusterAssociatorByHits_cfi")
+process.load("SimFastTiming.MtdAssociatorProducers.mtdRecoClusterToSimLayerClusterAssociation_cfi")
+process.load("SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociatorByTrackId_cfi")
+process.load("SimFastTiming.MtdAssociatorProducers.mtdSimLayerClusterToTPAssociation_cfi")
+mtdAssociationProducers = cms.Sequence( process.mtdRecoClusterToSimLayerClusterAssociatorByHits +
+                                        process.mtdRecoClusterToSimLayerClusterAssociation +
+                                        process.mtdSimLayerClusterToTPAssociatorByTrackId +
+	                                process.mtdSimLayerClusterToTPAssociation
+                                       )
 
 # --- Sim Clusters dumper
 process.clusterAssociation = cms.EDAnalyzer('TestClusterAssociation',
@@ -61,8 +66,9 @@ process.clusterAssociation = cms.EDAnalyzer('TestClusterAssociation',
 
 # Output TFile
 process.TFileService = cms.Service('TFileService',
+    fileName = cms.string('clusterAssociationTest_SinglePi_TEST.root')
    #fileName = cms.string('clusterAssociationTest_SingleMu_noPU.root')
-   fileName = cms.string('clusterAssociationTest_SingleMu_PU200.root')
+   #fileName = cms.string('clusterAssociationTest_SingleMu_PU200.root')
    #fileName = cms.string('clusterAssociationTest_SinglePi_noPU.root')
    #fileName = cms.string('clusterAssociationTest_SinglePi_PU200.root')
 
@@ -71,4 +77,4 @@ process.TFileService = cms.Service('TFileService',
 
                                    )
 
-process.p = cms.Path(process.mix + process.clusterAssociation)
+process.p = cms.Path(process.mix + mtdAssociationProducers + process.clusterAssociation)
