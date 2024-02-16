@@ -55,6 +55,8 @@
 #include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementError.h"
 #include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementPoint.h"
 #include "DataFormats/FTLRecHit/interface/FTLRecHitCollections.h"
+#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+#include "TrackingTools/GeomPropagators/interface/Propagator.h"
 
 #include "DataFormats/Common/interface/OneToMany.h"
 #include "DataFormats/Common/interface/AssociationMap.h"
@@ -84,8 +86,8 @@ private:
 
   void analyze(const edm::Event&, const edm::EventSetup&) override;
 
-  const std::pair<bool, bool> checkAcceptance(
-      const reco::Track&, const edm::Event&, const edm::EventSetup&, size_t&, float&, float&, float&, float&);
+  const std::pair<bool, bool> checkAcceptance(const reco::Track&, const edm::Event&, const edm::EventSetup&, size_t&, float&, float&, float&, float&,
+					      std::vector<float>&, std::vector<float>&, std::vector<float>&, std::vector<float>&);
 
   const bool mvaGenSel(const HepMC::GenParticle&, const float&);
   const bool mvaTPSel(const TrackingParticle&);
@@ -160,6 +162,7 @@ private:
   edm::ESGetToken<MTDDetLayerGeometry, MTDRecoGeometryRecord> mtdlayerToken_;
   edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magfieldToken_;
   edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> builderToken_;
+  edm::ESGetToken<Propagator, TrackingComponentsRecord> propToken_;
   edm::ESGetToken<HepPDT::ParticleDataTable, edm::DefaultRecord> particleTableToken_;
 
   MonitorElement* meBTLTrackRPTime_;
@@ -226,6 +229,25 @@ private:
   MonitorElement* meExtraBTLeneInCone_;
   MonitorElement* meExtraMTDfailExtenderEta_;
   MonitorElement* meExtraMTDfailExtenderPt_;
+
+  MonitorElement* meLocalX_BTL_;
+  MonitorElement* meLocalY_BTL_;
+  MonitorElement* meLocalXError_BTL_;
+  MonitorElement* meLocalYError_BTL_;
+  MonitorElement* meLocalXPull_BTL_;
+  MonitorElement* meLocalYPull_BTL_;
+  MonitorElement* meLocalXError_vs_pt_BTL_;
+  MonitorElement* meLocalYError_vs_pt_BTL_;
+
+  MonitorElement* meLocalX_ETL_;
+  MonitorElement* meLocalY_ETL_;
+  MonitorElement* meLocalXError_ETL_;
+  MonitorElement* meLocalXPull_ETL_;
+  MonitorElement* meLocalYPull_ETL_;
+  MonitorElement* meLocalYError_ETL_;
+  MonitorElement* meLocalXError_vs_pt_ETL_;
+  MonitorElement* meLocalYError_vs_pt_ETL_;
+
 };
 
 // ------------ constructor and destructor --------------
@@ -265,6 +287,7 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   mtdlayerToken_ = esConsumes<MTDDetLayerGeometry, MTDRecoGeometryRecord>();
   magfieldToken_ = esConsumes<MagneticField, IdealMagneticFieldRecord>();
   builderToken_ = esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"));
+  propToken_ = esConsumes<Propagator, TrackingComponentsRecord>(edm::ESInputTag("", "PropagatorWithMaterialForMTD"));
   particleTableToken_ = esConsumes<HepPDT::ParticleDataTable, edm::DefaultRecord>();
 }
 
@@ -391,6 +414,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     const reco::TrackRef trackref(iEvent.getHandle(GenRecTrackToken_), index);
     index++;
 
+    
     if (trackAssoc[trackref] == -1) {
       LogInfo("mtdTracks") << "Extended track not associated";
       continue;
@@ -546,10 +570,50 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       LogDebug("MtdTracksValidation") << "Track p/pt = " << track.p() << " " << track.pt() << " eta " << track.eta()
                                       << " BTL " << isBTL << " ETL " << isETL << " 2disks " << twoETLdiscs;
 
+
+
       // TrackingParticle based matching
 
       const reco::TrackBaseRef trkrefb(trackref);
       auto tp_info = getMatchedTP(trkrefb);
+
+      size_t nlayers(0);
+      float extrho(0.);
+      float exteta(0.);
+      float extphi(0.);
+      float selvar(0.);
+      std::vector<float> localPosX;
+      std::vector<float> localPosY;
+      std::vector<float> localPosXErr;
+      std::vector<float> localPosYErr;
+      std::pair<bool, bool> accept = std::make_pair(false,false);
+      if (tp_info != nullptr){
+	accept = checkAcceptance(trackGen, iEvent, iSetup, nlayers, extrho, exteta, extphi, selvar, localPosX, localPosY, localPosXErr, localPosYErr);
+	if (accept.first){
+	  for (unsigned int i = 0; i < localPosXErr.size(); i++){
+	    if (std::abs(exteta) < trackMaxBtlEta_){
+	      //meLocalX_BTL_ -> Fill(localPosX[i]);
+	      //meLocalY_BTL_ -> Fill(localPosY[i]);
+	      meLocalXError_BTL_ -> Fill(localPosXErr[i]);
+	      meLocalYError_BTL_ -> Fill(localPosYErr[i]);
+	      //meLocalXPull_BTL_ -> Fill(localPosX[i]/localPosXErr[i]);
+	      //meLocalYPull_BTL_ -> Fill(localPosY[i]/localPosYErr[i]);
+	      meLocalXError_vs_pt_BTL_ -> Fill(trackGen.pt(), localPosXErr[i]);
+	      meLocalYError_vs_pt_BTL_ -> Fill(trackGen.pt(), localPosYErr[i]);
+	    }
+	    if (std::abs(exteta) > trackMinEtlEta_ && std::abs(exteta) < trackMaxEtlEta_){
+	      //meLocalX_ETL_ -> Fill(localPosX[i]);
+	      //meLocalY_ETL_ -> Fill(localPosY[i]);
+	      meLocalXError_ETL_ -> Fill(localPosXErr[i]);
+	      meLocalYError_ETL_ -> Fill(localPosYErr[i]);
+	      //meLocalXPull_ETL_ -> Fill(localPosX[i]/localPosXErr[i]);
+	      //meLocalYPull_ETL_ -> Fill(localPosY[i]/localPosYErr[i]);
+	      meLocalXError_vs_pt_ETL_ -> Fill(trackGen.pt(), localPosXErr[i]);
+	      meLocalYError_vs_pt_ETL_ -> Fill(trackGen.pt(), localPosYErr[i]);
+	    }
+	  }
+	}
+      }
 
       meTrackPtTot_->Fill(trackGen.pt());
       meTrackEtaTot_->Fill(std::abs(trackGen.eta()));
@@ -584,14 +648,8 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             meTrackMatchedTPmtdEffEtaMtd_->Fill(std::abs(trackGen.eta()));
           }
         }
-
-        size_t nlayers(0);
-        float extrho(0.);
-        float exteta(0.);
-        float extphi(0.);
-        float selvar(0.);
-        auto accept = checkAcceptance(trackGen, iEvent, iSetup, nlayers, extrho, exteta, extphi, selvar);
-        if (accept.first && std::abs(exteta) < trackMaxBtlEta_) {
+	
+	if (accept.first && std::abs(exteta) < trackMaxBtlEta_) {
           meExtraPhiAtBTL_->Fill(angle_units::operators::convertRadToDeg(extphi));
           meExtraBTLeneInCone_->Fill(selvar);
         }
@@ -678,13 +736,23 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
                                                                  float& extrho,
                                                                  float& exteta,
                                                                  float& extphi,
-                                                                 float& selvar) {
+                                                                 float& selvar,
+								 std::vector<float>& localPosX,
+								 std::vector<float>& localPosY,
+								 std::vector<float>& localPosXErr,
+								 std::vector<float>& localPosYErr) {
+
+
   bool isMatched(false);
   nlayers = 0;
   extrho = 0.;
   exteta = -999.;
   extphi = -999.;
   selvar = 0.;
+  localPosX.clear();
+  localPosY.clear();
+  localPosXErr.clear();
+  localPosYErr.clear();
 
   auto geometryHandle = iSetup.getTransientHandle(mtdgeoToken_);
   const MTDGeometry* geom = geometryHandle.product();
@@ -705,8 +773,14 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
   float theNSigma = 10.;
   std::unique_ptr<MeasurementEstimator> theEstimator =
       std::make_unique<Chi2MeasurementEstimator>(theMaxChi2, theNSigma);
+
+
   SteppingHelixPropagator prop(mfield, anyDirection);
 
+  //auto propH = iSetup.getTransientHandle(propToken_);
+  //const Propagator &prop = *propH.product();
+
+  
   auto btlRecHitsHandle = makeValid(iEvent.getHandle(btlRecHitsToken_));
   auto etlRecHitsHandle = makeValid(iEvent.getHandle(etlRecHitsToken_));
 
@@ -728,7 +802,12 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
       extphi = comp.second.globalPosition().phi();
       edm::LogVerbatim("MtdTracksValidation") << "MtdTracksValidation: extrapolation at BTL surface, rho= " << extrho
                                               << " eta= " << exteta << " phi= " << extphi;
+
     }
+
+    localPosXErr.push_back(std::sqrt((comp.second).localError().positionError().xx()));
+    localPosYErr.push_back(std::sqrt((comp.second).localError().positionError().yy()));
+      
     std::vector<DetLayer::DetWithState> compDets = ilay->compatibleDets(tsos, prop, *theEstimator);
     for (const auto& detWithState : compDets) {
       const auto& det = detWithState.first;
@@ -741,7 +820,12 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
           << " " << detWithState.second.globalPosition().z() << " rho= " << detWithState.second.globalPosition().perp()
           << " eta= " << detWithState.second.globalPosition().eta()
           << " phi= " << detWithState.second.globalPosition().phi();
-
+      
+      //localPosX.push_back((detWithState.second).localPosition().x());
+      //localPosY.push_back((detWithState.second).localPosition().y());
+      localPosXErr.push_back(std::sqrt((detWithState.second).localError().positionError().xx()));
+      localPosYErr.push_back(std::sqrt((detWithState.second).localError().positionError().yy()));
+            
       for (const auto& recHit : *btlRecHitsHandle) {
         BTLDetId detId = recHit.id();
         DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
@@ -800,10 +884,14 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
     }
     edm::LogVerbatim("MtdTracksValidation") << "MtdTracksValidation: extrapolation at ETL surface, rho= " << extrho
                                             << " eta= " << exteta << " phi= " << extphi;
+
+    localPosXErr.push_back(std::sqrt((comp.second).localError().positionError().xx()));
+    localPosYErr.push_back(std::sqrt((comp.second).localError().positionError().yy()));
+    
     std::vector<DetLayer::DetWithState> compDets = ilay->compatibleDets(tsos, prop, *theEstimator);
     for (const auto& detWithState : compDets) {
       const auto& det = detWithState.first;
-
+      
       // loop on compatible rechits and check hits in a fixed size cone around the extrapolation point
 
       edm::LogVerbatim("MtdTracksValidation")
@@ -812,6 +900,11 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
           << " " << detWithState.second.globalPosition().z() << " rho= " << detWithState.second.globalPosition().perp()
           << " eta= " << detWithState.second.globalPosition().eta()
           << " phi= " << detWithState.second.globalPosition().phi();
+
+      localPosX.push_back((detWithState.second).localPosition().x());
+      localPosY.push_back((detWithState.second).localPosition().y());
+      //localPosXErr.push_back(std::sqrt((detWithState.second).localError().positionError().xx()));
+      //localPosYErr.push_back(std::sqrt((detWithState.second).localError().positionError().yy()));
 
       for (const auto& recHit : *etlRecHitsHandle) {
         ETLDetId detId = recHit.id();
@@ -823,7 +916,6 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
         if (geoId == det->geographicalId()) {
           const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
           const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
-
           Local3DPoint local_point(topo.localX(recHit.row()), topo.localY(recHit.column()), 0.);
           const auto& global_point = thedet->toGlobal(local_point);
           edm::LogVerbatim("MtdTracksValidation")
@@ -1007,6 +1099,26 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
                    110,
                    0.,
                    11.);
+
+  meLocalX_BTL_ = ibook.book1D("ExtrapolatedLocalPosX_BTL","local position x; local x [cm]", 1000, -10, 10);
+  meLocalY_BTL_ = ibook.book1D("ExtrapolatedLocalPosY_BTL","local position y; local y [cm]", 1000, -10, 10);
+  meLocalXError_BTL_ = ibook.book1D("ExtrapolatedLocalPosErrorX_BTL","local x error; local x error [cm]", 200, 0., 2.0);
+  meLocalYError_BTL_ = ibook.book1D("ExtrapolatedLocalPosErrorY_BTL","local y error; local y error [cm]", 200, 0., 2.0);
+  meLocalXPull_BTL_ = ibook.book1D("ExtrapolatedLocalPosPullX_BTL","local x pull; local x error [cm]", 400, -10., 10.);
+  meLocalYPull_BTL_ = ibook.book1D("ExtrapolatedLocalPosPullY_BTL","local y pull; local y error [cm]", 400, -10., 10.);
+  meLocalXError_vs_pt_BTL_ = ibook.bookProfile("ExtrapolatedLocalPosErrorX_vs_pt_BTL","local x error vs track pT; pT [GeV]; local x erro\r[cm]", 50, 0., 10., 0., 5., "S");
+  meLocalYError_vs_pt_BTL_ = ibook.bookProfile("ExtrapolatedLocalPosErrorY_vs_pt_BTL","local y error vs track pT; pT [GeV]; local y erro\r[cm]", 50, 0., 10., 0., 5., "S");
+  
+  meLocalX_ETL_ = ibook.book1D("ExtrapolatedLocalPosX_ETL","local position x ; local x [cm]", 1000, -10, 10);
+  meLocalY_ETL_ = ibook.book1D("ExtrapolatedLocalPosY_ETL","local position y ; local y [cm]", 1000, -10, 10);
+  meLocalXError_ETL_ = ibook.book1D("ExtrapolatedLocalPosErrorX_ETL","local x error ; local x error [cm]", 200, 0., 2.0);
+  meLocalYError_ETL_ = ibook.book1D("ExtrapolatedLocalPosErrorY_ETL","local y error ; local y error [cm]", 200, 0., 2.0);
+  meLocalXPull_ETL_ = ibook.book1D("ExtrapolatedLocalPosPullX_ETL","local x pull ; local x error [cm]", 400, -10., 10.);
+  meLocalYPull_ETL_ = ibook.book1D("ExtrapolatedLocalPosPullY_ETL","local y pull ; local y error [cm]", 400, -10., 10.);
+  meLocalXError_vs_pt_ETL_ = ibook.bookProfile("ExtrapolatedLocalPosErrorX_vs_pt_ETL","local x error vs track pT; pT [GeV]; local x error[cm]", 50, 0., 10., 0., 5., "S");
+  meLocalYError_vs_pt_ETL_ = ibook.bookProfile("ExtrapolatedLocalPosErrorY_vs_pt_ETL","local y error vs track pT; pT [GeV]; local y error[cm]", 50, 0., 10., 0., 5., "S");
+  
+
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -1063,9 +1175,9 @@ const bool MtdTracksValidation::mvaTPSel(const TrackingParticle& tp) {
   auto x_pv = tp.parentVertex()->position().x();
   auto y_pv = tp.parentVertex()->position().y();
   auto z_pv = tp.parentVertex()->position().z();
-
+  
   auto r_pv = std::sqrt(x_pv * x_pv + y_pv * y_pv);
-
+  
   match = tp.charge() != 0 && tp.pt() > pTcut_ && std::abs(tp.eta()) < etacutGEN_ && r_pv < rBTL_ && z_pv < zETL_;
   return match;
 }

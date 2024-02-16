@@ -27,12 +27,16 @@ process.options.numberOfConcurrentLuminosityBlocks = 0
 process.options.eventSetup.numberOfConcurrentIOVs = 1
 
 process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
-    reportEvery = cms.untracked.int32(10),
+    reportEvery = cms.untracked.int32(1),
 )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step3.root'
+#        'file:step3.root'
+#        '/store/relval/CMSSW_14_0_0_pre2/RelValSingleMuPt10/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_STD_2026D98_PU200-v3/2580000/06095400-e5e6-474c-a5c6-fc9262bd9f11.root'
+#        '/store/relval/CMSSW_14_0_0_pre2/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_STD_2026D98_noPU-v2/2590000/da4ffb1b-36d9-44cf-b1e6-0c077a5ba45f.root',
+#        '/store/relval/CMSSW_14_0_0_pre2/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/133X_mcRun4_realistic_v1_STD_2026D98_noPU-v2/2590000/667811d3-ad58-4f24-926a-3856de6f1738.root'
+        '/store/relval/CMSSW_14_0_0_pre2/RelValSinglePiFlatPt0p7To10/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_STD_2026D98_PU200-v3/2580000/ca1f786f-c99e-4d90-96f8-5f6b5ea4de63.root',
     )
 )
 
@@ -56,6 +60,9 @@ process.load("Validation.MtdValidation.mtdTracksValid_cfi")
 process.load("Validation.MtdValidation.mtdEleIsoValid_cfi")
 process.load("Validation.MtdValidation.vertices4DValid_cfi")
 
+# -- Tracks extrapolation
+from RecoMTD.TrackExtender.PropagatorWithMaterialForMTD_cfi import *
+
 # process.btlDigiHitsValid.optionalPlots = True
 # process.etlDigiHitsValid.optionalPlots = True
 # process.btlLocalRecoValid.optionalPlots = True
@@ -63,7 +70,9 @@ process.load("Validation.MtdValidation.vertices4DValid_cfi")
 # process.mtdTracksValid.optionalPlots = True
 # process.vertices4DValid.optionalPlots = True
 
-process.validation = cms.Sequence(btlValidation + etlValidation + process.mtdTracksValid + process.mtdEleIsoValid + process.vertices4DValid)
+#process.validation = cms.Sequence(btlValidation + etlValidation + process.mtdTracksValid + process.mtdEleIsoValid + process.vertices4DValid)
+process.validation = cms.Sequence(process.mtdTracksValid)
+
 
 process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
     dataset = cms.untracked.PSet(
