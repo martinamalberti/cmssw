@@ -1281,7 +1281,7 @@ const bool MtdTracksValidation::mvaGenSel(const HepMC::GenParticle& gp, const fl
 
 const bool MtdTracksValidation::mvaTPSel(const TrackingParticle& tp) {
   bool match = false;
-  std::cout << "tp.status = " << tp.status() <<std::endl;
+  //std::cout << "tp.status = " << tp.status() <<std::endl;
   if (tp.status() != 1) {
     return match;
   }
