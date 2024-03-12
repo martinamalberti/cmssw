@@ -23,7 +23,8 @@ protected:
 private:
   void computeEfficiency1D(MonitorElement* num, MonitorElement* den, MonitorElement* result);
   void normalize(MonitorElement* h, double scale);
-
+  void scale(MonitorElement* h, double scale);
+  
   const std::string folder_;
 
   // --- Histograms
@@ -58,6 +59,12 @@ private:
   MonitorElement* meExtraPhiAtBTLEff_;
   MonitorElement* meExtraMTDfailExtenderEtaEff_;
   MonitorElement* meExtraMTDfailExtenderPtEff_;
+
+  MonitorElement* meNTracksMtdVsEtaPt0p7_;
+  MonitorElement* meNTracksMtdVsEtaPt1p0_;
+  MonitorElement* meNTracksMtdVsEtaPt1p5_;
+  MonitorElement* meNTracksMtdVsEtaPt2p0_;
+  MonitorElement* meNTracksMtdVsEtaPt2p5_;
 };
 
 // ------------ constructor and destructor --------------
@@ -88,6 +95,15 @@ void MtdTracksHarvester::normalize(MonitorElement* h, double scale) {
     double eff = h->getBinContent(ibin) * norma;
     double bin_err = h->getBinError(ibin) * norma;
     h->setBinContent(ibin, eff);
+    h->setBinError(ibin, bin_err);
+  }
+}
+
+void MtdTracksHarvester::scale(MonitorElement* h, double s) {
+  for (int ibin = 1; ibin <= h->getNbinsX(); ibin++) {
+    double cont = h->getBinContent(ibin) * s;
+    double bin_err = h->getBinError(ibin) * s;
+    h->setBinContent(ibin, cont);
     h->setBinError(ibin, bin_err);
   }
 }
@@ -148,6 +164,13 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meExtraBTLeneInCone = igetter.get(folder_ + "ExtraBTLeneInCone");
   MonitorElement* meExtraMTDfailExtenderEta = igetter.get(folder_ + "ExtraMTDfailExtenderEta");
   MonitorElement* meExtraMTDfailExtenderPt = igetter.get(folder_ + "ExtraMTDfailExtenderPt");
+
+  MonitorElement* meNevents = igetter.get(folder_ + "Nevents");
+  MonitorElement* meTrackMatchedTPEtaMtdPt0p7 = igetter.get(folder_ + "MatchedTPEtaMtdPt0p7");
+  MonitorElement* meTrackMatchedTPEtaMtdPt1p0 = igetter.get(folder_ + "MatchedTPEtaMtdPt1p0");
+  MonitorElement* meTrackMatchedTPEtaMtdPt1p5 = igetter.get(folder_ + "MatchedTPEtaMtdPt1p5");
+  MonitorElement* meTrackMatchedTPEtaMtdPt2p0 = igetter.get(folder_ + "MatchedTPEtaMtdPt2p0");
+  MonitorElement* meTrackMatchedTPEtaMtdPt2p5 = igetter.get(folder_ + "MatchedTPEtaMtdPt2p5");
 
   if (!meBTLTrackEffEtaTot || !meBTLTrackEffPhiTot || !meBTLTrackEffPtTot || !meBTLTrackEffEtaMtd ||
       !meBTLTrackEffPhiMtd || !meBTLTrackEffPtMtd || !meETLTrackEffEtaTotZneg || !meETLTrackEffPhiTotZneg ||
@@ -484,6 +507,27 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
                    meTrackMatchedTPEffPtTot->getTH1()->GetXaxis()->GetXmax());
   meExtraMTDfailExtenderPtEff_->getTH1()->SetMinimum(0.);
   computeEfficiency1D(meExtraMTDfailExtenderPt, meTrackMatchedTPEffPtTot, meExtraMTDfailExtenderPtEff_);
+
+  //
+  /*meNTracksMtdVsEtaPt0p7_ = ibook.book1D("meNTracksMtdVsEtaPt0p7", "Ntracks per event matched to TP with time (pT > 0.7 GeV); track eta ", 66, 0., 3.3);
+  meNTracksMtdVsEtaPt1p0_ = ibook.book1D("meNTracksMtdVsEtaPt1p0", "Ntracks per event matched to TP with time (pT > 1.0 GeV); track eta ", 66, 0., 3.3);
+  meNTracksMtdVsEtaPt1p5_ = ibook.book1D("meNTracksMtdVsEtaPt1p5", "Ntracks per event matched to TP with time (pT > 1.5 GeV); track eta ", 66, 0., 3.3);
+  meNTracksMtdVsEtaPt2p0_ = ibook.book1D("meNTracksMtdVsEtaPt2p0", "Ntracks per event matched to TP with time (pT > 2.0 GeV); track eta ", 66, 0., 3.3);
+  meNTracksMtdVsEtaPt2p5_ = ibook.book1D("meNTracksMtdVsEtaPt2p5", "Ntracks per event matched to TP with time (pT > 2.5 GeV); track eta ", 66, 0., 3.3);
+  scale(meNTracksMtdVsEtaPt0p7_, 1./Nevents);
+  scale(meNTracksMtdVsEtaPt1p0_, 1./Nevents);
+  scale(meNTracksMtdVsEtaPt1p5_, 1./Nevents);
+  scale(meNTracksMtdVsEtaPt2p0_, 1./Nevents);
+  scale(meNTracksMtdVsEtaPt2p5_, 1./Nevents);
+  */
+  //const float Nevents = meNevents->getEntries();
+  //scale(meTrackMatchedTPEtaMtdPt0p7, 1./Nevents);
+  //scale(meTrackMatchedTPEtaMtdPt1p0, 1./Nevents);
+  //scale(meTrackMatchedTPEtaMtdPt1p5, 1./Nevents);
+  //scale(meTrackMatchedTPEtaMtdPt2p0, 1./Nevents);
+  //scale(meTrackMatchedTPEtaMtdPt2p5, 1./Nevents);
+
+
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ----------
