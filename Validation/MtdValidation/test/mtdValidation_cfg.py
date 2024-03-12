@@ -18,7 +18,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', ''
 process.load('RecoLocalFastTime.FTLClusterizer.MTDCPEESProducer_cfi')
 process.load("Configuration.StandardSequences.Reconstruction_cff")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 
 #Setup FWK for multithreaded
 process.options.numberOfThreads = 4
@@ -32,7 +32,9 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step3.root'
+        #'file:step3.root'
+        '/store/relval/CMSSW_14_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_133X_mcRun4_realistic_v1_STD_2026D98_PU200-v3/2580000/03281e2e-0c51-4536-a6be-6215f4a86651.root'
+        
     )
 )
 
@@ -63,7 +65,8 @@ process.load("Validation.MtdValidation.vertices4DValid_cfi")
 # process.mtdTracksValid.optionalPlots = True
 # process.vertices4DValid.optionalPlots = True
 
-process.validation = cms.Sequence(btlValidation + etlValidation + process.mtdTracksValid + process.mtdEleIsoValid + process.vertices4DValid)
+#process.validation = cms.Sequence(btlValidation + etlValidation + process.mtdTracksValid + process.mtdEleIsoValid + process.vertices4DValid)
+process.validation = cms.Sequence(process.mtdTracksValid)
 
 process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
     dataset = cms.untracked.PSet(

@@ -163,6 +163,8 @@ private:
   edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> builderToken_;
   edm::ESGetToken<HepPDT::ParticleDataTable, edm::DefaultRecord> particleTableToken_;
 
+  MonitorElement* meNevents_;
+  
   MonitorElement* meBTLTrackRPTime_;
   MonitorElement* meBTLTrackEffEtaTot_;
   MonitorElement* meBTLTrackEffPhiTot_;
@@ -247,6 +249,12 @@ private:
   MonitorElement* meExtraBTLeneInCone_;
   MonitorElement* meExtraMTDfailExtenderEta_;
   MonitorElement* meExtraMTDfailExtenderPt_;
+
+  MonitorElement* meTrackMatchedTPEtaMtdPt0p7_;
+  MonitorElement* meTrackMatchedTPEtaMtdPt1p0_;
+  MonitorElement* meTrackMatchedTPEtaMtdPt1p5_;
+  MonitorElement* meTrackMatchedTPEtaMtdPt2p0_;
+  MonitorElement* meTrackMatchedTPEtaMtdPt2p5_;
 };
 
 // ------------ constructor and destructor --------------
@@ -406,6 +414,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 
   // flag to select events with reco vertex close to true simulated primary vertex, or PV fake (particle guns)
   const bool isGoodVtx = std::abs(primRecoVtx.z() - zsim) < deltaZcut_ || primRecoVtx.isFake();
+
+  // --- This is to count the number of processed events, needed in the harvesting step
+  meNevents_->Fill(0.5);
 
   // --- Loop over all RECO tracks ---
   for (const auto& trackGen : *GenRecTrackHandle) {
@@ -572,6 +583,16 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       const reco::TrackBaseRef trkrefb(trackref);
       auto tp_info = getMatchedTP(trkrefb);
 
+      //---
+      if (tp_info != nullptr && (isBTL || twoETLdiscs) ){
+            if (trackGen.pt()>0.7) meTrackMatchedTPEtaMtdPt0p7_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>1.0) meTrackMatchedTPEtaMtdPt1p0_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>1.5) meTrackMatchedTPEtaMtdPt1p5_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>2.0) meTrackMatchedTPEtaMtdPt2p0_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>2.5) meTrackMatchedTPEtaMtdPt2p5_->Fill( std::abs(trackGen.eta()) );
+          }
+      ///
+      
       meTrackPtTot_->Fill(trackGen.pt());
       meTrackEtaTot_->Fill(std::abs(trackGen.eta()));
       if (tp_info != nullptr && mvaTPSel(**tp_info)) {
@@ -635,6 +656,18 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             }
           }
           meTrackMatchedTPEffEtaMtd_->Fill(std::abs(trackGen.eta()));
+
+	  // -- additional plots for different pT selections
+          /*
+	  if (isBTL || twoETLdiscs){
+            if (trackGen.pt()>0.7) meTrackMatchedTPEtaMtdPt0p7_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>1.0) meTrackMatchedTPEtaMtdPt1p0_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>1.5) meTrackMatchedTPEtaMtdPt1p5_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>2.0) meTrackMatchedTPEtaMtdPt2p0_->Fill( std::abs(trackGen.eta()) );
+            if (trackGen.pt()>2.5) meTrackMatchedTPEtaMtdPt2p5_->Fill( std::abs(trackGen.eta()) );
+          }
+	  */
+	  
           if (isBTL || twoETLdiscs) {
             meTrackMatchedTPEffEtaEtl2Mtd_->Fill(std::abs(trackGen.eta()));
           }
@@ -921,6 +954,7 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
   ibook.setCurrentFolder(folder_);
 
   // histogram booking
+  meNevents_ = ibook.book1D("Nevents", "Number of events", 1, 0., 1.);
   meBTLTrackRPTime_ = ibook.book1D("TrackBTLRPTime", "Track t0 with respect to R.P.;t0 [ns]", 100, -1, 3);
   meBTLTrackEffEtaTot_ = ibook.book1D("TrackBTLEffEtaTot", "Track efficiency vs eta (Tot);#eta_{RECO}", 100, -1.6, 1.6);
   meBTLTrackEffPhiTot_ =
@@ -1188,6 +1222,15 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
                    110,
                    0.,
                    11.);
+
+  //--- Additional plots for different pT selections
+  meTrackMatchedTPEtaMtdPt0p7_ = ibook.book1D("MatchedTPEtaMtdPt0p7", "tracks matched to TP with time (pT > 0.7 GeV); track eta ", 66, 0., 3.3);
+  meTrackMatchedTPEtaMtdPt1p0_ = ibook.book1D("MatchedTPEtaMtdPt1p0", "tracks matched to TP with time (pT > 1.0 GeV); track eta ", 66, 0., 3.3);
+  meTrackMatchedTPEtaMtdPt1p5_ = ibook.book1D("MatchedTPEtaMtdPt1p5", "tracks matched to TP with time (pT > 1.5 GeV); track eta ", 66, 0., 3.3);
+  meTrackMatchedTPEtaMtdPt2p0_ = ibook.book1D("MatchedTPEtaMtdPt2p0", "tracks matched to TP with time (pT > 2.0 GeV); track eta ", 66, 0., 3.3);
+  meTrackMatchedTPEtaMtdPt2p5_ = ibook.book1D("MatchedTPEtaMtdPt2p5", "tracks matched to TP with time (pT > 2.5 GeV); track eta ", 66, 0., 3.3);
+
+
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -1238,6 +1281,7 @@ const bool MtdTracksValidation::mvaGenSel(const HepMC::GenParticle& gp, const fl
 
 const bool MtdTracksValidation::mvaTPSel(const TrackingParticle& tp) {
   bool match = false;
+  std::cout << "tp.status = " << tp.status() <<std::endl;
   if (tp.status() != 1) {
     return match;
   }
