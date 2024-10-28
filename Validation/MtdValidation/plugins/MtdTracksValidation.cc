@@ -106,6 +106,8 @@ private:
 
   bool isETL(const double eta) const { return (std::abs(eta) > trackMinEtlEta_) && (std::abs(eta) < trackMaxEtlEta_); }
 
+  void fillTrackClusterMatchingHistograms(MonitorElement* me1, MonitorElement* me2, MonitorElement* me3, MonitorElement* me4, MonitorElement* me5, float var1, float var2, float var3, float var4, float var5, bool flag);
+  
   // ------------ member data ------------
 
   const std::string folder_;
@@ -127,7 +129,6 @@ private:
   static constexpr double cluDRradius_ = 0.05;  // to cluster rechits around extrapolated track
 
   const reco::RecoToSimCollection* r2s_;
-  const reco::SimToRecoCollection* s2r_;
 
   edm::EDGetTokenT<reco::TrackCollection> GenRecTrackToken_;
   edm::EDGetTokenT<reco::TrackCollection> RecTrackToken_;
@@ -139,7 +140,6 @@ private:
   edm::EDGetTokenT<reco::SimToRecoCollection> simToRecoAssociationToken_;
   edm::EDGetTokenT<reco::RecoToSimCollection> recoToSimAssociationToken_;
   edm::EDGetTokenT<reco::TPToSimCollectionMtd> tp2SimAssociationMapToken_;
-  edm::EDGetTokenT<MtdSimLayerClusterToRecoClusterAssociationMap> s2rAssociationMapToken_;
   edm::EDGetTokenT<MtdRecoClusterToSimLayerClusterAssociationMap> r2sAssociationMapToken_;
 
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
@@ -178,20 +178,21 @@ private:
   MonitorElement* meBTLTrackPtRes_;
 
   MonitorElement* meETLTrackRPTime_;
-  MonitorElement* meETLTrackEffEtaTot_[2];
-  MonitorElement* meETLTrackEffEtaTotLowPt_[2];
-  MonitorElement* meETLTrackEffPhiTot_[2];
-  MonitorElement* meETLTrackEffPtTot_[2];
-  MonitorElement* meETLTrackEffEtaMtd_[2];
-  MonitorElement* meETLTrackEffEtaMtdLowPt_[2];
-  MonitorElement* meETLTrackEffEta2MtdLowPt_[2];
-  MonitorElement* meETLTrackEffPhiMtd_[2];
-  MonitorElement* meETLTrackEffPtMtd_[2];
-  MonitorElement* meETLTrackEffEta2Mtd_[2];
-  MonitorElement* meETLTrackEffPhi2Mtd_[2];
-  MonitorElement* meETLTrackEffPt2Mtd_[2];
+  MonitorElement* meETLTrackEffEtaTot_;
+  MonitorElement* meETLTrackEffPhiTot_;
+  MonitorElement* meETLTrackEffPtTot_;
+  MonitorElement* meETLTrackEffEtaMtd_;
+  MonitorElement* meETLTrackEffPhiMtd_;
+  MonitorElement* meETLTrackEffPtMtd_;
+  MonitorElement* meETLTrackEffEta2Mtd_;
+  MonitorElement* meETLTrackEffPhi2Mtd_;
+  MonitorElement* meETLTrackEffPt2Mtd_;
   MonitorElement* meETLTrackPtRes_;
 
+  MonitorElement* meETLTrackEffEtaTotLowPt_[2];
+  MonitorElement* meETLTrackEffEtaMtdLowPt_[2];
+  MonitorElement* meETLTrackEffEta2MtdLowPt_[2];
+  
   MonitorElement* meTracktmtd_;
   MonitorElement* meTrackt0Src_;
   MonitorElement* meTrackSigmat0Src_;
@@ -236,8 +237,6 @@ private:
   MonitorElement* meTrackMatchedTPEffPtTotLV_;
   MonitorElement* meTrackMatchedTPEffPtMtd_;
   MonitorElement* meTrackMatchedTPEffPtEtl2Mtd_;
-  //MonitorElement* meTrackMatchedTPmtdEffPtTot_;
-  //MonitorElement* meTrackMatchedTPmtdEffPtMtd_;
   MonitorElement* meTrackEtaTot_;
   MonitorElement* meExtraEtaMtd_;
   MonitorElement* meExtraEtaEtl2Mtd_;
@@ -245,8 +244,6 @@ private:
   MonitorElement* meTrackMatchedTPEffEtaTotLV_;
   MonitorElement* meTrackMatchedTPEffEtaMtd_;
   MonitorElement* meTrackMatchedTPEffEtaEtl2Mtd_;
-  //  MonitorElement* meTrackMatchedTPmtdEffEtaTot_;
-  //MonitorElement* meTrackMatchedTPmtdEffEtaMtd_;
   MonitorElement* meTrackResTot_;
   MonitorElement* meTrackPullTot_;
   MonitorElement* meTrackResTotvsMVAQual_;
@@ -259,108 +256,60 @@ private:
   MonitorElement* meExtraMTDfailExtenderPt_;
 
 
-  // ====== Trak-cluster matching 
-  // BTL TPmtdDirect (aka TPtoSim)
-  MonitorElement* meBTLTrackMatchedTPmtdDirectEtaTot_;
-  MonitorElement* meBTLTrackMatchedTPmtdDirectEtaMtd_;
-  MonitorElement* meBTLTrackMatchedTPmtdDirectPtTot_;
-  MonitorElement* meBTLTrackMatchedTPmtdDirectPtMtd_;
-  MonitorElement* meBTLTrackMatchedTPmtdDirectMVAQual_;
-  MonitorElement* meBTLTrackMatchedTPmtdDirectTimeRes_;
-  MonitorElement* meBTLTrackMatchedTPmtdDirectTimePull_;
+  // ====== Trak-cluster matching based on MC truth
+  // BTL TPmtd Direct, TPmtd Other, TPnomtd 
+  MonitorElement* meBTLTrackMatchedTPmtdDirectEta_;
+  MonitorElement* meBTLTrackMatchedTPmtdDirectPt_;
 
-  MonitorElement* meBTLTrackMatchedTPmtdOtherEtaTot_; // to decide if we keep plots for "others" as optional
-  MonitorElement* meBTLTrackMatchedTPmtdOtherEtaMtd_;
-  MonitorElement* meBTLTrackMatchedTPmtdOtherPtTot_;
-  MonitorElement* meBTLTrackMatchedTPmtdOtherPtMtd_;
-  MonitorElement* meBTLTrackMatchedTPmtdOtherMVAQual_;
-  MonitorElement* meBTLTrackMatchedTPmtdOtherTimeRes_;
-  MonitorElement* meBTLTrackMatchedTPmtdOtherTimePull_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherEta_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherPt_;
 
-  // BTL TPmtdDirect and correctly associated (aka SimToSim)
+  MonitorElement* meBTLTrackMatchedTPnomtdEta_;
+  MonitorElement* meBTLTrackMatchedTPnomtdPt_;
+  
+  // BTL TPmtd Direct hits: correct, wrong, missing association in MTD 
   MonitorElement* meBTLTrackMatchedTPmtdDirectCorrectAssocEta_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectCorrectAssocPt_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectCorrectAssocMVAQual_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectCorrectAssocTimeRes_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectCorrectAssocTimePull_;
-  
-  // BTL TPmtdDirect Wrong association cluster
+
   MonitorElement* meBTLTrackMatchedTPmtdDirectWrongAssocEta_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectWrongAssocPt_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectWrongAssocMVAQual_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectWrongAssocTimeRes_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectWrongAssocTimePull_;
-
-  // BTL TPmtdDirect no Associated reco cluster
+  
   MonitorElement* meBTLTrackMatchedTPmtdDirectNoAssocEta_;
   MonitorElement* meBTLTrackMatchedTPmtdDirectNoAssocPt_;
-
-  // BTL TP matched tracks with fake association 
-  MonitorElement* meBTLTrackMatchedTPFakeAssocEta_;
-  MonitorElement* meBTLTrackMatchedTPFakeAssocPt_;
-  MonitorElement* meBTLTrackMatchedTPFakeAssocMVAQual_;
-  MonitorElement* meBTLTrackMatchedTPFakeAssocTimeRes_;
-  MonitorElement* meBTLTrackMatchedTPFakeAssocTimePull_;
-
-  //ETL
-  // ETL - tracks with sim cluter in ETL
-  MonitorElement* meETLTrackMatchedTPmtdEtaTot_;
-  MonitorElement* meETLTrackMatchedTPmtdPtTot_;
-
-  MonitorElement* meETLTrackMatchedTPmtdEtaMtd_;
-  MonitorElement* meETLTrackMatchedTPmtdPtMtd_;
-  MonitorElement* meETLTrackMatchedTPmtdMVAQual_;
-  MonitorElement* meETLTrackMatchedTPmtdTimeRes_;
-  MonitorElement* meETLTrackMatchedTPmtdTimePull_;
-
-  MonitorElement* meETL2TrackMatchedTPmtdEtaMtd_;
-  MonitorElement* meETL2TrackMatchedTPmtdPtMtd_;
-  MonitorElement* meETL2TrackMatchedTPmtdMVAQual_;
-  MonitorElement* meETL2TrackMatchedTPmtdTimeRes_;
-  MonitorElement* meETL2TrackMatchedTPmtdTimePull_;
-
-  // ETL - tracks with sim cluter in ETL - correctly associated reco cluster     
-  MonitorElement* meETLTrackMatchedTPmtdCorrectAssocEta_;
-  MonitorElement* meETLTrackMatchedTPmtdCorrectAssocPt_;
-  MonitorElement* meETLTrackMatchedTPmtdCorrectAssocMVAQual_;
-  MonitorElement* meETLTrackMatchedTPmtdCorrectAssocTimeRes_;
-  MonitorElement* meETLTrackMatchedTPmtdCorrectAssocTimePull_;
-
-  MonitorElement* meETL2TrackMatchedTPmtdCorrectAssocEta_;
-  MonitorElement* meETL2TrackMatchedTPmtdCorrectAssocPt_;
-  MonitorElement* meETL2TrackMatchedTPmtdCorrectAssocMVAQual_;
-  MonitorElement* meETL2TrackMatchedTPmtdCorrectAssocTimeRes_;
-  MonitorElement* meETL2TrackMatchedTPmtdCorrectAssocTimePull_;
-
-  // ETL - tracks with sim cluter in ETL - wrong associated reco cluster     
-  MonitorElement* meETLTrackMatchedTPmtdWrongAssocEta_;
-  MonitorElement* meETLTrackMatchedTPmtdWrongAssocPt_;
-  MonitorElement* meETLTrackMatchedTPmtdWrongAssocMVAQual_;
-  MonitorElement* meETLTrackMatchedTPmtdWrongAssocTimeRes_;
-  MonitorElement* meETLTrackMatchedTPmtdWrongAssocTimePull_;
-
-  MonitorElement* meETL2TrackMatchedTPmtdWrongAssocEta_;
-  MonitorElement* meETL2TrackMatchedTPmtdWrongAssocPt_;
-  MonitorElement* meETL2TrackMatchedTPmtdWrongAssocMVAQual_;
-  MonitorElement* meETL2TrackMatchedTPmtdWrongAssocTimeRes_;
-  MonitorElement* meETL2TrackMatchedTPmtdWrongAssocTimePull_;
-
-  // ETL - tracks with sim cluter in ETL - no hits in ETL associated: 
-  MonitorElement* meETLTrackMatchedTPmtdNoAssocEta_;
-  MonitorElement* meETLTrackMatchedTPmtdNoAssocPt_;
   
-  // ETL - fake associations: no sim hit, but reco cluster found
-  MonitorElement* meETLTrackMatchedTPmtdFakeAssocEta_;
-  MonitorElement* meETLTrackMatchedTPmtdFakeAssocPt_;
-  MonitorElement* meETLTrackMatchedTPmtdFakeAssocMVAQual_;
-  MonitorElement* meETLTrackMatchedTPmtdFakeAssocTimeRes_;
-  MonitorElement* meETLTrackMatchedTPmtdFakeAssocTimePull_;
+  // BTL TPmtd "other" hits: correct, wrong, missing association in MTD 
+  MonitorElement* meBTLTrackMatchedTPmtdOtherCorrectAssocEta_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherCorrectAssocPt_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherCorrectAssocMVAQual_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherCorrectAssocTimeRes_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherCorrectAssocTimePull_;
 
-  MonitorElement* meETL2TrackMatchedTPmtdFakeAssocEta_;
-  MonitorElement* meETL2TrackMatchedTPmtdFakeAssocPt_;
-  MonitorElement* meETL2TrackMatchedTPmtdFakeAssocMVAQual_;
-  MonitorElement* meETL2TrackMatchedTPmtdFakeAssocTimeRes_;
-  MonitorElement* meETL2TrackMatchedTPmtdFakeAssocTimePull_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherWrongAssocEta_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherWrongAssocPt_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherWrongAssocMVAQual_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherWrongAssocTimeRes_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherWrongAssocTimePull_;
+  
+  MonitorElement* meBTLTrackMatchedTPmtdOtherNoAssocEta_;
+  MonitorElement* meBTLTrackMatchedTPmtdOtherNoAssocPt_;
+
+  // BTL TPnomtd but reco cluster associated
+  MonitorElement* meBTLTrackMatchedTPnomtdAssocEta_;
+  MonitorElement* meBTLTrackMatchedTPnomtdAssocPt_;
+  MonitorElement* meBTLTrackMatchedTPnomtdAssocMVAQual_;
+  MonitorElement* meBTLTrackMatchedTPnomtdAssocTimeRes_;
+  MonitorElement* meBTLTrackMatchedTPnomtdAssocTimePull_;
+
+  // ETL ...
+
+    
+  
   
 };
 
@@ -381,8 +330,6 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
       consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"));
   tp2SimAssociationMapToken_ =
       consumes<reco::TPToSimCollectionMtd>(iConfig.getParameter<edm::InputTag>("tp2SimAssociationMapTag"));
-  s2rAssociationMapToken_ = consumes<MtdSimLayerClusterToRecoClusterAssociationMap>(
-      iConfig.getParameter<edm::InputTag>("s2rAssociationMapTag"));
   r2sAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(
       iConfig.getParameter<edm::InputTag>("r2sAssociationMapTag"));
 
@@ -432,7 +379,6 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   std::unordered_map<uint32_t, std::set<unsigned long int>> m_btlTrkPerCell;
   std::unordered_map<uint32_t, std::set<unsigned long int>> m_etlTrkPerCell;
   const auto& tp2SimAssociationMap = iEvent.get(tp2SimAssociationMapToken_);
-  const auto& s2rAssociationMap = iEvent.get(s2rAssociationMapToken_);
   const auto& r2sAssociationMap = iEvent.get(r2sAssociationMapToken_);
 
   const auto& tMtd = iEvent.get(tmtdToken_);
@@ -450,9 +396,6 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   const auto& trackAssoc = iEvent.get(trackAssocToken_);
   const auto& pathLength = iEvent.get(pathLengthToken_);
   const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
-
-  auto simToRecoH = makeValid(iEvent.getHandle(simToRecoAssociationToken_));
-  s2r_ = simToRecoH.product();
 
   auto recoToSimH = makeValid(iEvent.getHandle(recoToSimAssociationToken_));
   r2s_ = recoToSimH.product();
@@ -506,9 +449,10 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       bool MTDEtlZnegD2 = false;
       bool MTDEtlZposD1 = false;
       bool MTDEtlZposD2 = false;
+      std::vector<edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster>> recoClustersRefs;
       if (std::abs(trackGen.eta()) < trackMaxBtlEta_) {
         // --- all BTL tracks (with and without hit in MTD) ---
-        meBTLTrackEffEtaTot_->Fill(trackGen.eta());
+        meBTLTrackEffEtaTot_->Fill(std::abs(trackGen.eta()));
         meBTLTrackEffPhiTot_->Fill(trackGen.phi());
         meBTLTrackEffPtTot_->Fill(trackGen.pt());
 
@@ -521,14 +465,20 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           if ((Hit.det() == 6) && (Hit.subdetId() == 1) && (Hit.mtdSubDetector() == 1)) {
             MTDBtl = true;
             numMTDBtlvalidhits++;
-          }
-        }
+	    const auto* mtdhit = static_cast<const MTDTrackingRecHit*>(hit);
+	    const auto& hitCluster = mtdhit->mtdCluster();
+	    if (hitCluster.size() != 0) {
+	      auto recoClusterRef = edmNew::makeRefTo(btlRecCluHandle, &hitCluster);
+	      recoClustersRefs.push_back(recoClusterRef);
+	    }
+	  }
+	}
         meTrackNumHits_->Fill(numMTDBtlvalidhits);
 
         // --- keeping only tracks with last hit in MTD ---
         if (MTDBtl == true) {
           isBTL = true;
-          meBTLTrackEffEtaMtd_->Fill(trackGen.eta());
+          meBTLTrackEffEtaMtd_->Fill(std::abs(trackGen.eta()));
           meBTLTrackEffPhiMtd_->Fill(trackGen.phi());
           meBTLTrackEffPtMtd_->Fill(trackGen.pt());
           meBTLTrackRPTime_->Fill(track.t0());
@@ -541,18 +491,10 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 
       else {
         // --- all ETL tracks (with and without hit in MTD) ---
-        if ((trackGen.eta() < -trackMinEtlEta_) && (trackGen.eta() > -trackMaxEtlEta_)) {
-          meETLTrackEffEtaTot_[0]->Fill(trackGen.eta());
-          meETLTrackEffPhiTot_[0]->Fill(trackGen.phi());
-          meETLTrackEffPtTot_[0]->Fill(trackGen.pt());
-        }
-
-        if ((trackGen.eta() > trackMinEtlEta_) && (trackGen.eta() < trackMaxEtlEta_)) {
-          meETLTrackEffEtaTot_[1]->Fill(trackGen.eta());
-          meETLTrackEffPhiTot_[1]->Fill(trackGen.phi());
-          meETLTrackEffPtTot_[1]->Fill(trackGen.pt());
-        }
-
+	meETLTrackEffEtaTot_->Fill(std::abs(trackGen.eta()));
+	meETLTrackEffPhiTot_->Fill(trackGen.phi());
+	meETLTrackEffPtTot_->Fill(trackGen.pt());
+      
         int numMTDEtlvalidhits = 0;
         for (const auto hit : track.recHits()) {
           if (hit->isValid() == false)
@@ -561,6 +503,13 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           if ((Hit.det() == 6) && (Hit.subdetId() == 1) && (Hit.mtdSubDetector() == 2)) {
             isETL = true;
             ETLDetId ETLHit = hit->geographicalId();
+
+	    const auto* mtdhit = static_cast<const MTDTrackingRecHit*>(hit);
+            const auto& hitCluster = mtdhit->mtdCluster();
+            if (hitCluster.size() != 0) {
+              auto recoClusterRef = edmNew::makeRefTo(btlRecCluHandle, &hitCluster);
+              recoClustersRefs.push_back(recoClusterRef);
+            }
 
             if ((ETLHit.zside() == -1) && (ETLHit.nDisc() == 1)) {
               MTDEtlZnegD1 = true;
@@ -594,32 +543,15 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         }
 
         // --- keeping only tracks with last hit in MTD ---
-        if ((trackGen.eta() < -trackMinEtlEta_) && (trackGen.eta() > -trackMaxEtlEta_)) {
-          twoETLdiscs = (MTDEtlZnegD1 == true) && (MTDEtlZnegD2 == true);
-          if ((MTDEtlZnegD1 == true) || (MTDEtlZnegD2 == true)) {
-            meETLTrackEffEtaMtd_[0]->Fill(trackGen.eta());
-            meETLTrackEffPhiMtd_[0]->Fill(trackGen.phi());
-            meETLTrackEffPtMtd_[0]->Fill(trackGen.pt());
-            if (twoETLdiscs) {
-              meETLTrackEffEta2Mtd_[0]->Fill(trackGen.eta());
-              meETLTrackEffPhi2Mtd_[0]->Fill(trackGen.phi());
-              meETLTrackEffPt2Mtd_[0]->Fill(trackGen.pt());
-            }
-          }
-        }
-        if ((trackGen.eta() > trackMinEtlEta_) && (trackGen.eta() < trackMaxEtlEta_)) {
-          twoETLdiscs = (MTDEtlZposD1 == true) && (MTDEtlZposD2 == true);
-          if ((MTDEtlZposD1 == true) || (MTDEtlZposD2 == true)) {
-            meETLTrackEffEtaMtd_[1]->Fill(trackGen.eta());
-            meETLTrackEffPhiMtd_[1]->Fill(trackGen.phi());
-            meETLTrackEffPtMtd_[1]->Fill(trackGen.pt());
-            if (twoETLdiscs) {
-              meETLTrackEffEta2Mtd_[1]->Fill(trackGen.eta());
-              meETLTrackEffPhi2Mtd_[1]->Fill(trackGen.phi());
-              meETLTrackEffPt2Mtd_[1]->Fill(trackGen.pt());
-            }
-          }
-        }
+	twoETLdiscs = ((MTDEtlZnegD1 == true) && (MTDEtlZnegD2 == true)) || ((MTDEtlZposD1 == true) && (MTDEtlZposD2 == true));
+	meETLTrackEffEtaMtd_->Fill(std::abs(trackGen.eta()));
+	meETLTrackEffPhiMtd_->Fill(trackGen.phi());
+	meETLTrackEffPtMtd_->Fill(trackGen.pt());
+	if (twoETLdiscs) {
+              meETLTrackEffEta2Mtd_->Fill(trackGen.eta());
+              meETLTrackEffPhi2Mtd_->Fill(trackGen.phi());
+              meETLTrackEffPt2Mtd_->Fill(trackGen.pt());
+	}
       }
 
       if (isBTL)
@@ -712,325 +644,157 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  hasTime = true;
         }
 
-        // MC truth matching
+        // ==  MC truth matching
+	std::cout << "MC truth matching ...." << std::endl;
         if (std::abs(trackGen.eta()) < trackMaxBtlEta_ ||
             (std::abs(trackGen.eta()) > trackMinEtlEta_ && std::abs(trackGen.eta()) < trackMaxEtlEta_)) {
-
-	  bool isTPSimDirectBTL = false, isTPSimOtherBTL = false, isSimToSimDirectBTL = false,
-	       isSimToSimOtherBTL = false, isTPSimETL = false, isSimToSimETL = false, isNoSimToSimBTL = false,
-     	       isNoSimToSimETL = false;
-
-          std::vector<edm::Ref<MtdSimLayerClusterCollection>> SimClusters;
-          std::vector<edm::Ref<MtdSimLayerClusterCollection>>::iterator directHit;
-          auto mtdSubDetector = (std::abs(trackGen.eta()) < trackMaxBtlEta_) ? MTDDetId::BTL : MTDDetId::ETL;
-
-	  auto simClustersRefs = tp2SimAssociationMap.find(*tp_info);
-	  const bool withMTD = (simClustersRefs != tp2SimAssociationMap.end());
+	  
+	  std::cout << "Track eta, pt = " << trackGen.eta() << " " << trackGen.pt() <<std::endl;
+	  
+	  bool isTPmtdDirectBTL = false, isTPmtdOtherBTL = false,
+	    isTPmtdDirectCorrectBTL = false, isTPmtdDirectWrongBTL = false, isTPmtdDirectMissingBTL = false,
+	    isTPmtdOtherCorrectBTL = false, isTPmtdOtherWrongBTL = false, isTPmtdOtherMissingBTL = false,
+	    isTPmtdETL = false
+	    //,isTPmtdCorrectETL = false
+	    ;
+	  	  
+	  auto simClustersRefsIt = tp2SimAssociationMap.find(*tp_info);
+	  const bool withMTD = (simClustersRefsIt != tp2SimAssociationMap.end());
+	  
 	  if (withMTD) {	  // if there is a mtdSimLayerCluster from the tracking particle
-            
-            std::vector<edm::Ref<edmNew::DetSetVector<FTLCluster>, FTLCluster>> recoClusterRefs;
-
-            // Get the collection of reco clusters associated with track
-            auto checkRecoToReco = [this, mtdSubDetector, &recoClusterRefs, &isReco](const auto& track,
-                                                                                     auto& recClusterHandle) -> void {
-              for (const auto& hit : track.recHits()) {
-                if (hit->isValid() == false)
-                  continue;
-                MTDDetId Hit = hit->geographicalId();
-                if (Hit.det() == 6 && Hit.subdetId() == 1 && Hit.mtdSubDetector() == mtdSubDetector) {
-                  const auto* mtdhit = static_cast<const MTDTrackingRecHit*>(hit);
-                  const auto& hitCluster = mtdhit->mtdCluster();
-                  if (hitCluster.size() != 0) {
-                    auto recoClusterRef = edmNew::makeRefTo(recClusterHandle, &hitCluster);
-                    recoClusterRefs.push_back(recoClusterRef);
-                  }
-                }
-              }
-				   };
-
-            checkRecoToReco(track, (mtdSubDetector == MTDDetId::BTL) ? btlRecCluHandle : etlRecCluHandle);
-
-	    // get sim cluster associated to the TP
-            const auto& mtdSimClusters = simClustersRefs->val;
-            for (const auto& ref : mtdSimClusters) {
-              if (MTDDetId(ref->detIds_and_rows().front().first).mtdSubDetector() == mtdSubDetector) {
-                SimClusters.push_back(ref);
-              }
-            }
-
 	    
+	    // -- Get the refs to MtdSimLayerClusters associated to the TP
+	    std::vector<edm::Ref<MtdSimLayerClusterCollection>> simClustersRefs;
+	    for (const auto& ref : simClustersRefsIt->val) {
+	      std::cout << " --> trackEta = " << trackGen.eta() << "   " << MTDDetId(ref->detIds_and_rows().front().first).mtdSubDetector() <<std::endl;      
+	      //  //  if (MTDDetId(ref->detIds_and_rows().front().first).mtdSubDetector() == mtdSubDetector) {
+	      simClustersRefs.push_back(ref);
+	    }
+	    
+	    std::cout << " *** " << (simClustersRefsIt->val).size() << std::endl;
+	    
+
 	    // === BTL
             // -- Sort BTL sim clusters by time
-	    edm::Ref<MtdSimLayerClusterCollection> firstBTLSimCluster;
-            if (!SimClusters.empty() && mtdSubDetector == MTDDetId::BTL) {
-              std::sort(SimClusters.begin(), SimClusters.end(), [](const auto& a, const auto& b) {
-                return a->simLCTime() < b->simLCTime();
-              });
+	    edm::Ref<MtdSimLayerClusterCollection> firstBTLSimClusterRef;
+	    std::vector<edm::Ref<MtdSimLayerClusterCollection>>::iterator directSimClusIt;
 
-              firstBTLSimCluster = SimClusters.front();
-
+            if (std::abs(trackGen.eta()) < trackMaxBtlEta_ && !simClustersRefs.empty()) {
+              std::sort(simClustersRefs.begin(), simClustersRefs.end(), [](const auto& a, const auto& b) {
+								  return a->simLCTime() < b->simLCTime();
+								});
+	      
+              firstBTLSimClusterRef = simClustersRefs.front();
+	      
               // Find the first direct hit in time
-              directHit = std::find_if(SimClusters.begin(), SimClusters.end(), [](const auto& simCluster) {
-                return simCluster->trackIdOffset() == 0;
-              });
+              directSimClusIt = std::find_if(simClustersRefs.begin(), simClustersRefs.end(), [](const auto& simCluster) {
+										       return simCluster->trackIdOffset() == 0;
+										     });
               // Check if TP has direct or other sim cluster for BTL
-              for (const auto& simClusterRef : SimClusters) {
-                if (directHit != SimClusters.end() && simClusterRef == *directHit) {
-                  isTPSimDirectBTL = true;
+              for (const auto& simClusterRef : simClustersRefs) {
+                if (directSimClusIt != simClustersRefs.end() && simClusterRef == *directSimClusIt) {
+                  isTPmtdDirectBTL = true;
                 } else if (simClusterRef->trackIdOffset() != 0) {
-                  isTPSimOtherBTL = true;
+                  isTPmtdOtherBTL = true;
                 }
               }
-
-	      // -- track matched to TP with a direct hit in MTD
-              if (isTPSimDirectBTL) {
-                meBTLTrackMatchedTPmtdDirectEtaTot_->Fill(trackGen.eta());
-                meBTLTrackMatchedTPmtdDirectPtTot_->Fill(trackGen.pt());
-		// -- track has last hit in mtd
-		if (isBTL){
-		  meBTLTrackMatchedTPmtdDirectEtaMtd_->Fill(trackGen.eta());
-		  meBTLTrackMatchedTPmtdDirectPtMtd_->Fill(trackGen.pt());
-		  if (hasTime) {
-		    meBTLTrackMatchedTPmtdDirectMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meBTLTrackMatchedTPmtdDirectTimeRes_->Fill(dT);
-		    meBTLTrackMatchedTPmtdDirectTimePull_->Fill(pullT);
-		  }
-		}
-              } else if (isTPSimOtherBTL) {
-		meBTLTrackMatchedTPmtdOtherEtaTot_->Fill(trackGen.eta());
-                meBTLTrackMatchedTPmtdOtherPtTot_->Fill(trackGen.pt());
-		if (isBTL){
-		  meBTLTrackMatchedTPmtdOtherEtaMtd_->Fill(trackGen.eta());
-		  meBTLTrackMatchedTPmtdOtherPtMtd_->Fill(trackGen.pt());
-		  if (hasTime) {
-		    meBTLTrackMatchedTPmtdOtherMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meBTLTrackMatchedTPmtdOtherTimeRes_->Fill(dT);
-		    meBTLTrackMatchedTPmtdOtherTimePull_->Fill(pullT);
-		  }
-		}
-	      }
 	    }
-
+	    
 	    // === ETL
-            if (!SimClusters.empty() && mtdSubDetector == MTDDetId::ETL) {
-              isTPSimETL = true;
-	      meETLTrackMatchedTPmtdEtaTot_->Fill(std::abs(trackGen.eta()));
-	      meETLTrackMatchedTPmtdPtTot_->Fill(trackGen.pt());
-	      if (twoETLdiscs){
-		meETL2TrackMatchedTPmtdEtaTot_->Fill(std::abs(trackGen.eta()));
-		meETL2TrackMatchedTPmtdPtTot_->Fill(trackGen.pt());
-	      }
-	      // -- track has last hit in mtd
-	      if (isETL){
-		meETLTrackMatchedTPmtdEtaMtd_->Fill(std::abs(trackGen.eta()));
-		meETLTrackMatchedTPmtdPtMtd_->Fill(trackGen.pt());
-		if (twoETLdiscs){
-		  meETL2TrackMatchedTPmtdEtaMtd_->Fill(std::abs(trackGen.eta()));
-		  meETL2TrackMatchedTPmtdPtMtd_->Fill(trackGen.pt());
-		}
-		if (hasTime) {
-		  meETLTrackMatchedTPmtdMVAQual_->Fill(mtdQualMVA[trackref]);
-		  meETLTrackMatchedTPmtdTimeRes_->Fill(dT);
-		  meETLTrackMatchedTPmtdTimePull_->Fill(pullT);
-		  if (twoETLdiscs){
-		    meETL2TrackMatchedTPmtdMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meETL2TrackMatchedTPmtdTimeRes_->Fill(dT);
-		    meETL2TrackMatchedTPmtdTimePull_->Fill(pullT);
+	    // do stuff for ETL here ...
+	    
+	    
+	    
+	    // ==  Check if the track-cluster association is correct: Track->RecoClus->SimClus == Track->TP->SimClus
+	    //std::cout << "trackEta :" << trackGen.eta() << "  reco cluster multiplicity :" << recoClusterRefs.size()<<std::endl;// 1 in btl, 1 or 2 in etl. Sanity check - OK
+	    
+	    for (const auto& recClusterRef : recoClustersRefs) {
+	      if (recClusterRef.isNonnull()) {
+		auto itp = r2sAssociationMap.equal_range(recClusterRef);
+		if (itp.first != itp.second) {
+		  auto& simClustersRefs_RecoMatch = (*itp.first).second; 
+		  		  
+		  for (const auto& simClusterRef_RecoMatch : simClustersRefs_RecoMatch) {
+		    // Check if simClusterRef_RecoMatch  exists in SimClusters
+		    auto simClusterIt = std::find(simClustersRefs.begin(), simClustersRefs.end(), simClusterRef_RecoMatch);
+		    
+		    // SimCluster found in SimClusters
+		    if (simClusterIt != simClustersRefs.end()) {
+		      
+		      if (isBTL) {
+			if (directSimClusIt != simClustersRefs.end() && simClusterRef_RecoMatch == *directSimClusIt) {
+			  isTPmtdDirectCorrectBTL = true;
+			} else if (simClusterRef_RecoMatch->trackIdOffset() != 0) {
+			  isTPmtdOtherCorrectBTL = true;
+			}
+		      } else {
+			//if ( simclusIt in disco1) correctMatchETL1 = true;
+			//if ( simclusIt in disco2) correctMatchETL2 = true;
+			//isTPmtdCorrectETL = true;
+		      }
+		    }
 		  }
-                }
+		}
+	      }
+	    } /// end loop over reco clusters associated to this track.
+	    
+
+	    // -- Track matched to TP with sim hit in MTD
+	    if (isTPmtdDirectBTL) {
+	      meBTLTrackMatchedTPmtdDirectEta_->Fill(std::abs(trackGen.eta()));
+	      meBTLTrackMatchedTPmtdDirectPt_->Fill(trackGen.pt());
+	    } else if (isTPmtdOtherBTL) {
+	      meBTLTrackMatchedTPmtdOtherEta_->Fill(std::abs(trackGen.eta()));
+	      meBTLTrackMatchedTPmtdOtherPt_->Fill(trackGen.pt());
+	    }
+	    
+	      
+	    // -- Track matched to TP with sim hit in MTD, correctly associated reco cluster
+	    if (isTPmtdDirectCorrectBTL){
+	      fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPmtdDirectCorrectAssocEta_, meBTLTrackMatchedTPmtdDirectCorrectAssocPt_, meBTLTrackMatchedTPmtdDirectCorrectAssocMVAQual_, meBTLTrackMatchedTPmtdDirectCorrectAssocTimeRes_, meBTLTrackMatchedTPmtdDirectCorrectAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+	    }
+	    
+	    if (isTPmtdOtherCorrectBTL){
+	      fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPmtdOtherCorrectAssocEta_, meBTLTrackMatchedTPmtdOtherCorrectAssocPt_, meBTLTrackMatchedTPmtdOtherCorrectAssocMVAQual_, meBTLTrackMatchedTPmtdOtherCorrectAssocTimeRes_, meBTLTrackMatchedTPmtdOtherCorrectAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+	    }
+	    
+	    
+	    // -- Track matched to TP with sim hit in MTD, incorrectly associated reco cluster 
+	    if (isBTL && isTPmtdDirectBTL && !isTPmtdDirectCorrectBTL){
+	      fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPmtdDirectWrongAssocEta_, meBTLTrackMatchedTPmtdDirectWrongAssocPt_, meBTLTrackMatchedTPmtdDirectWrongAssocMVAQual_, meBTLTrackMatchedTPmtdDirectWrongAssocTimeRes_, meBTLTrackMatchedTPmtdDirectWrongAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+	    }
+	    
+	    if (isBTL && isTPmtdOtherBTL && !isTPmtdOtherCorrectBTL){
+	      fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPmtdOtherWrongAssocEta_, meBTLTrackMatchedTPmtdOtherWrongAssocPt_, meBTLTrackMatchedTPmtdOtherWrongAssocMVAQual_, meBTLTrackMatchedTPmtdOtherWrongAssocTimeRes_, meBTLTrackMatchedTPmtdOtherWrongAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+	    }
+	    
+	    // -- Track matched to TP with sim hit in MTD, missing associated reco cluster
+	    std::cout << "Missing associations " << std::endl;
+	    if ((isTPmtdDirectBTL || isTPmtdOtherBTL) && !isBTL) {
+	      if (isTPmtdDirectBTL) {
+		meBTLTrackMatchedTPmtdDirectNoAssocEta_->Fill(std::abs(trackGen.eta()));
+		meBTLTrackMatchedTPmtdDirectNoAssocPt_->Fill(trackGen.pt());
+	      } else if (isTPmtdOtherBTL) {
+		meBTLTrackMatchedTPmtdOtherNoAssocEta_->Fill(std::abs(trackGen.eta()));
+		meBTLTrackMatchedTPmtdOtherNoAssocPt_->Fill(trackGen.pt());
 	      }
 	    }
-
-
-	    // ==  Check if the track-cluster association is correct: Track->RecoClus->SimClus == Track->TP->SimClus
-            if (isBTL || isETL) {
-
-	      /// !!!!!!!!!!!! CONTROLLARE CHE LA LOGICA SIA GIUSTA per "correct match"
-	      bool correctMatch = false;
-
-	      for (const auto& recClusterRef : recoClusterRefs) {
-                if (recClusterRef.isNonnull()) {
-                  auto itp = r2sAssociationMap.equal_range(recClusterRef);
-                  if (itp.first != itp.second) {
-                    auto& simClustersRefs_RecoMatch = (*itp.first).second;
-
-                    for (const auto& simClusterRef_RecoMatch : simClustersRefs_RecoMatch) {
-                      // Check if simClusterRef_RecoMatch  exists in SimClusters
-                      auto simClusterIt = std::find(SimClusters.begin(), SimClusters.end(), simClusterRef_RecoMatch);
-
-                      // SimCluster found in SimClusters
-                      if (simClusterIt != SimClusters.end()) {
-                        correctMatch = true;
-
-                        if (isBTL) {
-                          if (directHit != SimClusters.end() && simClusterRef_RecoMatch == *directHit) {
-                            isSimToSimDirectBTL = true;
-                          } else if (simClusterRef_RecoMatch->trackIdOffset() != 0) {
-                            isSimToSimOtherBTL = true;
-                          }
-                        } else {
-                          isSimToSimETL = true;
-                        }
-                      }
-                    }
-		  }
-		}
-	      } /// end loop over reco clusters associated to this track.
-
-
-	      // -- CORRECT association
-	      if (isSimToSimDirectBTL){
-		meBTLTrackMatchedTPmtdDirectCorrectAssocEta_->Fill(trackGen.eta());
-		meBTLTrackMatchedTPmtdDirectCorrectAssocPt_->Fill(trackGen.pt());
-		if (hasTime){
-		  meBTLTrackMatchedTPmtdDirectCorrectAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		  meBTLTrackMatchedTPmtdDirectCorrectAssocTimeRes_->Fill(dT);
-		  meBTLTrackMatchedTPmtdDirectCorrectAssocTimePull_->Fill(pullT);
-		}
-	      }
-
-	      if (isSimToSimOtherBTL){ /// --- these may be optional
-		meBTLTrackMatchedTPmtdOtherCorrectAssocEta_->Fill(trackGen.eta());
-		meBTLTrackMatchedTPmtdOtherCorrectAssocPt_->Fill(trackGen.pt());
-		if (hasTime){
-		  meBTLTrackMatchedTPmtdOtherCorrectAssocMVAQual_->Fill(mtdQualMVA[trackref]);;
-		  meBTLTrackMatchedTPmtdOtherCorrectAssocTimeRes_->Fill(dT);
-		  meBTLTrackMatchedTPmtdOtherCorrectAssocTimePull_->Fill(pullT);
-		}
-	      }
-	      
-	      if (isSimToSimETL){
-		meETLTrackMatchedTPmtdCorrectAssocEta_->Fill(std::abs(trackGen.eta()));
-		meETLTrackMatchedTPmtdCorrectAssocPt_->Fill(trackGen.pt());
-		if (twoETLdiscs){
-		  meETL2TrackMatchedTPmtdCorrectAssocEta_->Fill(std::abs(trackGen.eta()));
-		  meETL2TrackMatchedTPmtdCorrectAssocPt_->Fill(trackGen.pt());
-		}
-		if (hasTime){
-		  meETLTrackMatchedTPmtdCorrectAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		  meETLTrackMatchedTPmtdCorrectAssocTimeRes_->Fill(dT);
-		  meETLTrackMatchedTPmtdCorrectAssocTimePull_->Fill(pullT);
-		  if (twoETLDisks){
-		    meETL2TrackMatchedTPmtdCorrectAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meETL2TrackMatchedTPmtdCorrectAssocTimeRes_->Fill(dT);
-		    meETL2TrackMatchedTPmtdCorrectAssocTimePull_->Fill(pullT);
-		  }
-		}
-	      }
-
-
-	      
-
-	      // -- WRONG association: track matched to TP with hit in MTD, but the reco cluster doesn't correspond to the sim cluster
-	      if (!correctMatch){ ///? check the logic
-		
-		if (isBTL){
-		  meBTLTrackMatchedTPmtdDirectWrongAssocEta_->Fill(trackGen.eta());
-		  meBTLTrackMatchedTPmtdDirectWrongAssocEta_->Fill(trackGen.pt());
-		  if (hasTime) {
-		    meBTLTrackMatchedTPmtdDirectWrongAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meBTLTrackMatchedTPmtdDirectWrongAssocTimeRes_->Fill(dT);
-		    meBTLTrackMatchedTPmtdDirectWrongAssocTimePull_->Fill(pullT);
-		  }
-
-		  // check which type of hits are associated when the association is not correct
-		  // = magari sostituire solo con un plot dei trackId Offset per incorrect association?
-		  /*if (firstBTLSimCluster.isNonnull()) {
-		    if (firstBTLSimCluster->trackIdOffset() == 0) {
-		      meBTLTrackNoSimToSimDirectMatchedEta_->Fill(trackGen.eta());
-		      meBTLTrackNoSimToSimDirectMatchedPt_->Fill(trackGen.pt());
-		    } else if (firstBTLSimCluster->trackIdOffset() == 1) {
-		      meBTLTrackNoSimToSimSecondMatchedEta_->Fill(trackGen.eta());
-		      meBTLTrackNoSimToSimSecondMatchedPt_->Fill(trackGen.pt());
-		    } else if (firstBTLSimCluster->trackIdOffset() == 2) {
-		      meBTLTrackNoSimToSimLoopMatchedEta_->Fill(trackGen.eta());
-		      meBTLTrackNoSimToSimLoopMatchedPt_->Fill(trackGen.pt());
-		    } else if (firstBTLSimCluster->trackIdOffset() == 3) {
-		      meBTLTrackNoSimToSimBackMatchedEta_->Fill(trackGen.eta());
-		      meBTLTrackNoSimToSimBackMatchedPt_->Fill(trackGen.pt());
-		    }
-
-		  */
-		}
-
-		if (isETL){
-		  meETLTrackMatchedTPmtdWrongAssocEta_->Fill(stad::abs(trackGen.eta()));
-                  meETLTrackMatchedTPmtdWrongAssocEta_->Fill(trackGen.pt());
-		  if (hasTime) {
-		    meETLTrackMatchedTPmtdWrongAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meETLTrackMatchedTPmtdWrongAssocTimeRes_->Fill(dT);
-		    meETLTrackMatchedTPmtdWrongAssocTimePull_->Fill(pullT);
-		  }
-		  if (twoDisks){
-		    meETL2TrackMatchedTPmtdWrongAssocEta_->Fill(stad::abs(trackGen.eta()));
-		    meETL2TrackMatchedTPmtdWrongAssocEta_->Fill(trackGen.pt());
-		    if (hasTime) {
-		      meETL2TrackMatchedTPmtdWrongAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		      meETL2TrackMatchedTPmtdWrongAssocTimeRes_->Fill(dT);
-		      meETL2TrackMatchedTPmtdWrongAssocTimePull_->Fill(pullT);
-		    }
-		  }
-		}
-	      }
-	    
-
-	      // == FAKE associations: track without sim-hit but with reco cluster associated
-	      if (!isTPSimDirectBTL && !isTPSimOtherBTL && !isTPSimETL) {
-		if (isBTL) {
-		  meBTLTrackMatchedTPmtdFakeAssocEta_->Fill(trackGen.eta());
-		  meBTLTrackMatchedTPmtdFakeAssocPt_->Fill(trackGen.pt());
-		  if (hasTime) {
-		    meBTLTrackMatchedTPmtdFakeAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meBTLTrackMatchedTPmtdFakeAssocTimeRes_->Fill(dT);
-		    meBTLTrackMatchedTPmtdFakeAssocTimePull_->Fill(pullT);
-		  }
-		}
-		
-		if (isETL) {
-		  meETLTrackMatchedTPmtdFakeAssocEta_->Fill(std::abs(trackGen.eta()));
-		  meETLTrackMatchedTPmtdFakeAssocPt_->Fill(trackGen.pt());
-		  if (hasTime) {
-		    meETLTrackMatchedTPmtdFakeAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		    meETLTrackMatchedTPmtdFakeAssocTimeRes_->Fill(dT);
-		    meETLTrackMatchedTPmtdFakeAssocTimePull_->Fill(pullT);
-		  }
-		  if (twoDisks){
-		    meETL2TrackMatchedTPmtdFakeAssocEta_->Fill(stad::abs(trackGen.eta()));
-		    meETL2TrackMatchedTPmtdFakeAssocEta_->Fill(trackGen.pt());
-		    if (hasTime) {
-		      meETL2TrackMatchedTPmtdWrongAssocMVAQual_->Fill(mtdQualMVA[trackref]);
-		      meETL2TrackMatchedTPmtdWrongAssocTimeRes_->Fill(dT);
-		      meETL2TrackMatchedTPmtdWrongAssocTimePull_->Fill(pullT);
-		    }
-		  }
-		}
-	      }
-		
-	    }		
-	    
-	    // ==  Missing association: tracks matched to TP with sim hit in mtd but no reco cluster associated
-            if ((isTPSimDirectBTL || isTPSimOtherBTL) && !isBTL) {
-              if (isTPSimDirectBTL) {
-                meBTLTrackMatchedTPmtdDirectNoAssocEta_->Fill(trackGen.eta());
-                meBTLTrackMatchedTPmtdDirectNoAssocPt_->Fill(trackGen.pt());
-              } else if (isTPSimOtherBTL) {
-                meBTLTrackMatchedTPmtdOtherNoAssocEta_->Fill(trackGen.eta());
-                meBTLTrackMatchedTPmtdOtherNoAssocPt_->Fill(trackGen.pt());
-	      }
-            }
-
-            if (isTPSimETL && !isETL) {
-	      meETLTrackMatchedTPmtdDirectNoAssocEta_->Fill(std::abs(trackGen.eta()));
-	      meETLTrackMatchedTPmtdDirectNoAssocPt_->Fill(trackGen.pt());
-            }
-
-
-	    
 	  }
+	  
+	  // Track matched to TP without sim hit in MTD, but with reco cluster associated 
+	  if (!isTPmtdDirectBTL && !isTPmtdOtherBTL && !isTPmtdETL) {
+	    if (isBTL) {
+	      fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPnomtdAssocEta_, meBTLTrackMatchedTPnomtdAssocPt_, meBTLTrackMatchedTPnomtdAssocMVAQual_, meBTLTrackMatchedTPnomtdAssocTimeRes_, meBTLTrackMatchedTPnomtdAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+            }
+	    	    
+	    if (isETL) {
+	      // do stuff for ETL...
+	    }
+	  }
+	  
+	}// MC truth matching
 
-	} // MC truth matching
-
-
+      
 	
         // time pull and detailed extrapolation check only on tracks associated to TP from signal event
         if (!trkTPSelLV(**tp_info)) {
@@ -1336,33 +1100,30 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
 
   // histogram booking
   meBTLTrackRPTime_ = ibook.book1D("TrackBTLRPTime", "Track t0 with respect to R.P.;t0 [ns]", 100, -1, 3);
-  meBTLTrackEffEtaTot_ = ibook.book1D("TrackBTLEffEtaTot", "Eta of tracks (Tot);#eta_{RECO}", 100, -1.6, 1.6);
+  meBTLTrackEffEtaTot_ = ibook.book1D("TrackBTLEffEtaTot", "Eta of tracks (Tot);#eta_{RECO}", 40, 0., 1.6);
   meBTLTrackEffPhiTot_ = ibook.book1D("TrackBTLEffPhiTot", "Phi of tracks (Tot);#phi_{RECO} [rad]", 100, -3.2, 3.2);
   meBTLTrackEffPtTot_ = ibook.book1D("TrackBTLEffPtTot", "Pt of tracks (Tot);pt_{RECO} [GeV]", 50, 0, 10);
-  meBTLTrackEffEtaMtd_ = ibook.book1D("TrackBTLEffEtaMtd", "Eta of tracks (Mtd);#eta_{RECO}", 100, -1.6, 1.6);
+  meBTLTrackEffEtaMtd_ = ibook.book1D("TrackBTLEffEtaMtd", "Eta of tracks (Mtd);#eta_{RECO}", 40, 0, 1.6);
   meBTLTrackEffPhiMtd_ = ibook.book1D("TrackBTLEffPhiMtd", "Phi of tracks (Mtd);#phi_{RECO} [rad]", 100, -3.2, 3.2);
   meBTLTrackEffPtMtd_ = ibook.book1D("TrackBTLEffPtMtd", "Pt of tracks (Mtd);pt_{RECO} [GeV]", 50, 0, 10);
   meBTLTrackPtRes_ =
       ibook.book1D("TrackBTLPtRes", "Track pT resolution  ;pT_{Gentrack}-pT_{MTDtrack}/pT_{Gentrack} ", 100, -0.1, 0.1);
   meETLTrackRPTime_ = ibook.book1D("TrackETLRPTime", "Track t0 with respect to R.P.;t0 [ns]", 100, -1, 3);
-  meETLTrackEffEtaTot_[0] =
-      ibook.book1D("TrackETLEffEtaTotZneg", "Eta of tracks (Tot) (-Z);#eta_{RECO}", 100, -3.2, -1.4);
-  meETLTrackEffEtaTot_[1] =
-      ibook.book1D("TrackETLEffEtaTotZpos", "Eta of tracks (Tot) (+Z);#eta_{RECO}", 100, 1.4, 3.2);
+  meETLTrackEffEtaTot_ =
+      ibook.book1D("TrackETLEffEtaTotZ", "Eta of tracks (Tot);#eta_{RECO}", 50, 1.4, 3.2);
+  meETLTrackEffPhiTot_=
+      ibook.book1D("TrackETLEffPhiTot", "Phi of tracks (Tot);#phi_{RECO} [rad]", 100, -3.2, 3.2);
+  meETLTrackEffPhiTot_ =
+      ibook.book1D("TrackETLEffPhiTot", "Phi of tracks (Tot);#phi_{RECO} [rad]", 100, -3.2, 3.2);
+  meETLTrackEffPtTot_ = ibook.book1D("TrackETLEffPtTot", "Pt of tracks (Tot);pt_{RECO} [GeV]", 50, 0, 10);
+
   meETLTrackEffEtaTotLowPt_[0] =
       ibook.book1D("TrackETLEffEtaTotLowPt0", "Eta of tracks, 0.2 < pt < 0.45 (Tot);#eta_{RECO}", 100, 1.4, 3.2);
   meETLTrackEffEtaTotLowPt_[1] =
       ibook.book1D("TrackETLEffEtaTotLowPt1", "Eta of tracks, 0.45 < pt < 0.7 (Tot);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackEffPhiTot_[0] =
-      ibook.book1D("TrackETLEffPhiTotZneg", "Phi of tracks (Tot) (-Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPhiTot_[1] =
-      ibook.book1D("TrackETLEffPhiTotZpos", "Phi of tracks (Tot) (+Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPtTot_[0] = ibook.book1D("TrackETLEffPtTotZneg", "Pt of tracks (Tot) (-Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffPtTot_[1] = ibook.book1D("TrackETLEffPtTotZpos", "Pt of tracks (Tot) (+Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffEtaMtd_[0] =
-      ibook.book1D("TrackETLEffEtaMtdZneg", "Eta of tracks (Mtd) (-Z);#eta_{RECO}", 100, -3.2, -1.4);
-  meETLTrackEffEtaMtd_[1] =
-      ibook.book1D("TrackETLEffEtaMtdZpos", "Eta of tracks (Mtd) (+Z);#eta_{RECO}", 100, 1.4, 3.2);
+  
+  meETLTrackEffEtaMtd_ =
+      ibook.book1D("TrackETLEffEtaMtd", "Eta of tracks (Mtd);#eta_{RECO}", 50, 1.4, 3.2);
   meETLTrackEffEtaMtdLowPt_[0] =
       ibook.book1D("TrackETLEffEtaMtdLowPt0", "Eta of tracks, 0.2 < pt < 0.45 (Mtd);#eta_{RECO}", 100, 1.4, 3.2);
   meETLTrackEffEtaMtdLowPt_[1] =
@@ -1371,24 +1132,17 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
       ibook.book1D("TrackETLEffEta2MtdLowPt0", "Eta of tracks, 0.2 < pt < 0.45 (Mtd 2 hit);#eta_{RECO}", 100, 1.4, 3.2);
   meETLTrackEffEta2MtdLowPt_[1] =
       ibook.book1D("TrackETLEffEta2MtdLowPt1", "Eta of tracks, 0.45 < pt < 0.7 (Mtd 2 hit);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackEffPhiMtd_[0] =
-      ibook.book1D("TrackETLEffPhiMtdZneg", "Phi of tracks (Mtd) (-Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPhiMtd_[1] =
-      ibook.book1D("TrackETLEffPhiMtdZpos", "Phi of tracks (Mtd) (+Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPtMtd_[0] = ibook.book1D("TrackETLEffPtMtdZneg", "Pt of tracks (Mtd) (-Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffPtMtd_[1] = ibook.book1D("TrackETLEffPtMtdZpos", "Pt of tracks (Mtd) (+Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffEta2Mtd_[0] =
-      ibook.book1D("TrackETLEffEta2MtdZneg", "Eta of tracks (Mtd 2 hit) (-Z);#eta_{RECO}", 100, -3.2, -1.4);
-  meETLTrackEffEta2Mtd_[1] =
-      ibook.book1D("TrackETLEffEta2MtdZpos", "Eta of tracks (Mtd 2 hit) (+Z);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackEffPhi2Mtd_[0] =
-      ibook.book1D("TrackETLEffPhi2MtdZneg", "Phi of tracks (Mtd 2 hit) (-Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPhi2Mtd_[1] =
-      ibook.book1D("TrackETLEffPhi2MtdZpos", "Phi of tracks (Mtd 2 hit) (+Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPt2Mtd_[0] =
-      ibook.book1D("TrackETLEffPt2MtdZneg", "Pt of tracks (Mtd 2 hit) (-Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffPt2Mtd_[1] =
-      ibook.book1D("TrackETLEffPt2MtdZpos", "Pt of tracks (Mtd 2 hit) (+Z);pt_{RECO} [GeV]", 50, 0, 10);
+
+  meETLTrackEffPhiMtd_ =
+      ibook.book1D("TrackETLEffPhiMtd", "Phi of tracks (Mtd);#phi_{RECO} [rad]", 100, -3.2, 3.2);
+  meETLTrackEffPtMtd_ = ibook.book1D("TrackETLEffPtMtd", "Pt of tracks (Mtd);pt_{RECO} [GeV]", 50, 0, 10);
+  meETLTrackEffEta2Mtd_  =
+      ibook.book1D("TrackETLEffEta2Mtd", "Eta of tracks (Mtd 2 hit);#eta_{RECO}", 100, -3.2, -1.4);
+  meETLTrackEffPhi2Mtd_ =
+      ibook.book1D("TrackETLEffPhi2Mtd", "Phi of tracks (Mtd 2 hit);#phi_{RECO} [rad]", 100, -3.2, 3.2);
+  meETLTrackEffPt2Mtd_ =
+      ibook.book1D("TrackETLEffPt2Mtd", "Pt of tracks (Mtd 2 hit);pt_{RECO} [GeV]", 50, 0, 10);
+
   meETLTrackPtRes_ =
       ibook.book1D("TrackETLPtRes", "Track pT resolution;pT_{Gentrack}-pT_{MTDtrack}/pT_{Gentrack} ", 100, -0.1, 0.1);
 
@@ -1585,11 +1339,6 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
                                                       0.1,
                                                       "s");
 
-  //meTrackMatchedTPmtdEffPtTot_ =
-  //    ibook.book1D("MatchedTPmtdEffPtTot", "Pt of tracks matched to TP-mtd hit; track pt [GeV] ", 110, 0., 11.);
-  //meTrackMatchedTPmtdEffPtMtd_ = ibook.book1D(
-  //    "MatchedTPmtdEffPtMtd", "Pt of tracks matched to TP-mtd hit with time; track pt [GeV] ", 110, 0., 11.);
-
   meExtraEtaMtd_ =
       ibook.book1D("ExtraEtaMtd", "Eta of tracks associated to LV extrapolated to hits; track eta ", 66, 0., 3.3);
   meExtraEtaEtl2Mtd_ = ibook.book1D(
@@ -1604,11 +1353,6 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
       ibook.book1D("MatchedTPEffEtaMtd", "Eta of tracks matched to TP with time; track eta ", 66, 0., 3.3);
   meTrackMatchedTPEffEtaEtl2Mtd_ = ibook.book1D(
       "MatchedTPEffEtaEtl2Mtd", "Eta of tracks matched to TP with time, 2 ETL hits; track eta ", 66, 0., 3.3);
-
-  //meTrackMatchedTPmtdEffEtaTot_ =
-  //    ibook.book1D("MatchedTPmtdEffEtaTot", "Eta of tracks matched to TP-mtd hit; track eta ", 66, 0., 3.3);
-  //meTrackMatchedTPmtdEffEtaMtd_ =
-  //    ibook.book1D("MatchedTPmtdEffEtaMtd", "Eta of tracks matched to TP-mtd hit with time; track eta ", 66, 0., 3.3);
 
   meTrackResTot_ = ibook.book1D(
       "TrackRes", "t_{rec} - t_{sim} for LV associated tracks matched to TP; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
@@ -1662,486 +1406,52 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
       11.);
 
 
-  // Book the histograms for BTL
-  meBTLTrackMatchedTPmtdDirectEtaTot_ = ibook.book1D("BTLTrackMatchedTPmtdDirectEtaTot", "Eta of tracks matched to TP with sim cluster (direct);#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdDirectPtTot_ = ibook.book1D("BTLTrackMatchedTPmtdDirectPtTot", "Pt of tracks matched to TP with sim cluster (direct); track pt [GeV]", 110, 0., 11.);
-  meBTLTrackMatchedTPmtdDirectEtaMtd_ = ibook.book1D("BTLTrackMatchedTPmtdDirectEtaMtd", "Eta of tracks with time matched to TP with sim cluster (direct);#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdDirectPtMtd_ = ibook.book1D("BTLTrackMatchedTPmtdDirectPtMtd", "Pt of tracks matched to TP with sim cluster (direct) with time; track pt [GeV]", 110, 0., 11.);
-  meBTLTrackMatchedTPmtdDirectMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdDirectMVAQual", "MVA of tracks matched to TP with sim cluster (direct); MVA score", 100, -1., 1.);
-  meBTLTrackMatchedTPmtdDirectTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdDirectTimeRes", "Time resolution of tracks matched to TP with sim cluster (direct); t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meBTLTrackMatchedTPmtdDirectTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdDirectTimePull", "Time pull of tracks matched to TP with sim cluster (direct); (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
+  // Book the histograms for track-hit matching - BTL
+  meBTLTrackMatchedTPmtdDirectEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectEta", "Eta of tracks matched to TP with sim cluster (direct);#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdDirectPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectPt", "Pt of tracks matched to TP with sim cluster (direct); track pt [GeV]", 110, 0., 11.);
+  
+  meBTLTrackMatchedTPmtdOtherEta_ = ibook.book1D("BTLTrackMatchedTPmtdOtherEta", "Eta of tracks matched to TP with sim cluster (other);#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdOtherPt_ = ibook.book1D("BTLTrackMatchedTPmtdOtherPt", "Pt of tracks matched to TP with sim cluster (other); track pt [GeV]", 110, 0., 11.);
 
-  meBTLTrackMatchedTPmtdOtherEtaTot_ = ibook.book1D("BTLTrackMatchedTPmtdOtherEtaTot", "Eta of tracks matched to TP with sim cluster (other);#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdOtherPtTot_ = ibook.book1D("BTLTrackMatchedTPmtdOtherPtTot", "Pt of tracks matched to TP with sim cluster (other); track pt [GeV]", 110, 0., 11.);
-  meBTLTrackMatchedTPmtdOtherEtaMtd_ = ibook.book1D("BTLTrackMatchedTPmtdOtherEtaMtd", "Eta of tracks with time matched to TP with sim cluster (other);#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdOtherPtMtd_ = ibook.book1D("BTLTrackMatchedTPmtdOtherPtMtd", "Pt of tracks matched to TP with sim cluster (other) with time; track pt [GeV]", 110, 0., 11.);
-  meBTLTrackMatchedTPmtdOtherMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdOtherMVAQual", "MVA of tracks matched to TP with sim cluster (other); MVA score", 100, -1., 1.);
-  meBTLTrackMatchedTPmtdOtherTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdOtherTimeRes", "Time resolution of tracks matched to TP with sim cluster (other); t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meBTLTrackMatchedTPmtdOtherTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdOtherTimePull", "Time pull of tracks matched to TP with sim cluster (other); (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
-
-  meBTLTrackMatchedTPmtdDirectCorrectAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocEta", "Eta of tracks matched to TP with sim cluster (direct) - correct association;#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdDirectCorrectAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - correct association;track pt [GeV]", 110, 0., 11.);
-  meBTLTrackMatchedTPmtdDirectCorrectAssocMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocMVAQual", "MVA of tracks matched to TP with sim cluster (direct) - correct association; MVA score", 100, -1., 1.);
-  meBTLTrackMatchedTPmtdDirectCorrectAssocTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster (direct) - correct association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meBTLTrackMatchedTPmtdDirectCorrectAssocTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocTimePull", "Time pull of tracks matched to TP with sim cluster (direct) - correct association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
-
-  meBTLTrackMatchedTPmtdDirectWrongAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocEta", "Eta of tracks matched to TP with sim cluster (direct) - wrong association;#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdDirectWrongAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - wrong association;track pt [GeV]", 110, 0., 11.);
-  meBTLTrackMatchedTPmtdDirectWrongAssocMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocMVAQual", "MVA of tracks matched to TP with sim cluster (direct) - wrong association; MVA score", 100, -1., 1.);
-  meBTLTrackMatchedTPmtdDirectWrongAssocTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster (direct) - wrong association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meBTLTrackMatchedTPmtdDirectWrongAssocTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocTimePull", "Time pull of tracks matched to TP with sim cluster (direct) - wrong association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
-
-  meBTLTrackMatchedTPmtdDirectFakeAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectFakeAssocEta", "Eta of tracks matched to TP without sim cluster (direct) - fake association;#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdDirectFakeAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectFakeAssocPt", "Pt of tracks matched to TP without sim cluster (direct) - fake association;track pt [GeV]", 110, 0., 11.);
-  meBTLTrackMatchedTPmtdDirectFakeAssocMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdDirectFakeAssocMVAQual", "MVA of tracks matched to TP without sim cluster (direct) - fake association; MVA score", 100, -1., 1.);
-  meBTLTrackMatchedTPmtdDirectFakeAssocTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdDirectFakeAssocTimeRes", "Time resolution of tracks matched to TP without sim cluster (direct) - fake association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meBTLTrackMatchedTPmtdDirectFakeAssocTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdDirectFakeAssocTimePull", "Time pull of tracks matched to TP without sim cluster (direct) - fake association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
-
-  meBTLTrackMatchedTPmtdDirectNoAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectNoAssocEta", "Eta of tracks matched to TP with sim cluster (direct) - no association;#eta_{RECO}", 40, 0., 1.6);
-  meBTLTrackMatchedTPmtdDirectNoAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectNoAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - no association;track pt [GeV]", 110, 0., 11.);
+  meBTLTrackMatchedTPnomtdEta_ = ibook.book1D("BTLTrackMatchedTPnomtdEta", "Eta of tracks matched to TP w/o sim cluster;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdOtherPt_ = ibook.book1D("BTLTrackMatchedTPmtdOtherPt", "Pt of tracks matched to TP w/o sim cluster; track pt [GeV]", 110, 0., 11.);
 
 
-  // Book the histograms for ETL
-  meETLTrackMatchedTPmtdEtaTot_ = ibook.book1D("ETLTrackMatchedTPmtdEtaTot", "Eta of tracks matched to TP with sim cluster;#eta_{RECO}", 40, 1.5, 3.3);
-  meETLTrackMatchedTPmtdPtTot_ = ibook.book1D("ETLTrackMatchedTPmtdPtTot", "Pt of tracks matched to TP with sim cluster; track pt [GeV]", 110, 0., 11.);
+  meBTLTrackMatchedTPmtdDirectCorrectAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocEta", "Eta of tracks matched to TP with sim cluster (direct), correct track-MTD association;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdDirectCorrectAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - correct track-MTD association;track pt [GeV]", 110, 0., 11.);
+  meBTLTrackMatchedTPmtdDirectCorrectAssocMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocMVAQual", "MVA of tracks matched to TP with sim cluster (direct) - correct track-MTD association; MVA score", 100, -1., 1.);
+  meBTLTrackMatchedTPmtdDirectCorrectAssocTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster (direct) - correct track-MTD association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
+  meBTLTrackMatchedTPmtdDirectCorrectAssocTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdDirectCorrectAssocTimePull", "Time pull of tracks matched to TP with sim cluster (direct) - correct track-MTD association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
 
-  meETLTrackMatchedTPmtdEtaMtd_ = ibook.book1D("ETLTrackMatchedTPmtdEtaMtd", "Eta of tracks with time matched to TP with sim cluster;#eta_{RECO}", 40, 1.5, 3.3);
-  meETLTrackMatchedTPmtdPtMtd_ = ibook.book1D("ETLTrackMatchedTPmtdPtMtd", "Pt of tracks with time matched to TP with sim cluster; track pt [GeV]", 110, 0., 11.);
-  meETLTrackMatchedTPmtdMVAQual_ = ibook.book1D("ETLTrackMatchedTPmtdMVAQual", "MVA of tracks matched to TP with sim cluster; MVA score", 100, -1., 1.);
-  meETLTrackMatchedTPmtdTimeRes_ = ibook.book1D("ETLTrackMatchedTPmtdTimeRes", "Time resolution of tracks matched to TP with sim cluster; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meETLTrackMatchedTPmtdTimePull_ = ibook.book1D("ETLTrackMatchedTPmtdTimePull", "Time pull of tracks matched to TP with sim cluster; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
+  meBTLTrackMatchedTPmtdDirectWrongAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocEta", "Eta of tracks matched to TP with sim cluster (direct) - wrong track-MTD association;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdDirectWrongAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - wrong track-MTD association;track pt [GeV]", 110, 0., 11.);
+  meBTLTrackMatchedTPmtdDirectWrongAssocMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocMVAQual", "MVA of tracks matched to TP with sim cluster (direct) - wrong track-MTD association; MVA score", 100, -1., 1.);
+  meBTLTrackMatchedTPmtdDirectWrongAssocTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster (direct) - wrong track-MTD association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
+  meBTLTrackMatchedTPmtdDirectWrongAssocTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdDirectWrongAssocTimePull", "Time pull of tracks matched to TP with sim cluster (direct) - wrong track-MTD association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
 
-  meETL2TrackMatchedTPmtdEtaMtd_ = ibook.book1D("ETL2TrackMatchedTPmtdEtaMtd", "Eta of tracks with time matched to TP with sim cluster - ETL 2 hits;#eta_{RECO}", 40, 1.5, 3.3);
-  meETL2TrackMatchedTPmtdPtMtd_ = ibook.book1D("ETL2TrackMatchedTPmtdPtMtd", "Pt of tracks with time matched to TP with sim cluster - ETL 2 hits; track pt [GeV]", 110, 0., 11.);
-  meETL2TrackMatchedTPmtdMVAQual_ = ibook.book1D("ETL2TrackMatchedTPmtdMVAQual", "MVA of tracks matched to TP with sim cluster - ETL 2 hits; MVA score", 100, -1., 1.);
-  meETL2TrackMatchedTPmtdTimeRes_ = ibook.book1D("ETL2TrackMatchedTPmtdTimeRes", "Time resolution of tracks matched to TP with sim cluster - ETL 2 hits; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meETL2TrackMatchedTPmtdTimePull_ = ibook.book1D("ETL2TrackMatchedTPmtdTimePull", "Time pull of tracks matched to TP with sim cluster - ETL 2 hits; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
+  meBTLTrackMatchedTPmtdDirectNoAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdDirectNoAssocEta", "Eta of tracks matched to TP with sim cluster (direct) - no track-MTD association;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdDirectNoAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdDirectNoAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - no track-MTD association;track pt [GeV]", 110, 0., 11.);
 
-  meETLTrackMatchedTPmtdCorrectAssocEta_ = ibook.book1D("ETLTrackMatchedTPmtdCorrectAssocEta", "Eta of tracks with time matched to TP with sim cluster - correct association;#eta_{RECO}", 40, 1.5, 3.3);
-  meETLTrackMatchedTPmtdCorrectAssocPt_ = ibook.book1D("ETLTrackMatchedTPmtdCorrectAssocPt", "Pt of tracks with time matched to TP with sim cluster - correct association; track pt [GeV]", 110, 0., 11.);
-  meETLTrackMatchedTPmtdCorrectAssocMVAQual_ = ibook.book1D("ETLTrackMatchedTPmtdCorrectAssocMVAQual", "MVA of tracks matched to TP with sim cluster - correct association; MVA score", 100, -1., 1.);
-  meETLTrackMatchedTPmtdCorrectAssocTimeRes_ = ibook.book1D("ETLTrackMatchedTPmtdCorrectAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster - correct association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meETLTrackMatchedTPmtdCorrectAssocTimePull_ = ibook.book1D("ETLTrackMatchedTPmtdCorrectAssocTimePull", "Time pull of tracks matched to TP with sim cluster - correct association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
 
-  meETL2TrackMatchedTPmtdCorrectAssocEta_ = ibook.book1D("ETL2TrackMatchedTPmtdCorrectAssocEta", "Eta of tracks with time matched to TP with sim cluster - ETL 2 hits - correct association;#eta_{RECO}", 40, 1.5, 3.3);
-  meETL2TrackMatchedTPmtdCorrectAssocPt_ = ibook.book1D("ETL2TrackMatchedTPmtdCorrectAssocPt", "Pt of tracks with time matched to TP with sim cluster - ETL 2 hits - correct association; track pt [GeV]", 110, 0., 11.);
-  meETL2TrackMatchedTPmtdCorrectAssocMVAQual_ = ibook.book1D("ETL2TrackMatchedTPmtdCorrectAssocMVAQual", "MVA of tracks matched to TP with sim cluster - ETL 2 hits - correct association; MVA score", 100, -1., 1.);
-  meETL2TrackMatchedTPmtdCorrectAssocTimeRes_ = ibook.book1D("ETL2TrackMatchedTPmtdCorrectAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster - ETL 2 hits - correct association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meETL2TrackMatchedTPmtdCorrectAssocTimePull_ = ibook.book1D("ETL2TrackMatchedTPmtdCorrectAssocTimePull", "Time pull of tracks matched to TP with sim cluster - ETL 2 hits - correct association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
+  meBTLTrackMatchedTPmtdOtherCorrectAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdOtherCorrectAssocEta", "Eta of tracks matched to TP with sim cluster (direct), correct track-MTD association;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdOtherCorrectAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdOtherCorrectAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - correct track-MTD association;track pt [GeV]", 110, 0., 11.);
+  meBTLTrackMatchedTPmtdOtherCorrectAssocMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdOtherCorrectAssocMVAQual", "MVA of tracks matched to TP with sim cluster (direct) - correct track-MTD association; MVA score", 100, -1., 1.);
+  meBTLTrackMatchedTPmtdOtherCorrectAssocTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdOtherCorrectAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster (direct) - correct track-MTD association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
+  meBTLTrackMatchedTPmtdOtherCorrectAssocTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdOtherCorrectAssocTimePull", "Time pull of tracks matched to TP with sim cluster (direct) - correct track-MTD association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
 
+  meBTLTrackMatchedTPmtdOtherWrongAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdOtherWrongAssocEta", "Eta of tracks matched to TP with sim cluster (direct) - wrong track-MTD association;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdOtherWrongAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdOtherWrongAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - wrong track-MTD association;track pt [GeV]", 110, 0., 11.);
+  meBTLTrackMatchedTPmtdOtherWrongAssocMVAQual_ = ibook.book1D("BTLTrackMatchedTPmtdOtherWrongAssocMVAQual", "MVA of tracks matched to TP with sim cluster (direct) - wrong track-MTD association; MVA score", 100, -1., 1.);
+  meBTLTrackMatchedTPmtdOtherWrongAssocTimeRes_ = ibook.book1D("BTLTrackMatchedTPmtdOtherWrongAssocTimeRes", "Time resolution of tracks matched to TP with sim cluster (direct) - wrong track-MTD association; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
+  meBTLTrackMatchedTPmtdOtherWrongAssocTimePull_ = ibook.book1D("BTLTrackMatchedTPmtdOtherWrongAssocTimePull", "Time pull of tracks matched to TP with sim cluster (direct) - wrong track-MTD association; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
+
+  meBTLTrackMatchedTPmtdOtherNoAssocEta_ = ibook.book1D("BTLTrackMatchedTPmtdOtherNoAssocEta", "Eta of tracks matched to TP with sim cluster (direct) - no track-MTD association;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPmtdOtherNoAssocPt_ = ibook.book1D("BTLTrackMatchedTPmtdOtherNoAssocPt", "Pt of tracks matched to TP with sim cluster (direct) - no track-MTD association;track pt [GeV]", 110, 0., 11.);
+
+  meBTLTrackMatchedTPnomtdAssocEta_ = ibook.book1D("BTLTrackMatchedTPnomtdAssocEta", "Eta of tracks matched to TP w/o sim cluster, with associated reco cluster  ;#eta_{RECO}", 40, 0., 1.6);
+  meBTLTrackMatchedTPnomtdAssocPt_ = ibook.book1D("BTLTrackMatchedTPnomtdAssocPt", "Pt of tracks matched to TP w/o sim cluster (direct), with associated reco cluster;track pt [GeV]", 110, 0., 11.);
 
   
-  meETLTrackTPSimMatchedEta_[0] = ibook.book1D(
-      "ETLTrackTPSimMatchedEtaneg", "ETL Reco track matched with TP with Simcluster (neg);#eta_{RECO}", 100, -3.2, -1.4);
-  meETLTrackTPSimMatchedPt_[0] = ibook.book1D(
-      "ETLTrackTPSimMatchedPtneg", "ETL Reco track matched with TP with Simcluster (neg);Pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackTPSimMatchedMVAQual_[0] = ibook.book1D(
-      "ETLTrackTPSimMatchedMVAQualneg", "ETL Reco track matched with TP with Simcluster (neg);MVA Qual", 100, -1., 1.);
-
-  meETL2TrackTPSimMatchedEta_[0] =
-      ibook.book1D("ETL2TrackTPSimMatchedEtaneg",
-                   "Two hits ETL Reco track matched with TP with Simcluster (neg);#eta_{RECO}",
-                   100,
-                   -3.2,
-                   -1.4);
-  meETL2TrackTPSimMatchedPt_[0] =
-      ibook.book1D("ETL2TrackTPSimMatchedPtneg",
-                   "Two hits ETL Reco track matched with TP with Simcluster (neg);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackTPSimMatchedMVAQual_[0] =
-      ibook.book1D("ETL2TrackTPSimMatchedMVAQualneg",
-                   "Two hits ETL Reco track matched with TP with Simcluster (neg);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETLTrackTPSimMatchedEta_[1] = ibook.book1D(
-      "ETLTrackTPSimMatchedEtapos", "ETL Reco track matched with TP with Simcluster (pos);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackTPSimMatchedPt_[1] = ibook.book1D(
-      "ETLTrackTPSimMatchedPtpos", "ETL Reco track matched with TP with Simcluster (pos);Pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackTPSimMatchedMVAQual_[1] = ibook.book1D(
-      "ETLTrackTPSimMatchedMVAQualpos", "ETL Reco track matched with TP with Simcluster (pos);MVA Qual", 100, -1., 1.);
-
-  meETL2TrackTPSimMatchedEta_[1] =
-      ibook.book1D("ETL2TrackTPSimMatchedEtapos",
-                   "Two hits ETL Reco track matched with TP with Simcluster (pos);#eta_{RECO}",
-                   100,
-                   1.4,
-                   3.2);
-  meETL2TrackTPSimMatchedPt_[1] =
-      ibook.book1D("ETL2TrackTPSimMatchedPtpos",
-                   "Two hits ETL Reco track matched with TP with Simcluster (pos);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackTPSimMatchedMVAQual_[1] =
-      ibook.book1D("ETL2TrackTPSimMatchedMVAQualpos",
-                   "Two hits ETL Reco track matched with TP with Simcluster (pos);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETLTrackTPSimRecoMatchedEta_[0] =
-      ibook.book1D("ETLTrackTPSimRecoMatchedEtaneg",
-                   "ETL Reco track matched with TP with Simcluster and recocluster (neg);#eta_{RECO}",
-                   100,
-                   -3.2,
-                   -1.4);
-  meETLTrackTPSimRecoMatchedPt_[0] =
-      ibook.book1D("ETLTrackTPSimRecoMatchedPtneg",
-                   "ETL Reco track matched with TP with Simcluster and recocluster (neg);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETLTrackTPSimRecoMatchedMVAQual_[0] =
-      ibook.book1D("ETLTrackTPSimRecoMatchedMVAQualneg",
-                   "ETL Reco track matched with TP with Simcluster and recocluster (neg);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETL2TrackTPSimRecoMatchedEta_[0] =
-      ibook.book1D("ETL2TrackTPSimRecoMatchedEtaneg",
-                   "Two hits ETL Reco track matched with TP with Simcluster and recocluster (neg);#eta_{RECO}",
-                   100,
-                   -3.2,
-                   -1.4);
-  meETL2TrackTPSimRecoMatchedPt_[0] =
-      ibook.book1D("ETL2TrackTPSimRecoMatchedPtneg",
-                   "Two hits ETL Reco track matched with TP with Simcluster and recocluster (neg);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackTPSimRecoMatchedMVAQual_[0] =
-      ibook.book1D("ETL2TrackTPSimRecoMatchedMVAQualneg",
-                   "Two hits ETL Reco track matched with TP with Simcluster and recocluster (neg);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETLTrackTPSimRecoMatchedEta_[1] =
-      ibook.book1D("ETLTrackTPSimRecoMatchedEtapos",
-                   "ETL Reco track matched with TP with Simcluster and recocluster (pos);#eta_{RECO}",
-                   100,
-                   1.4,
-                   3.2);
-  meETLTrackTPSimRecoMatchedPt_[1] =
-      ibook.book1D("ETLTrackTPSimRecoMatchedPtpos",
-                   "ETL Reco track matched with TP with Simcluster and recocluster (pos);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETLTrackTPSimRecoMatchedMVAQual_[1] =
-      ibook.book1D("ETLTrackTPSimRecoMatchedMVAQualpos",
-                   "ETL Reco track matched with TP with Simcluster and recocluster (pos);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETL2TrackTPSimRecoMatchedEta_[1] =
-      ibook.book1D("ETL2TrackTPSimRecoMatchedEtapos",
-                   "Two hits ETL Reco track matched with TP with Simcluster and recocluster (pos);#eta_{RECO}",
-                   100,
-                   1.4,
-                   3.2);
-  meETL2TrackTPSimRecoMatchedPt_[1] =
-      ibook.book1D("ETL2TrackTPSimRecoMatchedPtpos",
-                   "Two hits ETL Reco track matched with TP with Simcluster and recocluster (pos);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackTPSimRecoMatchedMVAQual_[1] =
-      ibook.book1D("ETL2TrackTPSimRecoMatchedMVAQualpos",
-                   "Two hits ETL Reco track matched with TP with Simcluster and recocluster (pos);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETLTrackTPSimNoRecoMatchedEta_[0] = ibook.book1D("ETLTrackTPSimNoRecoMatchedEtaneg",
-                                                     "ETL TP with SimCluster but no reco cluster (neg);#eta_{RECO}",
-                                                     100,
-                                                     -3.2,
-                                                     -1.4);
-  meETLTrackTPSimNoRecoMatchedPt_[0] = ibook.book1D(
-      "ETLTrackTPSimNoRecoMatchedPtneg", "ETL TP with SimCluster but no reco cluster (neg);Pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackTPSimNoRecoMatchedMVAQual_[0] = ibook.book1D(
-      "ETLTrackTPSimNoRecoMatchedMVAQualneg", "ETL TP with SimCluster but no reco cluster (neg);MVA Qual", 100, -1., 1.);
-
-  meETLTrackTPSimNoRecoMatchedEta_[1] = ibook.book1D(
-      "ETLTrackTPSimNoRecoMatchedEtapos", "ETL TP with SimCluster but no reco cluster (pos);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackTPSimNoRecoMatchedPt_[1] = ibook.book1D(
-      "ETLTrackTPSimNoRecoMatchedPtpos", "ETL TP with SimCluster but no reco cluster (pos);Pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackTPSimNoRecoMatchedMVAQual_[1] = ibook.book1D(
-      "ETLTrackTPSimNoRecoMatchedMVAQualpos", "ETL TP with SimCluster but no reco cluster (pos);MVA Qual", 100, -1., 1.);
-
-  meETL2TrackTPSimNoRecoMatchedEta_[0] =
-      ibook.book1D("ETL2TrackTPSimNoRecoMatchedEtaneg",
-                   "Two hits ETL TP with SimCluster but no reco cluster (neg);#eta_{RECO}",
-                   100,
-                   -3.2,
-                   -1.4);
-  meETL2TrackTPSimNoRecoMatchedPt_[0] =
-      ibook.book1D("ETL2TrackTPSimNoRecoMatchedPtneg",
-                   "Two hits ETL TP with SimCluster but no reco cluster (neg);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackTPSimNoRecoMatchedMVAQual_[0] =
-      ibook.book1D("ETL2TrackTPSimNoRecoMatchedMVAQualneg",
-                   "Two hits ETL TP with SimCluster but no reco cluster (neg);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETL2TrackTPSimNoRecoMatchedEta_[1] =
-      ibook.book1D("ETL2TrackTPSimNoRecoMatchedEtapos",
-                   "Two hits ETL TP with SimCluster but no reco cluster (pos);#eta_{RECO}",
-                   100,
-                   1.4,
-                   3.2);
-  meETL2TrackTPSimNoRecoMatchedPt_[1] =
-      ibook.book1D("ETL2TrackTPSimNoRecoMatchedPtpos",
-                   "Two hits ETL TP with SimCluster but no reco cluster (pos);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackTPSimNoRecoMatchedMVAQual_[1] =
-      ibook.book1D("ETL2TrackTPSimNoRecoMatchedMVAQualpos",
-                   "Two hits ETL TP with SimCluster but no reco cluster (pos);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-
-  meETLTrackSimToSimMatchedEta_[0] =
-      ibook.book1D("ETLTrackSimToSimMatchedEtaneg",
-                   "ETL Reco track matched with recocluster with TP Simcluster (neg);#eta_{RECO}",
-                   100,
-                   -3.2,
-                   -1.4);
-  meETLTrackSimToSimMatchedPt_[0] =
-      ibook.book1D("ETLTrackSimToSimMatchedPtneg",
-                   "ETL Reco track matched with recocluster with TP Simcluster (neg);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETLTrackSimToSimMVAQual_[0] =
-      ibook.book1D("ETLTrackSimToSimMVAQualneg",
-                   "ETL Reco track matched with recocluster with TP Simcluster (neg);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-  meETLTrackSimToSimRes_[0] = ibook.book1D(
-      "ETLTrackSimToSimResneg", "ETL Reco track matched with Simcluster (neg);t_{rec} - t_{sim} [ns]", 120, -0.15, 0.15);
-  meETLTrackSimToSimPull_[0] =
-      ibook.book1D("ETLTrackSimToSimPullneg",
-                   "ETL Reco track matched with Simcluster (neg);(t_{rec} - t_{sim})/#sigma_{t}",
-                   50,
-                   -5.,
-                   5.);
-
-  meETL2TrackSimToSimMatchedEta_[0] =
-      ibook.book1D("ETL2TrackSimToSimMatchedEtaneg",
-                   "Two hits ETL Reco track matched with recocluster with TP Simcluster (neg);#eta_{RECO}",
-                   100,
-                   -3.2,
-                   -1.4);
-  meETL2TrackSimToSimMatchedPt_[0] =
-      ibook.book1D("ETL2TrackSimToSimMatchedPtneg",
-                   "Two hits ETL Reco track matched with recocluster with TP Simcluster (neg);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackSimToSimMVAQual_[0] =
-      ibook.book1D("ETL2TrackSimToSimMVAQualneg",
-                   "Two hits ETL Reco track matched with recocluster with TP Simcluster (neg);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-  meETL2TrackSimToSimRes_[0] = ibook.book1D("ETL2TrackSimToSimResneg",
-                                            "ETL Reco track matched with Simcluster (neg);t_{rec} - t_{sim} [ns]",
-                                            120,
-                                            -0.15,
-                                            0.15);
-  meETL2TrackSimToSimPull_[0] =
-      ibook.book1D("ETL2TrackSimToSimPullneg",
-                   "Two hits ETL Reco track matched with Simcluster (neg);(t_{rec} - t_{sim})/#sigma_{t}",
-                   50,
-                   -5.,
-                   5.);
-
-  meETLTrackSimToSimMatchedEta_[1] =
-      ibook.book1D("ETLTrackSimToSimMatchedEtapos",
-                   "ETL Reco track matched with recocluster with TP Simcluster (pos);#eta_{RECO}",
-                   100,
-                   1.4,
-                   3.2);
-  meETLTrackSimToSimMatchedPt_[1] =
-      ibook.book1D("ETLTrackSimToSimMatchedPtpos",
-                   "ETL Reco track matched with recocluster with TP Simcluster (pos);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETLTrackSimToSimMVAQual_[1] =
-      ibook.book1D("ETLTrackSimToSimMVAQualpos",
-                   "ETL Reco track matched with recocluster with TP Simcluster (pos);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-  meETLTrackSimToSimRes_[1] = ibook.book1D(
-      "ETLTrackSimToSimRespos", "ETL Reco track matched with Simcluster (pos);t_{rec} - t_{sim} [ns]", 120, -0.15, 0.15);
-  meETLTrackSimToSimPull_[1] =
-      ibook.book1D("ETLTrackSimToSimPullpos",
-                   "ETL Reco track matched with Simcluster (pos);(t_{rec} - t_{sim})/#sigma_{t}",
-                   50,
-                   -5.,
-                   5.);
-
-  meETL2TrackSimToSimMatchedEta_[1] =
-      ibook.book1D("ETL2TrackSimToSimMatchedEtapos",
-                   "Two hits ETL Reco track matched with recocluster with TP Simcluster (pos);#eta_{RECO}",
-                   100,
-                   1.4,
-                   3.2);
-  meETL2TrackSimToSimMatchedPt_[1] =
-      ibook.book1D("ETL2TrackSimToSimMatchedPtpos",
-                   "Two hits ETL Reco track matched with recocluster with TP Simcluster (pos);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETL2TrackSimToSimMVAQual_[1] =
-      ibook.book1D("ETL2TrackSimToSimMVAQualpos",
-                   "Two hits ETL Reco track matched with recocluster with TP Simcluster (pos);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-  meETL2TrackSimToSimRes_[1] =
-      ibook.book1D("ETL2TrackSimToSimRespos",
-                   "Two hits ETL Reco track matched with Simcluster (pos);t_{rec} - t_{sim} [ns]",
-                   120,
-                   -0.15,
-                   0.15);
-  meETL2TrackSimToSimPull_[1] =
-      ibook.book1D("ETL2TrackSimToSimPullpos",
-                   "Two hits ETL Reco track matched with Simcluster (pos);(t_{rec} - t_{sim})/#sigma_{t}",
-                   50,
-                   -5.,
-                   5.);
-
-  meETLTrackNoSimToSimMatchedEta_[0] = ibook.book1D("ETLTrackNoSimToSimMatchedEtaneg",
-                                                    "ETL Reco track not matched with Simcluster (neg);#eta_{RECO}",
-                                                    100,
-                                                    -3.2,
-                                                    -1.4);
-  meETLTrackNoSimToSimMatchedPt_[0] = ibook.book1D(
-      "ETLTrackNoSimToSimMatchedPtneg", "ETL Reco track not matched with Simcluster (neg);Pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackNoSimToSimMatchedMVAQual_[0] = ibook.book1D(
-      "ETLTrackNoSimToSimMatchedMVAQualneg", "ETL Reco track not matched with Simcluster (neg);MVA Qual", 100, -1., 1.);
-  meETLTrackNoSimToSimRes_[0] = ibook.book1D("ETLTrackNoSimToSimResneg",
-                                             "ETL Reco track not matched with Simcluster (neg);t_{rec} - t_{sim} [ns]",
-                                             120,
-                                             -0.15,
-                                             0.15);
-  meETLTrackNoSimToSimPull_[0] =
-      ibook.book1D("ETLTrackNoSimToSimPullneg",
-                   "ETL Reco track not matched with Simcluster (neg);(t_{rec} - t_{sim})/#sigma_{t}",
-                   50,
-                   -5.,
-                   5.);
-
-  meETLTrackNoSimToSimMatchedEta_[1] = ibook.book1D(
-      "ETLTrackNoSimToSimMatchedEtapos", "ETL Reco track not matched with Simcluster (pos);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackNoSimToSimMatchedPt_[1] = ibook.book1D(
-      "ETLTrackNoSimToSimMatchedPtpos", "ETL Reco track not matched with Simcluster (pos);Pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackNoSimToSimMatchedMVAQual_[1] = ibook.book1D(
-      "ETLTrackNoSimToSimMatchedMVAQualpos", "ETL Reco track not matched with Simcluster (pos);MVA Qual", 100, -1., 1.);
-  meETLTrackNoSimToSimRes_[1] = ibook.book1D("ETLTrackNoSimToSimRespos",
-                                             "ETL Reco track not matched with Simcluster (pos);t_{rec} - t_{sim} [ns]",
-                                             120,
-                                             -0.15,
-                                             0.15);
-  meETLTrackNoSimToSimPull_[1] =
-      ibook.book1D("ETLTrackNoSimToSimPullpos",
-                   "ETL Reco track not matched with Simcluster (pos);(t_{rec} - t_{sim})/#sigma_{t}",
-                   50,
-                   -5.,
-                   5.);
-
-  meETLTrackFakeNoSimToSimEta_[0] =
-      ibook.book1D("ETLTrackFakeNoSimToSimEtaneg",
-                   "ETL Fake association: TP with no Simcluster matched (neg);#eta_{RECO}",
-                   100,
-                   -3.2,
-                   -1.4);
-  meETLTrackFakeNoSimToSimPt_[0] =
-      ibook.book1D("ETLTrackFakeNoSimToSimPtneg",
-                   "ETL Fake association: TP with no Simcluster matched (neg);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETLTrackFakeNoSimToSimMVAQual_[0] =
-      ibook.book1D("ETLTrackFakeNoSimToSimMVAQualneg",
-                   "ETL Fake association: TP with no Simcluster matched (neg);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-  meETLTrackFakeNoSimToSimRes_[0] =
-      ibook.book1D("ETLTrackFakeNoSimToSimResneg",
-                   "ETL Fake association: TP with no Simcluster matched (neg);Time Resolution [ns]",
-                   100,
-                   -1.,
-                   1.);
-  meETLTrackFakeNoSimToSimPull_[0] = ibook.book1D("ETLTrackFakeNoSimToSimPullneg",
-                                                  "ETL Fake association: TP with no Simcluster matched (neg);Time Pull",
-                                                  100,
-                                                  -5.,
-                                                  5.);
-
-  meETLTrackFakeNoSimToSimEta_[1] =
-      ibook.book1D("ETLTrackFakeNoSimToSimEtapos",
-                   "ETL Fake association: TP with no Simcluster matched (pos);#eta_{RECO}",
-                   100,
-                   1.4,
-                   3.2);
-  meETLTrackFakeNoSimToSimPt_[1] =
-      ibook.book1D("ETLTrackFakeNoSimToSimPtpos",
-                   "ETL Fake association: TP with no Simcluster matched (pos);Pt_{RECO} [GeV]",
-                   50,
-                   0,
-                   10);
-  meETLTrackFakeNoSimToSimMVAQual_[1] =
-      ibook.book1D("ETLTrackFakeNoSimToSimMVAQualpos",
-                   "ETL Fake association: TP with no Simcluster matched (pos);MVA Qual",
-                   100,
-                   -1.,
-                   1.);
-  meETLTrackFakeNoSimToSimRes_[1] =
-      ibook.book1D("ETLTrackFakeNoSimToSimRespos",
-                   "ETL Fake association: TP with no Simcluster matched (pos);Time Resolution [ns]",
-                   100,
-                   -1.,
-                   1.);
-  meETLTrackFakeNoSimToSimPull_[1] = ibook.book1D("ETLTrackFakeNoSimToSimPullpos",
-                                                  "ETL Fake association: TP with no Simcluster matched (pos);Time Pull",
-                                                  100,
-                                                  -5.,
-                                                  5.);
-
-  meBTLTrackTPNoSimEta_ = ibook.book1D(
-      "BTLTrackTPNoSimEta", "BTL Reco track matched with TP with No Simcluster;#eta_{RECO}", 100, -1.6, 1.6);
-  meBTLTrackTPNoSimPt_ =
-      ibook.book1D("BTLTrackTPNoSimPt", "BTL Reco track matched with TP with No Simcluster;Pt_{RECO} [GeV]", 50, 0, 10);
-
-  meETLTrackTPNoSimEta_[0] = ibook.book1D(
-      "ETLTrackTPNoSimEtaneg", "ETL Reco track matched with TP with No Simcluster (neg);#eta_{RECO}", 100, -3.2, -1.4);
-  meETLTrackTPNoSimPt_[0] = ibook.book1D(
-      "ETLTrackTPNoSimPtneg", "ETL Reco track matched with TP with No Simcluster (neg);Pt_{RECO} [GeV]", 50, 0, 10);
-
-  meETLTrackTPNoSimEta_[1] = ibook.book1D(
-      "ETLTrackTPNoSimEtapos", "ETL Reco track matched with TP with No Simcluster (pos);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackTPNoSimPt_[1] = ibook.book1D(
-      "ETLTrackTPNoSimPtpos", "ETL Reco track matched with TP with No Simcluster (pos);Pt_{RECO} [GeV]", 50, 0, 10);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -2157,7 +1467,7 @@ void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<edm::InputTag>("SimTag", edm::InputTag("mix", "MergedTrackTruth"));
   desc.add<edm::InputTag>("TPtoRecoTrackAssoc", edm::InputTag("trackingParticleRecoTrackAsssociation"));
   desc.add<edm::InputTag>("tp2SimAssociationMapTag", edm::InputTag("mtdSimLayerClusterToTPAssociation"));
-  desc.add<edm::InputTag>("s2rAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
+  //desc.add<edm::InputTag>("s2rAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
   desc.add<edm::InputTag>("r2sAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
   desc.add<edm::InputTag>("btlRecHits", edm::InputTag("mtdRecHits", "FTLBarrel"));
   desc.add<edm::InputTag>("etlRecHits", edm::InputTag("mtdRecHits", "FTLEndcap"));
@@ -2242,5 +1552,17 @@ bool MtdTracksValidation::isSameCluster(const FTLCluster& clu1, const FTLCluster
   return clu1.id() == clu2.id() && clu1.size() == clu2.size() && clu1.x() == clu2.x() && clu1.y() == clu2.y() &&
          clu1.time() == clu2.time();
 }
+
+void MtdTracksValidation::fillTrackClusterMatchingHistograms(MonitorElement* me1, MonitorElement* me2, MonitorElement* me3, MonitorElement* me4, MonitorElement* me5, float var1, float var2, float var3, float var4, float var5, bool flag){
+  me1->Fill(var1);
+  me2->Fill(var2);
+  if (flag){
+    me3->Fill(var3);
+    me4->Fill(var4);
+    me5->Fill(var5);
+  }
+  
+}
+
 
 DEFINE_FWK_MODULE(MtdTracksValidation);
