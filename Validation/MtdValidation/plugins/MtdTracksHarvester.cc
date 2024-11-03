@@ -44,7 +44,8 @@ private:
   MonitorElement* meTPEtaMatchEff_;
   MonitorElement* meTPPtMatchEtl2Eff_;
   MonitorElement* meTPEtaMatchEtl2Eff_;
-  
+
+  // - BTL track-mtd matching efficiencies
   MonitorElement* meBTLTPmtdDirectEtaSelEff_; 
   MonitorElement* meBTLTPmtdDirectPtSelEff_;
   MonitorElement* meBTLTPmtdOtherEtaSelEff_; 
@@ -69,18 +70,32 @@ private:
   MonitorElement* meBTLTPnomtdEtaMatchEff_; 
   MonitorElement* meBTLTPnomtdPtMatchEff_;
 
-
-  MonitorElement* meETLTPmtdEtaSelEff_; 
-  MonitorElement* meETLTPmtdPtSelEff_;
-  MonitorElement* meETLTPnomtdEtaSelEff_; 
+  // - ETL track-mtd matching efficiencies
+  MonitorElement* meETLTPmtd1EtaSelEff_;
+  MonitorElement* meETLTPmtd1PtSelEff_;
+  MonitorElement* meETLTPmtd2EtaSelEff_;
+  MonitorElement* meETLTPmtd2PtSelEff_;
+  MonitorElement* meETLTPnomtdEtaSelEff_;
   MonitorElement* meETLTPnomtdPtSelEff_;
 
-  // Quali cat per etl??
-  //MonitorElement* meBTLTPmtdAssocEtaMatchEff_; 
-  //MonitorElement* meBTLTPmtdAssocPtMatchEff_;
-  //MonitorElement* meBTLTPmtdNoAssocEtaMatchEff_; 
-  //MonitorElement* meBTLTPmtdNoAssocPtMatchEff_;
+  MonitorElement* meETLTPmtd1CorrectAssocEtaMatchEff_; 
+  MonitorElement* meETLTPmtd1CorrectAssocPtMatchEff_;
+  MonitorElement* meETLTPmtd1WrongAssocEtaMatchEff_; 
+  MonitorElement* meETLTPmtd1WrongAssocPtMatchEff_;
+  MonitorElement* meETLTPmtd1NoAssocEtaMatchEff_; 
+  MonitorElement* meETLTPmtd1NoAssocPtMatchEff_;
   
+  MonitorElement* meETLTPmtd2CorrectAssocEtaMatchEff_; 
+  MonitorElement* meETLTPmtd2CorrectAssocPtMatchEff_;
+  MonitorElement* meETLTPmtd2WrongAssocEtaMatchEff_; 
+  MonitorElement* meETLTPmtd2WrongAssocPtMatchEff_;
+  MonitorElement* meETLTPmtd2NoAssocEtaMatchEff_; 
+  MonitorElement* meETLTPmtd2NoAssocPtMatchEff_;
+  
+  MonitorElement* meETLTPnomtdEtaMatchEff_; 
+  MonitorElement* meETLTPnomtdPtMatchEff_;
+
+  //
   MonitorElement* meNoTimeFraction_;
   MonitorElement* meExtraPtEff_;
   MonitorElement* meExtraPtEtl2Eff_;
@@ -150,7 +165,6 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meETLTrackEffEta2MtdLowPt0 = igetter.get(folder_ + "TrackETLEffEta2MtdLowPt0");
   MonitorElement* meETLTrackEffEta2MtdLowPt1 = igetter.get(folder_ + "TrackETLEffEta2MtdLowPt1");
   
-  
   MonitorElement* meTrackPtTot = igetter.get(folder_ + "TrackPtTot");
   MonitorElement* meExtraPtMtd = igetter.get(folder_ + "ExtraPtMtd");
   MonitorElement* meExtraPtEtl2Mtd = igetter.get(folder_ + "ExtraPtEtl2Mtd");
@@ -191,11 +205,31 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meBTLTrackMatchedTPnomtdAssocEta = igetter.get(folder_ + "BTLTrackMatchedTPnomtdAssocEta");
   MonitorElement* meBTLTrackMatchedTPnomtdAssocPt = igetter.get(folder_ + "BTLTrackMatchedTPnomtdAssocPt");
 
-  MonitorElement* meETLTrackMatchedTPmtdEta = igetter.get(folder_ + "ETLTrackMatchedTPmtdEta");
-  MonitorElement* meETLTrackMatchedTPmtdPt = igetter.get(folder_ + "ETLTrackMatchedTPmtdPt");
+  MonitorElement* meETLTrackMatchedTPmtd1Eta = igetter.get(folder_ + "ETLTrackMatchedTPmtd1Eta");
+  MonitorElement* meETLTrackMatchedTPmtd1Pt = igetter.get(folder_ + "ETLTrackMatchedTPmtd1Pt");
+  MonitorElement* meETLTrackMatchedTPmtd2Eta = igetter.get(folder_ + "ETLTrackMatchedTPmtd2Eta"); 
+  MonitorElement* meETLTrackMatchedTPmtd2Pt = igetter.get(folder_ + "ETLTrackMatchedTPmtd2Pt"); ; 
   MonitorElement* meETLTrackMatchedTPnomtdEta = igetter.get(folder_ + "ETLTrackMatchedTPnomtdEta");
   MonitorElement* meETLTrackMatchedTPnomtdPt = igetter.get(folder_ + "ETLTrackMatchedTPnomtdPt");
+
+  MonitorElement* meETLTrackMatchedTPmtd1CorrectAssocEta = igetter.get(folder_ + "ETLTrackMatchedTPmtd1CorrectAssocEta");
+  MonitorElement* meETLTrackMatchedTPmtd1CorrectAssocPt = igetter.get(folder_ + "ETLTrackMatchedTPmtd1CorrectAssocPt");
+  MonitorElement* meETLTrackMatchedTPmtd1WrongAssocEta = igetter.get(folder_ + "ETLTrackMatchedTPmtd1WrongAssocEta");
+  MonitorElement* meETLTrackMatchedTPmtd1WrongAssocPt = igetter.get(folder_ + "ETLTrackMatchedTPmtd1WrongAssocPt");
+  MonitorElement* meETLTrackMatchedTPmtd1NoAssocEta = igetter.get(folder_ + "ETLTrackMatchedTPmtd1NoAssocEta");
+  MonitorElement* meETLTrackMatchedTPmtd1NoAssocPt = igetter.get(folder_ + "ETLTrackMatchedTPmtd1NoAssocPt");
+
+  MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocEta = igetter.get(folder_ + "ETLTrackMatchedTPmtd2CorrectAssocEta");
+  MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocPt = igetter.get(folder_ + "ETLTrackMatchedTPmtd2CorrectAssocPt");
+  MonitorElement* meETLTrackMatchedTPmtd2WrongAssocEta = igetter.get(folder_ + "ETLTrackMatchedTPmtd2WrongAssocEta");
+  MonitorElement* meETLTrackMatchedTPmtd2WrongAssocPt = igetter.get(folder_ + "ETLTrackMatchedTPmtd2WrongAssocPt");
+  MonitorElement* meETLTrackMatchedTPmtd2NoAssocEta = igetter.get(folder_ + "ETLTrackMatchedTPmtd2NoAssocEta");
+  MonitorElement* meETLTrackMatchedTPmtd2NoAssocPt = igetter.get(folder_ + "ETLTrackMatchedTPmtd2NoAssocPt");
   
+  MonitorElement* meETLTrackMatchedTPnomtdAssocEta = igetter.get(folder_ + "ETLTrackMatchedTPnomtdAssocEta");
+  MonitorElement* meETLTrackMatchedTPnomtdAssocPt = igetter.get(folder_ + "ETLTrackMatchedTPnomtdAssocPt");
+  
+  //  
   MonitorElement* meTrackNumHits = igetter.get(folder_ + "TrackNumHits");
   MonitorElement* meTrackNumHitsNT = igetter.get(folder_ + "TrackNumHitsNT");
   MonitorElement* meExtraPhiAtBTL = igetter.get(folder_ + "ExtraPhiAtBTL");
@@ -215,17 +249,14 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
       !meTrackMatchedTPEffPtTotLV || !meTrackMatchedTPEffPtMtd || !meTrackMatchedTPEffPtEtl2Mtd ||
       !meTrackMatchedTPEffEtaTot ||
       !meTrackMatchedTPEffEtaTotLV ||!meTrackMatchedTPEffEtaMtd || !meTrackMatchedTPEffEtaEtl2Mtd ||
-      
       !meBTLTrackMatchedTPmtdDirectEta || !meBTLTrackMatchedTPmtdDirectPt || !meBTLTrackMatchedTPmtdOtherEta || !meBTLTrackMatchedTPmtdOtherPt || !meBTLTrackMatchedTPnomtdEta || !meBTLTrackMatchedTPnomtdPt ||
-
       !meBTLTrackMatchedTPmtdDirectCorrectAssocEta || !meBTLTrackMatchedTPmtdDirectCorrectAssocPt || !meBTLTrackMatchedTPmtdDirectWrongAssocEta || !meBTLTrackMatchedTPmtdDirectWrongAssocPt || !meBTLTrackMatchedTPmtdDirectNoAssocEta || !meBTLTrackMatchedTPmtdDirectNoAssocPt ||
-
       !meBTLTrackMatchedTPmtdOtherCorrectAssocEta || !meBTLTrackMatchedTPmtdOtherCorrectAssocPt || !meBTLTrackMatchedTPmtdOtherWrongAssocEta || !meBTLTrackMatchedTPmtdOtherWrongAssocPt || !meBTLTrackMatchedTPmtdOtherNoAssocEta || !meBTLTrackMatchedTPmtdOtherNoAssocPt ||
-
       !meBTLTrackMatchedTPnomtdAssocEta || !meBTLTrackMatchedTPnomtdAssocPt ||
-
-      !meETLTrackMatchedTPmtdEta || !meETLTrackMatchedTPmtdPt || !meETLTrackMatchedTPnomtdEta || !meETLTrackMatchedTPnomtdPt ||
-      
+      !meETLTrackMatchedTPmtd1Eta || !meETLTrackMatchedTPmtd1Pt || !meETLTrackMatchedTPmtd2Eta || !meETLTrackMatchedTPmtd2Pt || !meETLTrackMatchedTPnomtdEta || !meETLTrackMatchedTPnomtdPt ||
+      !meETLTrackMatchedTPmtd1CorrectAssocEta || !meETLTrackMatchedTPmtd1CorrectAssocPt || !meETLTrackMatchedTPmtd1WrongAssocEta || !meETLTrackMatchedTPmtd1WrongAssocPt || !meETLTrackMatchedTPmtd1NoAssocEta || !meETLTrackMatchedTPmtd1NoAssocPt ||
+      !meETLTrackMatchedTPmtd2CorrectAssocEta || !meETLTrackMatchedTPmtd2CorrectAssocPt || !meETLTrackMatchedTPmtd2WrongAssocEta || !meETLTrackMatchedTPmtd2WrongAssocPt || !meETLTrackMatchedTPmtd2NoAssocEta || !meETLTrackMatchedTPmtd2NoAssocPt ||
+      !meETLTrackMatchedTPnomtdAssocEta || !meETLTrackMatchedTPnomtdAssocPt ||
       !meTrackNumHits || !meTrackNumHitsNT ||
       !meTrackPtTot || !meTrackEtaTot || !meExtraPtMtd || !meExtraPtEtl2Mtd || !meExtraEtaMtd || !meExtraEtaEtl2Mtd ||
       !meExtraPhiAtBTL || !meExtraPhiAtBTLmatched || !meExtraBTLeneInCone || !meExtraMTDfailExtenderEta ||
@@ -427,8 +458,8 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   computeEfficiency1D(meTrackMatchedTPEffEtaEtl2Mtd, meTrackMatchedTPEffEtaTot, meTPEtaMatchEtl2Eff_);
 
 
-  // Track-cluster matching efficiencies based on mc truth
-  
+  // == Track-cluster matching efficiencies based on mc truth
+  // -- BTL
   meBTLTPmtdDirectEtaSelEff_ = ibook.book1D("BTLTPmtdDirectEtaSelEff",
 					    "Track selected efficiency TP-mtd hit (direct) VS Eta",
 					    meBTLTrackEffEtaTot->getNbinsX(),
@@ -597,22 +628,38 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
 
 
   // -- ETL
-  meETLTPmtdEtaSelEff_ = ibook.book1D("ETLTPmtdEtaSelEff",
-				      "Track selected efficiency TP-mtd hit VS Eta",
-				      meETLTrackEffEtaTot->getNbinsX(),
-				      meETLTrackEffEtaTot->getTH1()->GetXaxis()->GetXmin(),
-				      meETLTrackEffEtaTot->getTH1()->GetXaxis()->GetXmax());
-  meETLTPmtdEtaSelEff_->getTH1()->SetMinimum(0.);
-  computeEfficiency1D(meETLTrackMatchedTPmtdEta, meETLTrackEffEtaTot, meETLTPmtdEtaSelEff_);
+  meETLTPmtd1EtaSelEff_ = ibook.book1D("ETLTPmtd1EtaSelEff",
+				       "Track selected efficiency TP-mtd hit (>=1 sim hit) VS Eta",
+				       meETLTrackEffEtaTot->getNbinsX(),
+				       meETLTrackEffEtaTot->getTH1()->GetXaxis()->GetXmin(),
+				       meETLTrackEffEtaTot->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1EtaSelEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1Eta, meETLTrackEffEtaTot, meETLTPmtd1EtaSelEff_);
   
-  meETLTPmtdPtSelEff_ = ibook.book1D("ETLTPmtdPtSelEff",
-				     "Track selected efficiency TP-mtd hit VS Pt",
-				     meETLTrackEffPtTot->getNbinsX(),
-				     meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmin(),
-				     meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmax());
-  meETLTPmtdPtSelEff_->getTH1()->SetMinimum(0.);
-  computeEfficiency1D(meETLTrackMatchedTPmtdPt, meETLTrackEffPtTot, meETLTPmtdPtSelEff_);
-
+  meETLTPmtd1PtSelEff_ = ibook.book1D("ETLTPmtd1PtSelEff",
+				      "Track selected efficiency TP-mtd hit (>=1 sim hit) VS Pt",
+				      meETLTrackEffPtTot->getNbinsX(),
+				      meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmin(),
+				      meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1PtSelEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1Pt, meETLTrackEffPtTot, meETLTPmtd1PtSelEff_);
+  
+  meETLTPmtd2EtaSelEff_ = ibook.book1D("ETLTPmtd2EtaSelEff",
+				       "Track selected efficiency TP-mtd hit (2 sim hits) VS Eta",
+				       meETLTrackEffEtaTot->getNbinsX(),
+				       meETLTrackEffEtaTot->getTH1()->GetXaxis()->GetXmin(),
+				       meETLTrackEffEtaTot->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2EtaSelEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2Eta, meETLTrackEffEtaTot, meETLTPmtd2EtaSelEff_);
+  
+  meETLTPmtd2PtSelEff_ = ibook.book1D("ETLTPmtd2PtSelEff",
+				      "Track selected efficiency TP-mtd hit (2 sim hits) VS Pt",
+				      meETLTrackEffPtTot->getNbinsX(),
+				      meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmin(),
+				      meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2PtSelEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2Pt, meETLTrackEffPtTot, meETLTPmtd2PtSelEff_);		     
+  
   meETLTPnomtdEtaSelEff_ = ibook.book1D("ETLTPnomtdEtaSelEff",
 					"Track selected efficiency TP-no mtd hit VS Eta",
 					meETLTrackEffEtaTot->getNbinsX(),
@@ -620,17 +667,133 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
 					meETLTrackEffEtaTot->getTH1()->GetXaxis()->GetXmax());
   meETLTPnomtdEtaSelEff_->getTH1()->SetMinimum(0.);
   computeEfficiency1D(meETLTrackMatchedTPnomtdEta, meETLTrackEffEtaTot, meETLTPnomtdEtaSelEff_);
-
+  
   meETLTPnomtdPtSelEff_ = ibook.book1D("ETLTPnomtdPtSelEff",
-				      "Track selected efficiency TP-no mtd hit VS Pt",
-				      meETLTrackEffPtTot->getNbinsX(),
+				       "Track selected efficiency TP-no mtd hit VS Pt",
+				       meETLTrackEffPtTot->getNbinsX(),
 				       meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmin(),
-				      meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmax());
+				       meETLTrackEffPtTot->getTH1()->GetXaxis()->GetXmax());
   meETLTPnomtdPtSelEff_->getTH1()->SetMinimum(0.);
   computeEfficiency1D(meETLTrackMatchedTPnomtdPt, meETLTrackEffPtTot, meETLTPnomtdPtSelEff_);
   
-
   
+  meETLTPmtd1CorrectAssocEtaMatchEff_ = ibook.book1D("ETLTPmtd1CorrectAssocEtaMatchEff",
+						     "Track efficiency TP-mtd hit (>=1 sim hit), correct reco match VS Eta",
+						     meETLTrackMatchedTPmtd1Eta->getNbinsX(),
+						     meETLTrackMatchedTPmtd1Eta->getTH1()->GetXaxis()->GetXmin(),
+						     meETLTrackMatchedTPmtd1Eta->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1CorrectAssocEtaMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1CorrectAssocEta, meETLTrackMatchedTPmtd1Eta, meETLTPmtd1CorrectAssocEtaMatchEff_);
+  
+  meETLTPmtd1CorrectAssocPtMatchEff_ = ibook.book1D("ETLTPmtd1CorrectAssocPtMatchEff",
+						    "Track efficiency TP-mtd hit (>=1 sim hit), correct reco match VS Pt",
+						    meETLTrackMatchedTPmtd1Pt->getNbinsX(),
+						    meETLTrackMatchedTPmtd1Pt->getTH1()->GetXaxis()->GetXmin(),
+						    meETLTrackMatchedTPmtd1Pt->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1CorrectAssocPtMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1CorrectAssocPt, meETLTrackMatchedTPmtd1Pt, meETLTPmtd1CorrectAssocPtMatchEff_);
+  
+  meETLTPmtd1WrongAssocEtaMatchEff_ = ibook.book1D("ETLTPmtd1WrongAssocEtaMatchEff",
+						   "Track efficiency TP-mtd hit (>=1 sim hit), incorrect reco match VS Eta",
+						   meETLTrackMatchedTPmtd1Eta->getNbinsX(),
+						   meETLTrackMatchedTPmtd1Eta->getTH1()->GetXaxis()->GetXmin(),
+						   meETLTrackMatchedTPmtd1Eta->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1WrongAssocEtaMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1WrongAssocEta, meETLTrackMatchedTPmtd1Eta, meETLTPmtd1WrongAssocEtaMatchEff_);
+  
+  meETLTPmtd1WrongAssocPtMatchEff_ = ibook.book1D("ETLTPmtd1WrongAssocPtMatchEff",
+						  "Track efficiency TP-mtd hit (>=1 sim hit), incorrect reco match VS Pt",
+						  meETLTrackMatchedTPmtd1Pt->getNbinsX(),
+						  meETLTrackMatchedTPmtd1Pt->getTH1()->GetXaxis()->GetXmin(),
+						  meETLTrackMatchedTPmtd1Pt->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1WrongAssocPtMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1WrongAssocPt, meETLTrackMatchedTPmtd1Pt, meETLTPmtd1WrongAssocPtMatchEff_);
+  
+  
+  meETLTPmtd1NoAssocEtaMatchEff_ = ibook.book1D("ETLTPmtd1NoAssocEtaMatchEff",
+						"Track efficiency TP-mtd hit (>=1 sim hit), no reco match VS Eta",
+						meETLTrackMatchedTPmtd1Eta->getNbinsX(),
+						meETLTrackMatchedTPmtd1Eta->getTH1()->GetXaxis()->GetXmin(),
+						meETLTrackMatchedTPmtd1Eta->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1NoAssocEtaMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1NoAssocEta, meETLTrackMatchedTPmtd1Eta, meETLTPmtd1NoAssocEtaMatchEff_);
+  
+  meETLTPmtd1NoAssocPtMatchEff_ = ibook.book1D("ETLTPmtd1NoAssocPtMatchEff",
+					       "Track efficiency TP-mtd hit (>=1 sim hit), no reco match VS Pt",
+					       meETLTrackMatchedTPmtd1Pt->getNbinsX(),
+					       meETLTrackMatchedTPmtd1Pt->getTH1()->GetXaxis()->GetXmin(),
+					       meETLTrackMatchedTPmtd1Pt->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd1NoAssocPtMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd1NoAssocPt, meETLTrackMatchedTPmtd1Pt, meETLTPmtd1NoAssocPtMatchEff_);
+  
+  
+  
+  meETLTPmtd2CorrectAssocEtaMatchEff_ = ibook.book1D("ETLTPmtd2CorrectAssocEtaMatchEff",
+						     "Track efficiency TP-mtd hit (2 sim hits), correct reco match VS Eta",
+						     meETLTrackMatchedTPmtd2Eta->getNbinsX(),
+						     meETLTrackMatchedTPmtd2Eta->getTH1()->GetXaxis()->GetXmin(),
+						     meETLTrackMatchedTPmtd2Eta->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2CorrectAssocEtaMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2CorrectAssocEta, meETLTrackMatchedTPmtd2Eta, meETLTPmtd2CorrectAssocEtaMatchEff_);
+  
+  meETLTPmtd2CorrectAssocPtMatchEff_ = ibook.book1D("ETLTPmtd2CorrectAssocPtMatchEff",
+						    "Track efficiency TP-mtd hit (2 sim hits), correct reco match VS Pt",
+						    meETLTrackMatchedTPmtd2Pt->getNbinsX(),
+						    meETLTrackMatchedTPmtd2Pt->getTH1()->GetXaxis()->GetXmin(),
+						    meETLTrackMatchedTPmtd2Pt->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2CorrectAssocPtMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2CorrectAssocPt, meETLTrackMatchedTPmtd2Pt, meETLTPmtd2CorrectAssocPtMatchEff_);
+  
+  meETLTPmtd2WrongAssocEtaMatchEff_ = ibook.book1D("ETLTPmtd2WrongAssocEtaMatchEff",
+						   "Track efficiency TP-mtd hit (2 sim hits), incorrect reco match VS Eta",
+						   meETLTrackMatchedTPmtd2Eta->getNbinsX(),
+						   meETLTrackMatchedTPmtd2Eta->getTH1()->GetXaxis()->GetXmin(),
+						   meETLTrackMatchedTPmtd2Eta->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2WrongAssocEtaMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2WrongAssocEta, meETLTrackMatchedTPmtd2Eta, meETLTPmtd2WrongAssocEtaMatchEff_);
+  
+  meETLTPmtd2WrongAssocPtMatchEff_ = ibook.book1D("ETLTPmtd2WrongAssocPtMatchEff",
+						  "Track efficiency TP-mtd hit (2 sim hits), incorrect reco match VS Pt",
+						  meETLTrackMatchedTPmtd2Pt->getNbinsX(),
+						  meETLTrackMatchedTPmtd2Pt->getTH1()->GetXaxis()->GetXmin(),
+						  meETLTrackMatchedTPmtd2Pt->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2WrongAssocPtMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2WrongAssocPt, meETLTrackMatchedTPmtd2Pt, meETLTPmtd2WrongAssocPtMatchEff_);
+  
+  
+  meETLTPmtd2NoAssocEtaMatchEff_ = ibook.book1D("ETLTPmtd2NoAssocEtaMatchEff",
+						"Track efficiency TP-mtd hit (2 sim hits), no reco match VS Eta",
+						meETLTrackMatchedTPmtd2Eta->getNbinsX(),
+						meETLTrackMatchedTPmtd2Eta->getTH1()->GetXaxis()->GetXmin(),
+						meETLTrackMatchedTPmtd2Eta->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2NoAssocEtaMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2NoAssocEta, meETLTrackMatchedTPmtd2Eta, meETLTPmtd2NoAssocEtaMatchEff_);
+  
+  meETLTPmtd2NoAssocPtMatchEff_ = ibook.book1D("ETLTPmtd2NoAssocPtMatchEff",
+					       "Track efficiency TP-mtd hit (2 sim hits), no reco match VS Pt",
+					       meETLTrackMatchedTPmtd2Pt->getNbinsX(),
+					       meETLTrackMatchedTPmtd2Pt->getTH1()->GetXaxis()->GetXmin(),
+					       meETLTrackMatchedTPmtd2Pt->getTH1()->GetXaxis()->GetXmax());
+  meETLTPmtd2NoAssocPtMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPmtd2NoAssocPt, meETLTrackMatchedTPmtd2Pt, meETLTPmtd2NoAssocPtMatchEff_);
+  
+  
+  meETLTPnomtdEtaMatchEff_ = ibook.book1D("ETLTPnomtdEtaMatchEff",
+					  "Track efficiency TP- no mtd hit, with reco match VS Eta",
+					  meETLTrackMatchedTPnomtdEta->getNbinsX(),
+					  meETLTrackMatchedTPnomtdEta->getTH1()->GetXaxis()->GetXmin(),
+					  meETLTrackMatchedTPnomtdEta->getTH1()->GetXaxis()->GetXmax());
+  meETLTPnomtdEtaMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPnomtdAssocEta, meETLTrackMatchedTPnomtdEta, meETLTPnomtdEtaMatchEff_);
+  
+  meETLTPnomtdPtMatchEff_ = ibook.book1D("ETLTPnomtdPtMatchEff",
+					 "Track efficiency TP- no mtd hit, with reco match VS Pt",
+					 meETLTrackMatchedTPnomtdPt->getNbinsX(),
+					 meETLTrackMatchedTPnomtdPt->getTH1()->GetXaxis()->GetXmin(),
+					 meETLTrackMatchedTPnomtdPt->getTH1()->GetXaxis()->GetXmax());
+  meETLTPnomtdPtMatchEff_->getTH1()->SetMinimum(0.);
+  computeEfficiency1D(meETLTrackMatchedTPnomtdAssocPt, meETLTrackMatchedTPnomtdPt, meETLTPnomtdPtMatchEff_);
+  //
     
   meNoTimeFraction_ = ibook.book1D("NoTimeFraction",
                                    "Fraction of tracks with MTD hits and no time associated; Num. of hits",
