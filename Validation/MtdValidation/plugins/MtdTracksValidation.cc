@@ -468,6 +468,8 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     bool isBTL = false;
     bool isETL = false;
     bool twoETLdiscs = false;
+    bool ETLdisc1 = false;
+    bool ETLdisc2 = false;
     bool noCrack = std::abs(trackGen.eta()) < trackMaxBtlEta_ || std::abs(trackGen.eta()) > trackMinEtlEta_;
 
     if (trkRecSel(trackGen)) {
@@ -594,6 +596,8 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 
         // --- keeping only tracks with last hit in MTD ---
 	twoETLdiscs = ((MTDEtlZnegD1 == true) && (MTDEtlZnegD2 == true)) || ((MTDEtlZposD1 == true) && (MTDEtlZposD2 == true));
+	ETLdisc1 = (MTDEtlZnegD1 || MTDEtlZposD1);
+	ETLdisc2 = (MTDEtlZnegD2 || MTDEtlZposD2);
 	meETLTrackEffEtaMtd_->Fill(std::abs(trackGen.eta()));
 	meETLTrackEffPhiMtd_->Fill(trackGen.phi());
 	meETLTrackEffPtMtd_->Fill(trackGen.pt());
@@ -836,43 +840,51 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 		meETLTrackMatchedTPmtd2Eta_->Fill(std::abs(trackGen.eta()));
                 meETLTrackMatchedTPmtd2Pt_->Fill(trackGen.pt());
 	      }
+
+	      //!!!!!!!!!!!!!! CHECK THE LOGIC FOR THE SELECTION OF DIFFERENT CATEGORIES IN ETL!!!!!!!!!!!!
+	      
 	      // - Correct reco association
 	      // -- Track matched to TP with sim hit in one etl layer, correctly associated reco hit
 	      //if ((isTPmtdCorrectETLD1 && !isTPmtdCorrectETLD2) || (isTPmtdCorrectETLD2 && !isTPmtdCorrectETLD1)){ // hit in only one disk (D1 or D2), correctly associated  
 	      if (isETL){
-		if ( (isTPmtdETLD1 && isTPmtdCorrectETLD1 && !isTPmtdETLD2) ||
-		     (isTPmtdETLD2 && isTPmtdCorrectETLD2 && !isTPmtdETLD1) ||
-		     ( isTPmtdETLD1 && isTPmtdCorrectETLD1 && isTPmtdETLD2 && isTPmtdCorrectETLD2)) { // hit in at least one disk, each correctly associated
-		  fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd1CorrectAssocEta_, meETLTrackMatchedTPmtd1CorrectAssocPt_, meETLTrackMatchedTPmtd1CorrectAssocMVAQual_, meETLTrackMatchedTPmtd1CorrectAssocTimeRes_, meETLTrackMatchedTPmtd1CorrectAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+		// Track matched to TP with sim hit in >=1 etl layer
+		if (isTPmtdETLD1 || isTPmtdETLD2){
+		  // each hit is correctly associated to the track
+		  if ((isTPmtdETLD1 && !isTPmtdETLD2 && ETLdisc1 && isTPmtdCorrectETLD1) ||
+		      (isTPmtdETLD2 && !isTPmtdETLD1 && ETLdisc2 && isTPmtdCorrectETLD2) ||
+		      (isTPmtdETLD1 && isTPmtdETLD2 && ETLdisc1 && ETLdisc2 && isTPmtdCorrectETLD1 && isTPmtdCorrectETLD2)){
+		    fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd1CorrectAssocEta_, meETLTrackMatchedTPmtd1CorrectAssocPt_, meETLTrackMatchedTPmtd1CorrectAssocMVAQual_, meETLTrackMatchedTPmtd1CorrectAssocTimeRes_, meETLTrackMatchedTPmtd1CorrectAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+		  }
+		  //at least one reco hit is incorrectly associated or, if two sim hits, one reco hit is missing
+		  else if ((isTPmtdETLD1 && !isTPmtdCorrectETLD1) || (isTPmtdETLD2 && !isTPmtdCorrectETLD2)){
+		    fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd1WrongAssocEta_, meETLTrackMatchedTPmtd1WrongAssocPt_, meETLTrackMatchedTPmtd1WrongAssocMVAQual_, meETLTrackMatchedTPmtd1WrongAssocTimeRes_, meETLTrackMatchedTPmtd1WrongAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+		  }
 		}
-		// -- Track matched to TP with sim hit in two etl layers, both correctly associated reco cluster
-		if ( isTPmtdETLD1 && isTPmtdCorrectETLD1 &&  isTPmtdETLD2 && isTPmtdCorrectETLD2){
-		  fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd2CorrectAssocEta_, meETLTrackMatchedTPmtd2CorrectAssocPt_, meETLTrackMatchedTPmtd2CorrectAssocMVAQual_, meETLTrackMatchedTPmtd2CorrectAssocTimeRes_, meETLTrackMatchedTPmtd2CorrectAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
-		}
-		
-		// - Wrong reco association
-		// -- Track matched to TP with sim hit in one etl layer, at least one reco hit incorrectly associated
-		if ( (isTPmtdETLD1 && !isTPmtdCorrectETLD1) || (isTPmtdETLD2 && !isTPmtdCorrectETLD2) ||
-		     ( isTPmtdETLD1 && !isTPmtdCorrectETLD1 && isTPmtdETLD2 && !isTPmtdCorrectETLD2)) { 
-		  fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd1WrongAssocEta_, meETLTrackMatchedTPmtd1WrongAssocPt_, meETLTrackMatchedTPmtd1WrongAssocMVAQual_, meETLTrackMatchedTPmtd1WrongAssocTimeRes_, meETLTrackMatchedTPmtd1WrongAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
-		}
-		// -- Track matched to TP with sim hit in two etl layers, at least one hit incorrectly associated
-		if (isTPmtdETLD1 &&  isTPmtdETLD2 && ( !isTPmtdCorrectETLD1 || !isTPmtdCorrectETLD2) ){
-		  fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd2WrongAssocEta_, meETLTrackMatchedTPmtd2WrongAssocPt_, meETLTrackMatchedTPmtd2WrongAssocMVAQual_, meETLTrackMatchedTPmtd2WrongAssocTimeRes_, meETLTrackMatchedTPmtd2WrongAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+		// Track matched to TP with sim hits in both etl layers (D1 and D2)
+		if (isTPmtdETLD1 && isTPmtdETLD2){
+		  // each hit correctly associated to the track
+		  if (ETLdisc1 && ETLdisc2 && isTPmtdCorrectETLD1 && isTPmtdCorrectETLD2){ 
+		    fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd2CorrectAssocEta_, meETLTrackMatchedTPmtd2CorrectAssocPt_, meETLTrackMatchedTPmtd2CorrectAssocMVAQual_, meETLTrackMatchedTPmtd2CorrectAssocTimeRes_, meETLTrackMatchedTPmtd2CorrectAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+		  }
+		  //at least one reco hit incorrectly associated or one hit missing
+		  else if( (ETLdisc1 || ETLdisc2) && (!isTPmtdCorrectETLD1 || !isTPmtdCorrectETLD2)){
+		    fillTrackClusterMatchingHistograms(meETLTrackMatchedTPmtd2WrongAssocEta_, meETLTrackMatchedTPmtd2WrongAssocPt_, meETLTrackMatchedTPmtd2WrongAssocMVAQual_, meETLTrackMatchedTPmtd2WrongAssocTimeRes_, meETLTrackMatchedTPmtd2WrongAssocTimePull_, std::abs(trackGen.eta()),trackGen.pt(), mtdQualMVA[trackref], dT, pullT, hasTime);
+		  } 
 		}
 	      }
 	      // - Missing associations
-	      // -- Track matched to TP with sim hit in >=1 etl layers, at least one reco hit missing
-	      if ((isTPmtdETLD1 || isTPmtdETLD2) && (!(MTDEtlZposD1 || MTDEtlZnegD1) || !(MTDEtlZposD2 || MTDEtlZnegD2))){
-		meETLTrackMatchedTPmtd1NoAssocEta_->Fill(std::abs(trackGen.eta()));
-		meETLTrackMatchedTPmtd1NoAssocPt_->Fill(trackGen.pt());
+	      else{
+		// -- Track matched to TP with sim hit in >=1 etl layers, no reco hits associated to the track
+		if (isTPmtdETLD1 || isTPmtdETLD2){
+		  meETLTrackMatchedTPmtd1NoAssocEta_->Fill(std::abs(trackGen.eta()));
+		  meETLTrackMatchedTPmtd1NoAssocPt_->Fill(trackGen.pt());
 		}
-	      // -- Track matched to TP with sim hit in 2 etl layers, at least one reco hits missing
-	      if ((isTPmtdETLD1 && isTPmtdETLD2) &&  (!(MTDEtlZposD1 || MTDEtlZnegD1) || !(MTDEtlZposD2 || MTDEtlZnegD2))){
-		meETLTrackMatchedTPmtd2NoAssocEta_->Fill(std::abs(trackGen.eta()));
-		meETLTrackMatchedTPmtd2NoAssocPt_->Fill(trackGen.pt());
+		// -- Track matched to TP with sim hit in 2 etl layers, no reco hits associated to the track
+		if (isTPmtdETLD1 && isTPmtdETLD2){
+		  meETLTrackMatchedTPmtd2NoAssocEta_->Fill(std::abs(trackGen.eta()));
+		  meETLTrackMatchedTPmtd2NoAssocPt_->Fill(trackGen.pt());
+		}
 	      }
-		   
 	    }// == end ETL 
 	    
 	  } // --- end "withMTD"
