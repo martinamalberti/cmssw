@@ -307,16 +307,16 @@ private:
   MonitorElement* meBTLTrackMatchedTPnomtdAssocTimePull_;
 
   // - ETL: one, two o no sim hits 
-  MonitorElement* meETLTrackMatchedTPmtd1Eta_; // -- sim hit in one etl disk
+  MonitorElement* meETLTrackMatchedTPmtd1Eta_; // -- sim hit in >=1 etl disk
   MonitorElement* meETLTrackMatchedTPmtd1Pt_;
 
-  MonitorElement* meETLTrackMatchedTPmtd2Eta_; // -- sim hits in two etl disks
+  MonitorElement* meETLTrackMatchedTPmtd2Eta_; // -- sim hits in 2 etl disks
   MonitorElement* meETLTrackMatchedTPmtd2Pt_;
 
   MonitorElement* meETLTrackMatchedTPnomtdEta_; // -- no sim hits in etl
   MonitorElement* meETLTrackMatchedTPnomtdPt_;
 
-  // - ETL - one sim hit: correct, wrong, missing association 
+  // - ETL >=1 sim hit: each correct, at least one wrong, each sim hit missing reco association 
   MonitorElement* meETLTrackMatchedTPmtd1CorrectAssocEta_;  
   MonitorElement* meETLTrackMatchedTPmtd1CorrectAssocPt_;
   MonitorElement* meETLTrackMatchedTPmtd1CorrectAssocMVAQual_;
@@ -329,26 +329,26 @@ private:
   MonitorElement* meETLTrackMatchedTPmtd1WrongAssocTimeRes_;
   MonitorElement* meETLTrackMatchedTPmtd1WrongAssocTimePull_;
 
-  MonitorElement* meETLTrackMatchedTPmtd1NoAssocEta_;
+  MonitorElement* meETLTrackMatchedTPmtd1NoAssocEta_; 
   MonitorElement* meETLTrackMatchedTPmtd1NoAssocPt_;
   MonitorElement* meETLTrackMatchedTPmtd1NoAssocMVAQual_;
   MonitorElement* meETLTrackMatchedTPmtd1NoAssocTimeRes_;
   MonitorElement* meETLTrackMatchedTPmtd1NoAssocTimePull_;
 
-  // - ETL - two sim hits: both correct, at least one wrong, at least one missing association 
-  MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocEta_; // both hits correctly associated
+  // - ETL - 2 sim hits: both correct, at least one wrong or one missing, both missing reco association 
+  MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocEta_; 
   MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocPt_;
   MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocMVAQual_;
   MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocTimeRes_;
   MonitorElement* meETLTrackMatchedTPmtd2CorrectAssocTimePull_;
 
-  MonitorElement* meETLTrackMatchedTPmtd2WrongAssocEta_; // at least one hit incorrectly associated
+  MonitorElement* meETLTrackMatchedTPmtd2WrongAssocEta_; 
   MonitorElement* meETLTrackMatchedTPmtd2WrongAssocPt_;
   MonitorElement* meETLTrackMatchedTPmtd2WrongAssocMVAQual_;
   MonitorElement* meETLTrackMatchedTPmtd2WrongAssocTimeRes_;
   MonitorElement* meETLTrackMatchedTPmtd2WrongAssocTimePull_;
 
-  MonitorElement* meETLTrackMatchedTPmtd2NoAssocEta_; // at least one hit missing
+  MonitorElement* meETLTrackMatchedTPmtd2NoAssocEta_; 
   MonitorElement* meETLTrackMatchedTPmtd2NoAssocPt_;
   MonitorElement* meETLTrackMatchedTPmtd2NoAssocMVAQual_;
   MonitorElement* meETLTrackMatchedTPmtd2NoAssocTimeRes_;
@@ -840,12 +840,6 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 		meETLTrackMatchedTPmtd2Eta_->Fill(std::abs(trackGen.eta()));
                 meETLTrackMatchedTPmtd2Pt_->Fill(trackGen.pt());
 	      }
-
-	      //!!!!!!!!!!!!!! CHECK THE LOGIC FOR THE SELECTION OF DIFFERENT CATEGORIES IN ETL!!!!!!!!!!!!
-	      
-	      // - Correct reco association
-	      // -- Track matched to TP with sim hit in one etl layer, correctly associated reco hit
-	      //if ((isTPmtdCorrectETLD1 && !isTPmtdCorrectETLD2) || (isTPmtdCorrectETLD2 && !isTPmtdCorrectETLD1)){ // hit in only one disk (D1 or D2), correctly associated  
 	      if (isETL){
 		// Track matched to TP with sim hit in >=1 etl layer
 		if (isTPmtdETLD1 || isTPmtdETLD2){
