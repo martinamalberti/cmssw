@@ -92,7 +92,6 @@ private:
   const bool trkRecSel(const reco::TrackBase&);
   const bool trkRecSelLowPt(const reco::TrackBase&);
   const edm::Ref<std::vector<TrackingParticle>>* getMatchedTP(const reco::TrackBaseRef&);
-  bool isSameCluster(const FTLCluster&, const FTLCluster&);
 
   const unsigned long int uniqueId(const uint32_t x, const EncodedEventId& y) {
     const uint64_t a = static_cast<uint64_t>(x);
@@ -2154,11 +2153,6 @@ const edm::Ref<std::vector<TrackingParticle>>* MtdTracksValidation::getMatchedTP
 
   // reco track not matched to any TP from vertex
   return nullptr;
-}
-
-bool MtdTracksValidation::isSameCluster(const FTLCluster& clu1, const FTLCluster& clu2) {
-  return clu1.id() == clu2.id() && clu1.size() == clu2.size() && clu1.x() == clu2.x() && clu1.y() == clu2.y() &&
-         clu1.time() == clu2.time();
 }
 
 void MtdTracksValidation::fillTrackClusterMatchingHistograms(MonitorElement* me1,
