@@ -193,7 +193,6 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meBTLTrackMatchedTPmtdDirectPt = igetter.get(folder_ + "BTLTrackMatchedTPmtdDirectPt");
   MonitorElement* meBTLTrackMatchedTPmtdOtherEta = igetter.get(folder_ + "BTLTrackMatchedTPmtdOtherEta");
   MonitorElement* meBTLTrackMatchedTPmtdOtherPt = igetter.get(folder_ + "BTLTrackMatchedTPmtdOtherPt");
-  ;
   MonitorElement* meBTLTrackMatchedTPnomtdEta = igetter.get(folder_ + "BTLTrackMatchedTPnomtdEta");
   MonitorElement* meBTLTrackMatchedTPnomtdPt = igetter.get(folder_ + "BTLTrackMatchedTPnomtdPt");
 
@@ -227,7 +226,6 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meETLTrackMatchedTPmtd1Pt = igetter.get(folder_ + "ETLTrackMatchedTPmtd1Pt");
   MonitorElement* meETLTrackMatchedTPmtd2Eta = igetter.get(folder_ + "ETLTrackMatchedTPmtd2Eta");
   MonitorElement* meETLTrackMatchedTPmtd2Pt = igetter.get(folder_ + "ETLTrackMatchedTPmtd2Pt");
-  ;
   MonitorElement* meETLTrackMatchedTPnomtdEta = igetter.get(folder_ + "ETLTrackMatchedTPnomtdEta");
   MonitorElement* meETLTrackMatchedTPnomtdPt = igetter.get(folder_ + "ETLTrackMatchedTPnomtdPt");
 
@@ -264,25 +262,23 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
       !meETLTrackPhiMtd || !meETLTrackPtMtd || !meETLTrackEta2Mtd || !meETLTrackPhi2Mtd || !meETLTrackPt2Mtd ||
       !meETLTrackEtaTotLowPt0 || !meETLTrackEtaTotLowPt1 || !meETLTrackEtaMtdLowPt0 || !meETLTrackEtaMtdLowPt1 ||
       !meETLTrackEta2MtdLowPt0 || !meETLTrackEta2MtdLowPt1 || !meTrackMatchedTPPtTotLV || !meTrackMatchedTPEtaTotLV ||
-
       !meBTLTrackMatchedTPPtTot || !meBTLTrackMatchedTPPtMtd || !meBTLTrackMatchedTPEtaTot ||
       !meBTLTrackMatchedTPEtaMtd || !meETLTrackMatchedTPPtTot || !meETLTrackMatchedTPPtMtd ||
       !meETLTrackMatchedTPPt2Mtd || !meETLTrackMatchedTPEtaTot || !meETLTrackMatchedTPEtaMtd ||
-      !meETLTrackMatchedTPEta2Mtd ||
-
-      !meBTLTrackMatchedTPmtdDirectEta || !meBTLTrackMatchedTPmtdDirectPt || !meBTLTrackMatchedTPmtdOtherEta ||
-      !meBTLTrackMatchedTPmtdOtherPt || !meBTLTrackMatchedTPnomtdEta || !meBTLTrackMatchedTPnomtdPt ||
-      !meBTLTrackMatchedTPmtdDirectCorrectAssocEta || !meBTLTrackMatchedTPmtdDirectCorrectAssocPt ||
-      !meBTLTrackMatchedTPmtdDirectWrongAssocEta || !meBTLTrackMatchedTPmtdDirectWrongAssocPt ||
-      !meBTLTrackMatchedTPmtdDirectNoAssocEta || !meBTLTrackMatchedTPmtdDirectNoAssocPt ||
-      !meBTLTrackMatchedTPmtdOtherCorrectAssocEta || !meBTLTrackMatchedTPmtdOtherCorrectAssocPt ||
-      !meBTLTrackMatchedTPmtdOtherWrongAssocEta || !meBTLTrackMatchedTPmtdOtherWrongAssocPt ||
-      !meBTLTrackMatchedTPmtdOtherNoAssocEta || !meBTLTrackMatchedTPmtdOtherNoAssocPt ||
-      !meBTLTrackMatchedTPnomtdAssocEta || !meBTLTrackMatchedTPnomtdAssocPt || !meETLTrackMatchedTPmtd1Eta ||
-      !meETLTrackMatchedTPmtd1Pt || !meETLTrackMatchedTPmtd2Eta || !meETLTrackMatchedTPmtd2Pt ||
-      !meETLTrackMatchedTPnomtdEta || !meETLTrackMatchedTPnomtdPt || !meETLTrackMatchedTPmtd1CorrectAssocEta ||
-      !meETLTrackMatchedTPmtd1CorrectAssocPt || !meETLTrackMatchedTPmtd1WrongAssocEta ||
-      !meETLTrackMatchedTPmtd1WrongAssocPt || !meETLTrackMatchedTPmtd1NoAssocEta || !meETLTrackMatchedTPmtd1NoAssocPt ||
+      !meETLTrackMatchedTPEta2Mtd || !meBTLTrackMatchedTPmtdDirectEta || !meBTLTrackMatchedTPmtdDirectPt ||
+      !meBTLTrackMatchedTPmtdOtherEta || !meBTLTrackMatchedTPmtdOtherPt || !meBTLTrackMatchedTPnomtdEta ||
+      !meBTLTrackMatchedTPnomtdPt || !meBTLTrackMatchedTPmtdDirectCorrectAssocEta ||
+      !meBTLTrackMatchedTPmtdDirectCorrectAssocPt || !meBTLTrackMatchedTPmtdDirectWrongAssocEta ||
+      !meBTLTrackMatchedTPmtdDirectWrongAssocPt || !meBTLTrackMatchedTPmtdDirectNoAssocEta ||
+      !meBTLTrackMatchedTPmtdDirectNoAssocPt || !meBTLTrackMatchedTPmtdOtherCorrectAssocEta ||
+      !meBTLTrackMatchedTPmtdOtherCorrectAssocPt || !meBTLTrackMatchedTPmtdOtherWrongAssocEta ||
+      !meBTLTrackMatchedTPmtdOtherWrongAssocPt || !meBTLTrackMatchedTPmtdOtherNoAssocEta ||
+      !meBTLTrackMatchedTPmtdOtherNoAssocPt || !meBTLTrackMatchedTPnomtdAssocEta || !meBTLTrackMatchedTPnomtdAssocPt ||
+      !meETLTrackMatchedTPmtd1Eta || !meETLTrackMatchedTPmtd1Pt || !meETLTrackMatchedTPmtd2Eta ||
+      !meETLTrackMatchedTPmtd2Pt || !meETLTrackMatchedTPnomtdEta || !meETLTrackMatchedTPnomtdPt ||
+      !meETLTrackMatchedTPmtd1CorrectAssocEta || !meETLTrackMatchedTPmtd1CorrectAssocPt ||
+      !meETLTrackMatchedTPmtd1WrongAssocEta || !meETLTrackMatchedTPmtd1WrongAssocPt ||
+      !meETLTrackMatchedTPmtd1NoAssocEta || !meETLTrackMatchedTPmtd1NoAssocPt ||
       !meETLTrackMatchedTPmtd2CorrectAssocEta || !meETLTrackMatchedTPmtd2CorrectAssocPt ||
       !meETLTrackMatchedTPmtd2WrongAssocEta || !meETLTrackMatchedTPmtd2WrongAssocPt ||
       !meETLTrackMatchedTPmtd2NoAssocEta || !meETLTrackMatchedTPmtd2NoAssocPt || !meETLTrackMatchedTPnomtdAssocEta ||
