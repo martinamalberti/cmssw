@@ -1,8 +1,9 @@
 // system include files
 #include <vector>
 #include <string>
-
+#include <iostream>
 // user include files
+#include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -18,6 +19,31 @@
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
 
+
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/ESTransientHandle.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/Exception.h"
+
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+
+#include "DetectorDescription/Core/interface/DDFilteredView.h"
+#include "DetectorDescription/Core/interface/DDSolid.h"
+#include "DetectorDescription/Core/interface/DDSolidShapes.h"
+
+#include "Geometry/MTDCommonData/interface/MTDBaseNumber.h"
+#include "Geometry/MTDCommonData/interface/BTLNumberingScheme.h"
+#include "Geometry/MTDCommonData/interface/ETLNumberingScheme.h"
+
+#include "DataFormats/ForwardDetId/interface/BTLDetId.h"
+#include "DataFormats/ForwardDetId/interface/ETLDetId.h"
+
+#include "DataFormats/Math/interface/angle_units.h"
+#include "DataFormats/Math/interface/Rounding.h"
 class SimHitCaloHitDumper : public edm::one::EDAnalyzer<> {
 public:
   SimHitCaloHitDumper(const edm::ParameterSet&);
@@ -375,7 +401,30 @@ void SimHitCaloHitDumper::analyze(const edm::Event& iEvent, const edm::EventSetu
           << theMTDHits[nhit] << " Energy = " << theMTDHits[nhit].energyLoss()
           << " tid orig/offset= " << theMTDHits[nhit].originalTrackId() << " " << theMTDHits[nhit].offsetTrackId()
           << " Track Id = " << theMTDHits[nhit].trackId();
-      nhit++;
+
+      // std::string MTDHit = ;
+      // std::istringstream stream(MTDhit);
+      // int firstInt;
+      // // Extract the first integer
+      // stream >> firstInt;
+      // Output the result
+
+      if(icoll == theMTDComposition.begin()){
+        unsigned int rawId =  theMTDHits[nhit].detUnitId();
+        BTLDetId thisId(rawId);
+        edm::LogPrint("SimHitCaloHitDumper") << " Original Id: " << theMTDHits[nhit].detUnitId() 
+                                            << " re-built Id: " << thisId.rawId() << "\n"
+                                            << " Side           : " << thisId.mtdSide() << "\n"
+                                            << " Rod            : " << thisId.mtdRR() << "\n"
+                                            << " Crystal type   : " << thisId.modType() << "\n" // crystal type in v1 geometry scheme
+                                            << " Runit by Type  : " << thisId.runitByType() << "\n"
+                                            << " Readout unit   : " << thisId.runit() << "\n"
+                                            << " Detector module: " << thisId.dmodule() << "\n"
+                                            << " Sensor module  : " << thisId.smodule() << "\n"
+                                            << " Module         : " << thisId.module() << "\n"
+                                            << " Crystal        : " << thisId.crystal() << "\n";
+      }
+     nhit++;
     }
   }
 
