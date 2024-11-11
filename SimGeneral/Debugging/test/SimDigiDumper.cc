@@ -6,6 +6,7 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/Utilities/interface/ESGetToken.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "DataFormats/Common/interface/Handle.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -32,6 +33,16 @@
 #include "DataFormats/RPCDigi/interface/RPCDigiCollection.h"
 // BTL/ETL info
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
+
+
+#include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
+#include "Geometry/Records/interface/MTDTopologyRcd.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
+#include "Geometry/MTDNumberingBuilder/interface/MTDTopology.h"
+#include "Geometry/MTDGeometryBuilder/interface/ProxyMTDTopology.h"
+#include "Geometry/MTDGeometryBuilder/interface/RectangularMTDTopology.h"
+#include "Geometry/MTDCommonData/interface/MTDTopologyMode.h"
+
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 
@@ -72,6 +83,9 @@ private:
   edm::EDGetTokenT<BTLDigiCollection> BTLSrc_;
   edm::EDGetTokenT<ETLDigiCollection> ETLSrc_;
 
+  edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
+  edm::ESGetToken<MTDTopology, MTDTopologyRcd> mtdtopoToken_;
+  
   static const int sdSiTIB = 3;
   static const int sdSiTID = 4;
   static const int sdSiTOB = 5;
@@ -80,7 +94,7 @@ private:
   static const int sdPxlFwd = 2;
 };
 
-SimDigiDumper::SimDigiDumper(const edm::ParameterSet& iPSet) {
+SimDigiDumper::SimDigiDumper(const edm::ParameterSet& iPSet){
   //get Labels to use to extract information
   ECalEBSrc_ = consumes<EBDigiCollection>(iPSet.getParameter<edm::InputTag>("ECalEBSrc"));
   ECalEESrc_ = consumes<EEDigiCollection>(iPSet.getParameter<edm::InputTag>("ECalEESrc"));
@@ -97,6 +111,8 @@ SimDigiDumper::SimDigiDumper(const edm::ParameterSet& iPSet) {
   MuRPCSrc_ = consumes<RPCDigiCollection>(iPSet.getParameter<edm::InputTag>("MuRPCSrc"));
   BTLSrc_ = consumes<BTLDigiCollection>(iPSet.getParameter<edm::InputTag>("BTLSrc"));
   ETLSrc_ = consumes<ETLDigiCollection>(iPSet.getParameter<edm::InputTag>("ETLSrc"));
+  mtdgeoToken_ = esConsumes<MTDGeometry, MTDDigiGeometryRecord>();
+  mtdtopoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
 }
 
 //
@@ -419,6 +435,12 @@ void SimDigiDumper::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
   edm::LogPrint("SimDigiDumper") << "RPC, digi multiplicity = " << nRPC;
 
   // BTL
+  auto geometryHandle = iSetup.getTransientHandle(mtdgeoToken_);
+  const MTDGeometry* geom = geometryHandle.product();
+
+  auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
+  const MTDTopology* topology = topologyHandle.product();
+  
   bool isBTL = true;
   const BTLDigiCollection* BTLdigis = 0;
   auto BTLDigi = iEvent.getHandle(BTLSrc_);
@@ -435,7 +457,24 @@ void SimDigiDumper::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
       for (unsigned int digis = 0; digis < BTLDigi->size(); ++digis) {
         BTLDataFrame btldf = (*BTLdigis)[digis];
         edm::LogPrint("SimDigiDumper") << btldf.id().rawId();
+	std::cout << btldf.id() << std::endl;
         btldf.print();
+
+	//----
+	BTLDetId hitId(btldf.id());
+	DetId geoId = hitId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
+	const MTDGeomDet* thedet = geom->idToDet(geoId);
+	
+	if (thedet == nullptr) {
+	  std::cout << "GeographicalID: " << std::hex << geoId.rawId() << " (" << btldf.id().rawId()
+		    << ") is invalid!" << std::dec << std::endl;
+	}
+	else{
+	  std::cout << "GeographicalID: " << std::hex << geoId.rawId() << " (" << btldf.id().rawId()
+                    << ")" << std::dec << std::endl;
+	}
+	//----
+	
       }
     }
   }
