@@ -83,6 +83,13 @@ private:
   const edm::ESGetToken<MTDClusterParameterEstimator, MTDCPERecord> cpeToken_;
 
   // --- histograms declaration
+  MonitorElement *meSimClusterEnergy;
+  MonitorElement *meSimClusterEnergyRU1;
+  MonitorElement *meSimClusterEnergyRU2;
+  MonitorElement *meSimClusterEnergyRU3;
+  MonitorElement *meSimClusterEnergyRU4;
+  MonitorElement *meSimClusterEnergyRU5;
+  MonitorElement *meSimClusterEnergyRU6;
 
   MonitorElement* meNevents_;
 
@@ -691,6 +698,17 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
           meCluTrackIdOffset_->Fill(float(idOffset));
 
+	  if (idOffset==0){
+	    meSimClusterEnergy->Fill(simClusEnergy);
+	    if ( std::abs(simClusGlobalPos.eta()) >= 0 && std::abs(simClusGlobalPos.eta()) < 0.35 ) meSimClusterEnergyRU1->Fill(simClusEnergy);
+	    if ( std::abs(simClusGlobalPos.eta()) >= 0.35 && std::abs(simClusGlobalPos.eta()) < 0.65 ) meSimClusterEnergyRU2->Fill(simClusEnergy);
+	    if ( std::abs(simClusGlobalPos.eta()) >= 0.65 && std::abs(simClusGlobalPos.eta()) < 0.92 ) meSimClusterEnergyRU3->Fill(simClusEnergy);
+	    if ( std::abs(simClusGlobalPos.eta()) >= 0.92 && std::abs(simClusGlobalPos.eta()) < 1.15 ) meSimClusterEnergyRU4->Fill(simClusEnergy);
+	    if ( std::abs(simClusGlobalPos.eta()) >= 1.15 && std::abs(simClusGlobalPos.eta()) < 1.35 ) meSimClusterEnergyRU5->Fill(simClusEnergy);
+	    if ( std::abs(simClusGlobalPos.eta()) >= 1.35 && std::abs(simClusGlobalPos.eta()) < 1.48 ) meSimClusterEnergyRU6->Fill(simClusEnergy);
+	  }
+
+	    
           // -- Fill for direct hits
           if (idOffset == 0) {
             meCluTimeRes_simLC_->Fill(time_res);
@@ -954,7 +972,14 @@ void BtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
   ibook.setCurrentFolder(folder_);
 
   // --- histograms booking
-
+  meSimClusterEnergy = ibook.book1D("BtlSimClusterEnergy", "sim cluster energy", 100, 0., 20.);
+  meSimClusterEnergyRU1 = ibook.book1D("BtlSimClusterEnergyRU1", "sim cluster energy", 100, 0., 20.);
+  meSimClusterEnergyRU2 = ibook.book1D("BtlSimClusterEnergyRU2", "sim cluster energy", 100, 0., 20.);
+  meSimClusterEnergyRU3 = ibook.book1D("BtlSimClusterEnergyRU3", "sim cluster energy", 100, 0., 20.);
+  meSimClusterEnergyRU4 = ibook.book1D("BtlSimClusterEnergyRU4", "sim cluster energy", 100, 0., 20.);
+  meSimClusterEnergyRU5 = ibook.book1D("BtlSimClusterEnergyRU5", "sim cluster energy", 100, 0., 20.);
+  meSimClusterEnergyRU6 = ibook.book1D("BtlSimClusterEnergyRU6", "sim cluster energy", 100, 0., 20.);
+  
   meNevents_ = ibook.book1D("BtlNevents", "Number of events", 1, 0., 1.);
 
   meNhits_ = ibook.book1D("BtlNhits", "Number of BTL RECO hits;log_{10}(N_{RECO})", 100, 0., 5.25);
