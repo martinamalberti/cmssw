@@ -112,7 +112,9 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> t0PidToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> Sigmat0PidToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> trackMVAQualToken_;
-
+  edm::EDGetTokenT<edm::ValueMap<float>> t0SafePidToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> Sigmat0SafePidToken_;
+  
   edm::EDGetTokenT<reco::RecoToSimCollection> recoToSimAssociationToken_;
 
   // Signal histograms
@@ -875,6 +877,8 @@ MtdEleIsoValidation::MtdEleIsoValidation(const edm::ParameterSet& iConfig)
 
   t0PidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("t0PID"));
   Sigmat0PidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmat0PID"));
+  t0SafePidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("t0SafePID"));
+  Sigmat0SafePidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmat0SafePID"));
   trackMVAQualToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("trackMVAQual"));
 
   recoToSimAssociationToken_ =
@@ -896,6 +900,8 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 
   const auto& t0Pid = iEvent.get(t0PidToken_);
   const auto& Sigmat0Pid = iEvent.get(Sigmat0PidToken_);
+  const auto& t0Safe = iEvent.get(t0SafePidToken_);
+  const auto& Sigmat0Safe = iEvent.get(Sigmat0SafePidToken_);
   const auto& mtdQualMVA = iEvent.get(trackMVAQualToken_);
 
   auto eleHandle_EB = makeValid(iEvent.getHandle(GsfElectronToken_EB_));
@@ -944,10 +950,6 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     float ele_track_source_dxy = std::abs(ele.gsfTrack()->dxy(Vtx_chosen.position()));
 
     const reco::TrackRef ele_TrkRef = ele.core()->ctfTrack();
-    double tsim_ele = -1.;
-    double ele_sim_pt = -1.;
-    double ele_sim_phi = -1.;
-    double ele_sim_eta = -1.;
 
     // selecting "good" RECO electrons
     // PARAM
@@ -960,10 +962,6 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     auto found = r2s_->find(trkrefb);
     if (found != r2s_->end()) {
       const auto& tp = (found->val)[0];
-      tsim_ele = (tp.first)->parentVertex()->position().t() * 1e9;
-      ele_sim_pt = (tp.first)->pt();
-      ele_sim_phi = (tp.first)->phi();
-      ele_sim_eta = (tp.first)->eta();
       // check that the genParticle vector is not empty
       if (tp.first->status() != -99) {
         const auto genParticle = *(tp.first->genParticles()[0]);
@@ -977,6 +975,9 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         }
       }
     }
+
+    std::cout << "Found electron prompt : " << ele_Promt <<std::endl;
+    std::cout << "electron pt, eta : " << ele.gsfTrack()->pt() << ", " << ele.gsfTrack()->eta() <<std::endl;
 
     math::XYZVector EleSigTrackMomentumAtVtx = ele.gsfTrack()->momentum();
     double EleSigTrackEtaAtVtx = ele.gsfTrack()->eta();
@@ -996,20 +997,23 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       ele_sigTrkMtdMva = mtdQualMVA[ele_TrkRef];
       ele_sigTrkTimeErr = (ele_sigTrkMtdMva > min_track_mtd_mva_cut) ? Sigmat0Pid[ele_TrkRef] : -1;
 
-      meEle_avg_error_SigTrk_check_->Fill(ele_sigTrkTimeErr);
+      float dt_ele_vtx_signif = 0;
+      if ( ele_sigTrkTimeErr > 0 ) {
+	dt_ele_vtx_signif = std::abs(ele_sigTrkTime - Vtx_chosen.t())/ std::sqrt(ele_sigTrkTimeErr*ele_sigTrkTimeErr + Vtx_chosen.tError() * Vtx_chosen.tError());
+      }
+      if ( dt_ele_vtx_signif > 3 ) std::cout << "dtSig(ele,vtx) = " << dt_ele_vtx_signif << std::endl;
 
+      
       if (ele_Promt) {
         // For signal (promt)
         if (Barrel_ele) {
           // All selected electron information for efficiency plots later
           meEle_pt_tot_Sig_EB_->Fill(ele.pt());
-          meEle_pt_sim_tot_Sig_EB_->Fill(ele_sim_pt);
           meEle_eta_tot_Sig_EB_->Fill(std::abs(ele.eta()));
           meEle_phi_tot_Sig_EB_->Fill(ele.phi());
         } else {
           // All selected electron information for efficiency plots later
           meEle_pt_tot_Sig_EE_->Fill(ele.pt());
-          meEle_pt_sim_tot_Sig_EE_->Fill(ele_sim_pt);
           meEle_eta_tot_Sig_EE_->Fill(std::abs(ele.eta()));
           meEle_phi_tot_Sig_EE_->Fill(ele.phi());
         }
@@ -1017,12 +1021,10 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         // For background (non-promt)
         if (Barrel_ele) {
           meEle_pt_tot_Bkg_EB_->Fill(ele.pt());
-          meEle_pt_sim_tot_Bkg_EB_->Fill(ele_sim_pt);
           meEle_eta_tot_Bkg_EB_->Fill(std::abs(ele.eta()));
           meEle_phi_tot_Bkg_EB_->Fill(ele.phi());
         } else {
           meEle_pt_tot_Bkg_EE_->Fill(ele.pt());
-          meEle_pt_sim_tot_Bkg_EE_->Fill(ele_sim_pt);
           meEle_eta_tot_Bkg_EE_->Fill(std::abs(ele.eta()));
           meEle_phi_tot_Bkg_EE_->Fill(ele.phi());
         }
@@ -1035,20 +1037,9 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       std::vector<double> pT_sum_MTD{0, 0, 0, 0, 0, 0, 0};
       std::vector<double> rel_pT_sum_MTD{0, 0, 0, 0, 0, 0, 0};
 
-      std::vector<int> N_tracks_sim_MTD{0, 0, 0, 0, 0, 0, 0};
-      std::vector<double> pT_sum_sim_MTD{0, 0, 0, 0, 0, 0, 0};
-      std::vector<double> rel_pT_sum_sim_MTD{0, 0, 0, 0, 0, 0, 0};
-      int N_tracks_gen = 0;
-      double pT_sum_gen = 0;
-      double rel_pT_sum_gen = 0;
-
       std::vector<int> N_tracks_MTD_significance{0, 0, 0};
       std::vector<double> pT_sum_MTD_significance{0, 0, 0};
       std::vector<double> rel_pT_sum_MTD_significance{0, 0, 0};
-
-      std::vector<int> N_tracks_sim_MTD_significance{0, 0, 0};
-      std::vector<double> pT_sum_sim_MTD_significance{0, 0, 0};
-      std::vector<double> rel_pT_sum_sim_MTD_significance{0, 0, 0};
 
       int general_index = 0;
       for (const auto& trackGen : *GenRecTrackHandle) {
@@ -1062,9 +1053,10 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         if (trackGen.pt() < min_pt_cut) {
           continue;
         }
-        if (std::abs(trackGen.vz() - ele.gsfTrack()->vz()) > max_dz_cut) {
-          continue;
-        }
+	// MM: need this?
+        //if (std::abs(trackGen.vz() - ele.gsfTrack()->vz()) > max_dz_cut) {
+        //  continue;
+        //}
 
         // cut for general track matching to PV
         if (track_match_PV_) {
@@ -1073,265 +1065,74 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           }
         }
 
+	double dz = std::abs(trackGen.dz(Vtx_chosen.position()));
+	if ( dz > 0.2 ) continue; /// MM
+		
         double dR = reco::deltaR(trackGen.momentum(), EleSigTrackMomentumAtVtx);
         double deta = std::abs(trackGen.eta() - EleSigTrackEtaAtVtx);
 
-        // restrict to tracks in the isolation cone
+	// restrict to tracks in the isolation cone
         if (dR < min_dR_cut || dR > max_dR_cut || deta < min_strip_cut)
           continue;
 
-        // no MTD case
-        ++N_tracks_noMTD;
-        pT_sum_noMTD += trackGen.pt();
-
-        // MTD case
-        const reco::TrackBaseRef trkrefBase(trackref_general);
+	//  matching to Tracking Particle
+	const reco::TrackBaseRef trkrefBase(trackref_general);
         auto TPmatched = r2s_->find(trkrefBase);
-        double tsim_trk = -1.;
-        double trk_ptSim = -1.;
-        bool genMatched = false;
+        bool isFromPU = true;
         if (TPmatched != r2s_->end()) {
           // reco track matched to a TP
           const auto& tp = (TPmatched->val)[0];
-          tsim_trk = (tp.first)->parentVertex()->position().t() * 1e9;
-          trk_ptSim = (tp.first)->pt();
-          // check that the genParticle vector is not empty
-          if (tp.first->status() != -99) {
-            genMatched = true;
-            meTrk_genMatch_check_->Fill(1);
-          } else {
-            meTrk_genMatch_check_->Fill(0);
-          }
-        }
+	  //if eventID=0 and bx=0: PV, otherwise is from PU event
+	  if ( tp.first->eventId().event() == 0 && tp.first->eventId().bunchCrossing() == 0 ){
+	    isFromPU = false;
+	  }
+	  else{
+	    //std::cout << "tp status = " << tp.first->status() <<std::endl;
+	  }
+	  //std::cout << tp.first->eventId().event() << "   " << tp.first->eventId().bunchCrossing() << "   isFromPU = " << isFromPU   << std::endl;
+	}
 
-        double TrkMTDTime = t0Pid[trackref_general];
-        double TrkMTDMva = mtdQualMVA[trackref_general];
-        double TrkMTDTimeErr = (TrkMTDMva > min_track_mtd_mva_cut) ? Sigmat0Pid[trackref_general] : -1;
 
-        meEle_avg_error_PUTrk_check_->Fill(TrkMTDTimeErr);
+	
+        // no MTD case
+        ++N_tracks_noMTD;
+        pT_sum_noMTD += trackGen.pt();
+	
+        // MTD case
+	double TrkMTDMva = mtdQualMVA[trackref_general];
+	//double TrkMTDTime = t0Pid[trackref_general];
+	//double TrkMTDTimeErr = (TrkMTDMva > min_track_mtd_mva_cut) ? Sigmat0Pid[trackref_general] : -1;
+	double TrkMTDTime = t0Safe[trackref_general];
+	double TrkMTDTimeErr = (TrkMTDMva > min_track_mtd_mva_cut) ? Sigmat0Safe[trackref_general] : -1;
 
-        // MTD GEN case
-        if (genMatched) {
-          N_tracks_gen++;
-          pT_sum_gen += trk_ptSim;
-        }
+	// dt wrt vertex
+	double dt_vtx = 0;  // dt regular track vs vtx
+	double dt_vtx_signif = 0;
+	
+	if (TrkMTDTimeErr > 0 && Vtx_chosen.tError() > 0) {
+	  dt_vtx = std::abs(TrkMTDTime - Vtx_chosen.t());
+	  dt_vtx_signif = dt_vtx / std::sqrt(TrkMTDTimeErr * TrkMTDTimeErr + Vtx_chosen.tError() * Vtx_chosen.tError());
 
-        // dt with the track
-        if (dt_sig_track_) {
-          double dt_sigTrk = 0;
-          double dt_sigTrk_signif = 0;
-          double dt_sim_sigTrk = 0;
-          double dt_sim_sigTrk_signif = 0;
+	  std::cout << "track pT = " << trackGen.pt() << "  eta = " << trackGen.eta()
+		    << "  sigmat0 = " << Sigmat0Pid[trackref_general]
+		    << "  sigmat0Safe = " << Sigmat0Safe[trackref_general]
+		    << "  dtSig(track, vtx) = " << dt_vtx_signif << "  isFromPU = " << isFromPU <<std::endl;
+	}
+	
+	// significance timing cuts
+	for (long unsigned int i = 0; i < N_tracks_MTD_significance.size(); i++) {
+	  if (dt_vtx_signif < max_dt_significance_cut[i]) {
+	    N_tracks_MTD_significance[i]++;
+	    pT_sum_MTD_significance[i] += trackGen.pt();
+	  }
+	}
+      } // end loop over tracks
 
-          // MTD SIM CASE
-          if (std::abs(tsim_trk) > 0 && std::abs(tsim_ele) > 0 && trk_ptSim > 0) {
-            dt_sim_sigTrk = std::abs(tsim_trk - tsim_ele);
-            dt_sim_sigTrk_signif = dt_sim_sigTrk / std::sqrt(avg_sim_PUtrack_t_err * avg_sim_PUtrack_t_err +
-                                                             avg_sim_sigTrk_t_err * avg_sim_sigTrk_t_err);
-
-            if (optionalPlots_) {
-              // absolute timing cuts
-              for (long unsigned int i = 0; i < N_tracks_sim_MTD.size(); i++) {
-                if (dt_sim_sigTrk < max_dt_track_cut[i]) {
-                  N_tracks_sim_MTD[i] = N_tracks_sim_MTD[i] + 1;
-                  pT_sum_sim_MTD[i] = pT_sum_sim_MTD[i] + trk_ptSim;
-                }
-              }
-            }
-            // significance cuts
-            for (long unsigned int i = 0; i < N_tracks_sim_MTD_significance.size(); i++) {
-              if (dt_sim_sigTrk_signif < max_dt_significance_cut[i]) {
-                N_tracks_sim_MTD_significance[i]++;
-                pT_sum_sim_MTD_significance[i] += trk_ptSim;
-              }
-            }
-
-          } else {
-            // if there is no error for MTD information, we count the MTD isolation case same as noMTD
-            if (optionalPlots_) {
-              for (long unsigned int i = 0; i < N_tracks_sim_MTD.size(); i++) {
-                N_tracks_sim_MTD[i] = N_tracks_sim_MTD[i] + 1;
-                pT_sum_sim_MTD[i] = pT_sum_sim_MTD[i] + trk_ptSim;
-              }
-            }
-            for (long unsigned int i = 0; i < N_tracks_sim_MTD_significance.size(); i++) {
-              N_tracks_sim_MTD_significance[i]++;
-              pT_sum_sim_MTD_significance[i] += trk_ptSim;
-            }
-          }
-
-          // MTD reco case
-          if (TrkMTDTimeErr > 0 && ele_sigTrkTimeErr > 0) {
-            dt_sigTrk = std::abs(TrkMTDTime - ele_sigTrkTime);
-            dt_sigTrk_signif =
-                dt_sigTrk / std::sqrt(TrkMTDTimeErr * TrkMTDTimeErr + ele_sigTrkTimeErr * ele_sigTrkTimeErr);
-
-            meEle_no_dt_check_->Fill(1);
-            if (optionalPlots_) {
-              // absolute timing cuts
-              for (long unsigned int i = 0; i < N_tracks_MTD.size(); i++) {
-                if (dt_sigTrk < max_dt_track_cut[i]) {
-                  N_tracks_MTD[i] = N_tracks_MTD[i] + 1;
-                  pT_sum_MTD[i] = pT_sum_MTD[i] + trackGen.pt();
-                }
-              }
-            }
-            // significance cuts
-            for (long unsigned int i = 0; i < N_tracks_MTD_significance.size(); i++) {
-              if (dt_sigTrk_signif < max_dt_significance_cut[i]) {
-                N_tracks_MTD_significance[i]++;
-                pT_sum_MTD_significance[i] += trackGen.pt();
-              }
-            }
-
-          } else {
-            // if there is no error for MTD information, we count the MTD isolation case same as noMTD
-            if (optionalPlots_) {
-              for (long unsigned int i = 0; i < N_tracks_MTD.size(); i++) {
-                N_tracks_MTD[i] = N_tracks_MTD[i] + 1;          // N_tracks_noMTD
-                pT_sum_MTD[i] = pT_sum_MTD[i] + trackGen.pt();  // pT sum
-              }
-            }
-            for (long unsigned int i = 0; i < N_tracks_MTD_significance.size(); i++) {
-              N_tracks_MTD_significance[i]++;
-              pT_sum_MTD_significance[i] += trackGen.pt();
-            }
-            meEle_no_dt_check_->Fill(0);
-          }
-
-          if (optionalPlots_) {
-            for (long unsigned int i = 0; i < (pT_bins_dt_distrb.size() - 1); i++) {
-              //stuff general pT
-              if (ele.pt() > pT_bins_dt_distrb[i] && ele.pt() < pT_bins_dt_distrb[i + 1]) {
-                general_pT_list[i]->Fill(dt_sigTrk);
-                general_pT_Signif_list[i]->Fill(dt_sigTrk_signif);
-              }
-            }
-
-            for (long unsigned int i = 0; i < (eta_bins_dt_distrib.size() - 1); i++) {
-              //stuff general eta
-              if (std::abs(ele.eta()) > eta_bins_dt_distrib[i] && std::abs(ele.eta()) < eta_bins_dt_distrib[i + 1]) {
-                general_eta_list[i]->Fill(dt_sigTrk);
-                general_eta_Signif_list[i]->Fill(dt_sigTrk_signif);
-              }
-            }
-          }  // End of optional dt distributions plots
-
-          // dt with the vertex
-        } else {
-          double dt_vtx = 0;  // dt regular track vs vtx
-          double dt_vtx_signif = 0;
-
-          double dt_sim_vtx = 0;  // dt regular track vs vtx
-          double dt_sim_vtx_signif = 0;
-
-          // MTD SIM case
-          if (std::abs(tsim_trk) > 0 && Vtx_chosen.tError() > 0 && trk_ptSim > 0) {
-            dt_sim_vtx = std::abs(tsim_trk - Vtx_chosen.t());
-            dt_sim_vtx_signif = dt_sim_vtx / std::sqrt(avg_sim_PUtrack_t_err * avg_sim_PUtrack_t_err +
-                                                       Vtx_chosen.tError() * Vtx_chosen.tError());
-            if (optionalPlots_) {
-              // absolute timing cuts
-              for (long unsigned int i = 0; i < N_tracks_sim_MTD.size(); i++) {
-                if (dt_sim_vtx < max_dt_vtx_cut[i]) {
-                  N_tracks_sim_MTD[i] = N_tracks_sim_MTD[i] + 1;
-                  pT_sum_sim_MTD[i] = pT_sum_sim_MTD[i] + trk_ptSim;
-                }
-              }
-            }
-            // significance timing cuts
-            for (long unsigned int i = 0; i < N_tracks_sim_MTD_significance.size(); i++) {
-              if (dt_sim_vtx_signif < max_dt_significance_cut[i]) {
-                N_tracks_sim_MTD_significance[i]++;
-                pT_sum_sim_MTD_significance[i] += trk_ptSim;
-              }
-            }
-          } else {
-            if (optionalPlots_) {
-              for (long unsigned int i = 0; i < N_tracks_sim_MTD.size(); i++) {
-                N_tracks_sim_MTD[i] = N_tracks_sim_MTD[i] + 1;      // N_tracks_noMTD
-                pT_sum_sim_MTD[i] = pT_sum_sim_MTD[i] + trk_ptSim;  // pT_sum_noMTD
-              }
-            }
-            for (long unsigned int i = 0; i < N_tracks_sim_MTD_significance.size(); i++) {
-              N_tracks_sim_MTD_significance[i]++;
-              pT_sum_sim_MTD_significance[i] += trk_ptSim;
-            }
-          }
-
-          // MTD RECO case
-          if (TrkMTDTimeErr > 0 && Vtx_chosen.tError() > 0) {
-            dt_vtx = std::abs(TrkMTDTime - Vtx_chosen.t());
-            dt_vtx_signif =
-                dt_vtx / std::sqrt(TrkMTDTimeErr * TrkMTDTimeErr + Vtx_chosen.tError() * Vtx_chosen.tError());
-
-            meEle_no_dt_check_->Fill(1);
-            meEle_avg_error_vtx_check_->Fill(Vtx_chosen.tError());
-            if (optionalPlots_) {
-              // absolute timing cuts
-              for (long unsigned int i = 0; i < N_tracks_MTD.size(); i++) {
-                if (dt_vtx < max_dt_vtx_cut[i]) {
-                  N_tracks_MTD[i] = N_tracks_MTD[i] + 1;
-                  pT_sum_MTD[i] = pT_sum_MTD[i] + trackGen.pt();
-                }
-              }
-            }
-            // significance timing cuts
-            for (long unsigned int i = 0; i < N_tracks_MTD_significance.size(); i++) {
-              if (dt_vtx_signif < max_dt_significance_cut[i]) {
-                N_tracks_MTD_significance[i]++;
-                pT_sum_MTD_significance[i] += trackGen.pt();
-              }
-            }
-          } else {
-            if (optionalPlots_) {
-              for (long unsigned int i = 0; i < N_tracks_MTD.size(); i++) {
-                N_tracks_MTD[i] = N_tracks_MTD[i] + 1;          // N_tracks_noMTD
-                pT_sum_MTD[i] = pT_sum_MTD[i] + trackGen.pt();  // pT_sum_noMTD
-              }
-            }
-            for (long unsigned int i = 0; i < N_tracks_MTD_significance.size(); i++) {
-              N_tracks_MTD_significance[i]++;
-              pT_sum_MTD_significance[i] += trackGen.pt();
-            }
-            meEle_no_dt_check_->Fill(0);
-          }
-
-          // Optional dt distribution plots
-          if (optionalPlots_) {
-            for (long unsigned int i = 0; i < (pT_bins_dt_distrb.size() - 1); i++) {
-              //stuff general pT
-              if (ele.pt() > pT_bins_dt_distrb[i] && ele.pt() < pT_bins_dt_distrb[i + 1]) {
-                general_pT_list[i]->Fill(dt_vtx);
-                general_pT_Signif_list[i]->Fill(dt_vtx_signif);
-              }
-            }
-
-            for (long unsigned int i = 0; i < (eta_bins_dt_distrib.size() - 1); i++) {
-              //stuff general eta
-              if (std::abs(ele.eta()) > eta_bins_dt_distrib[i] && std::abs(ele.eta()) < eta_bins_dt_distrib[i + 1]) {
-                general_eta_list[i]->Fill(dt_vtx);
-                general_eta_Signif_list[i]->Fill(dt_vtx_signif);
-              }
-            }
-          }  // End of optional dt distributions plots
-        }
-      }
+      
+      //now compute relative isolation
       rel_pT_sum_noMTD = pT_sum_noMTD / ele.gsfTrack()->pt();  // rel_ch_iso calculation
-      if (optionalPlots_) {
-        for (long unsigned int i = 0; i < N_tracks_MTD.size(); i++) {
-          rel_pT_sum_MTD[i] = pT_sum_MTD[i] / ele.gsfTrack()->pt();
-          rel_pT_sum_sim_MTD[i] = pT_sum_sim_MTD[i] / ele_sim_pt;
-        }
-        // now compute the isolation
-        rel_pT_sum_noMTD = pT_sum_noMTD / ele.gsfTrack()->pt();
-
-        rel_pT_sum_gen = pT_sum_gen / ele_sim_pt;
-      }
-
       for (long unsigned int i = 0; i < N_tracks_MTD_significance.size(); i++) {
         rel_pT_sum_MTD_significance[i] = pT_sum_MTD_significance[i] / ele.gsfTrack()->pt();
-        rel_pT_sum_sim_MTD_significance[i] = pT_sum_sim_MTD_significance[i] / ele_sim_pt;
       }
 
       if (ele_Promt) {  // promt part
@@ -1339,257 +1140,41 @@ void MtdEleIsoValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           meEleISO_Ntracks_Sig_EB_->Fill(N_tracks_noMTD);
           meEleISO_chIso_Sig_EB_->Fill(pT_sum_noMTD);
           meEleISO_rel_chIso_Sig_EB_->Fill(rel_pT_sum_noMTD);
-          if (optionalPlots_) {
-            for (long unsigned int j = 0; j < Ntracks_EB_list_Sig.size(); j++) {
-              Ntracks_EB_list_Sig[j]->Fill(N_tracks_MTD[j]);
-              ch_iso_EB_list_Sig[j]->Fill(pT_sum_MTD[j]);
-              rel_ch_iso_EB_list_Sig[j]->Fill(rel_pT_sum_MTD[j]);
-
-              Ntracks_sim_EB_list_Sig[j]->Fill(N_tracks_sim_MTD[j]);
-              ch_iso_sim_EB_list_Sig[j]->Fill(pT_sum_sim_MTD[j]);
-              rel_ch_iso_sim_EB_list_Sig[j]->Fill(rel_pT_sum_sim_MTD[j]);
-            }
-            meEleISO_Ntracks_gen_Sig_EB_->Fill(N_tracks_gen);
-            meEleISO_chIso_gen_Sig_EB_->Fill(pT_sum_gen);
-            meEleISO_rel_chIso_gen_Sig_EB_->Fill(rel_pT_sum_gen);
-          }
-
-          for (long unsigned int j = 0; j < Ntracks_EB_list_Significance_Sig.size(); j++) {
+	  for (long unsigned int j = 0; j < Ntracks_EB_list_Significance_Sig.size(); j++) {
             Ntracks_EB_list_Significance_Sig[j]->Fill(N_tracks_MTD_significance[j]);
             ch_iso_EB_list_Significance_Sig[j]->Fill(pT_sum_MTD_significance[j]);
             rel_ch_iso_EB_list_Significance_Sig[j]->Fill(rel_pT_sum_MTD_significance[j]);
-
-            if (optionalPlots_) {
-              Ntracks_sim_EB_list_Significance_Sig[j]->Fill(N_tracks_sim_MTD_significance[j]);
-              ch_iso_sim_EB_list_Significance_Sig[j]->Fill(pT_sum_sim_MTD_significance[j]);
-              rel_ch_iso_sim_EB_list_Significance_Sig[j]->Fill(rel_pT_sum_sim_MTD_significance[j]);
-            }
-          }
-
-          if (rel_pT_sum_noMTD < rel_iso_cut_) {  // filling hists for iso efficiency calculations
-            meEle_pt_noMTD_Sig_EB_->Fill(ele.pt());
-            meEle_eta_noMTD_Sig_EB_->Fill(std::abs(ele.eta()));
-            meEle_phi_noMTD_Sig_EB_->Fill(ele.phi());
-          }
-          if (optionalPlots_) {
-            for (long unsigned int k = 0; k < Ntracks_EB_list_Sig.size(); k++) {
-              if (rel_pT_sum_MTD[k] < rel_iso_cut_) {
-                Ele_pT_MTD_EB_list_Sig[k]->Fill(ele.pt());
-                Ele_eta_MTD_EB_list_Sig[k]->Fill(std::abs(ele.eta()));
-                Ele_phi_MTD_EB_list_Sig[k]->Fill(ele.phi());
-
-                Ele_pT_sim_MTD_EB_list_Sig[k]->Fill(ele_sim_pt);
-              }
-            }
-            if (rel_pT_sum_gen < rel_iso_cut_) {
-              meEle_pt_gen_Sig_EB_->Fill(ele_sim_pt);
-              meEle_eta_gen_Sig_EB_->Fill(ele_sim_eta);
-              meEle_phi_gen_Sig_EB_->Fill(ele_sim_phi);
-            }
-          }
-
-          for (long unsigned int k = 0; k < Ntracks_EB_list_Significance_Sig.size(); k++) {
-            if (rel_pT_sum_MTD_significance[k] < rel_iso_cut_) {
-              Ele_pT_MTD_EB_list_Significance_Sig[k]->Fill(ele.pt());
-              Ele_eta_MTD_EB_list_Significance_Sig[k]->Fill(std::abs(ele.eta()));
-              Ele_phi_MTD_EB_list_Significance_Sig[k]->Fill(ele.phi());
-            }
-            if (optionalPlots_ and rel_pT_sum_sim_MTD_significance[k] < rel_iso_cut_)
-              Ele_pT_sim_MTD_EB_list_Significance_Sig[k]->Fill(ele_sim_pt);
-          }
-
-        } else {  // for endcap
-
-          meEleISO_Ntracks_Sig_EE_->Fill(N_tracks_noMTD);
-          meEleISO_chIso_Sig_EE_->Fill(pT_sum_noMTD);
+	  }
+	} else {  // for endcap
+	  meEleISO_Ntracks_Sig_EE_->Fill(N_tracks_noMTD);
+	  meEleISO_chIso_Sig_EE_->Fill(pT_sum_noMTD);
           meEleISO_rel_chIso_Sig_EE_->Fill(rel_pT_sum_noMTD);
-          if (optionalPlots_) {
-            for (long unsigned int j = 0; j < Ntracks_EE_list_Sig.size(); j++) {
-              Ntracks_EE_list_Sig[j]->Fill(N_tracks_MTD[j]);
-              ch_iso_EE_list_Sig[j]->Fill(pT_sum_MTD[j]);
-              rel_ch_iso_EE_list_Sig[j]->Fill(rel_pT_sum_MTD[j]);
-
-              Ntracks_sim_EE_list_Sig[j]->Fill(N_tracks_sim_MTD[j]);
-              ch_iso_sim_EE_list_Sig[j]->Fill(pT_sum_sim_MTD[j]);
-              rel_ch_iso_sim_EE_list_Sig[j]->Fill(rel_pT_sum_sim_MTD[j]);
-            }
-            meEleISO_Ntracks_gen_Sig_EE_->Fill(N_tracks_gen);
-            meEleISO_chIso_gen_Sig_EE_->Fill(pT_sum_gen);
-            meEleISO_rel_chIso_gen_Sig_EE_->Fill(rel_pT_sum_gen);
-          }
-
           for (long unsigned int j = 0; j < Ntracks_EE_list_Significance_Sig.size(); j++) {
             Ntracks_EE_list_Significance_Sig[j]->Fill(N_tracks_MTD_significance[j]);
             ch_iso_EE_list_Significance_Sig[j]->Fill(pT_sum_MTD_significance[j]);
             rel_ch_iso_EE_list_Significance_Sig[j]->Fill(rel_pT_sum_MTD_significance[j]);
-
-            if (optionalPlots_) {
-              Ntracks_sim_EE_list_Significance_Sig[j]->Fill(N_tracks_sim_MTD_significance[j]);
-              ch_iso_sim_EE_list_Significance_Sig[j]->Fill(pT_sum_sim_MTD_significance[j]);
-              rel_ch_iso_sim_EE_list_Significance_Sig[j]->Fill(rel_pT_sum_sim_MTD_significance[j]);
-            }
-          }
-
-          if (rel_pT_sum_noMTD < rel_iso_cut_) {  // filling hists for iso efficiency calculations
-            meEle_pt_noMTD_Sig_EE_->Fill(ele.pt());
-            meEle_eta_noMTD_Sig_EE_->Fill(std::abs(ele.eta()));
-            meEle_phi_noMTD_Sig_EE_->Fill(ele.phi());
-          }
-          if (optionalPlots_) {
-            for (long unsigned int k = 0; k < Ntracks_EE_list_Sig.size(); k++) {
-              if (rel_pT_sum_MTD[k] < rel_iso_cut_) {
-                Ele_pT_MTD_EE_list_Sig[k]->Fill(ele.pt());
-                Ele_eta_MTD_EE_list_Sig[k]->Fill(std::abs(ele.eta()));
-                Ele_phi_MTD_EE_list_Sig[k]->Fill(ele.phi());
-
-                Ele_pT_sim_MTD_EE_list_Sig[k]->Fill(ele_sim_pt);
-              }
-            }
-            if (rel_pT_sum_gen < rel_iso_cut_) {
-              meEle_pt_gen_Sig_EE_->Fill(ele_sim_pt);
-              meEle_eta_gen_Sig_EE_->Fill(ele_sim_eta);
-              meEle_phi_gen_Sig_EE_->Fill(ele_sim_phi);
-            }
-          }
-          for (long unsigned int k = 0; k < Ntracks_EE_list_Significance_Sig.size(); k++) {
-            if (rel_pT_sum_MTD_significance[k] < rel_iso_cut_) {
-              Ele_pT_MTD_EE_list_Significance_Sig[k]->Fill(ele.pt());
-              Ele_eta_MTD_EE_list_Significance_Sig[k]->Fill(std::abs(ele.eta()));
-              Ele_phi_MTD_EE_list_Significance_Sig[k]->Fill(ele.phi());
-
-              if (optionalPlots_ and rel_pT_sum_sim_MTD_significance[k] < rel_iso_cut_)
-                Ele_pT_sim_MTD_EE_list_Significance_Sig[k]->Fill(ele_sim_pt);
-            }
-          }
-        }
+	  }
+	}
       } else {  // non-promt part
         if (Barrel_ele) {
           meEleISO_Ntracks_Bkg_EB_->Fill(N_tracks_noMTD);
           meEleISO_chIso_Bkg_EB_->Fill(pT_sum_noMTD);
           meEleISO_rel_chIso_Bkg_EB_->Fill(rel_pT_sum_noMTD);
-          if (optionalPlots_) {
-            for (long unsigned int j = 0; j < Ntracks_EB_list_Bkg.size(); j++) {
-              Ntracks_EB_list_Bkg[j]->Fill(N_tracks_MTD[j]);
-              ch_iso_EB_list_Bkg[j]->Fill(pT_sum_MTD[j]);
-              rel_ch_iso_EB_list_Bkg[j]->Fill(rel_pT_sum_MTD[j]);
-
-              Ntracks_sim_EB_list_Bkg[j]->Fill(N_tracks_sim_MTD[j]);
-              ch_iso_sim_EB_list_Bkg[j]->Fill(pT_sum_sim_MTD[j]);
-              rel_ch_iso_sim_EB_list_Bkg[j]->Fill(rel_pT_sum_sim_MTD[j]);
-            }
-            meEleISO_Ntracks_gen_Bkg_EB_->Fill(N_tracks_gen);
-            meEleISO_chIso_gen_Bkg_EB_->Fill(pT_sum_gen);
-            meEleISO_rel_chIso_gen_Bkg_EB_->Fill(rel_pT_sum_gen);
-          }
-
-          for (long unsigned int j = 0; j < Ntracks_EB_list_Significance_Bkg.size(); j++) {
+	  for (long unsigned int j = 0; j < Ntracks_EB_list_Significance_Bkg.size(); j++) {
             Ntracks_EB_list_Significance_Bkg[j]->Fill(N_tracks_MTD_significance[j]);
             ch_iso_EB_list_Significance_Bkg[j]->Fill(pT_sum_MTD_significance[j]);
             rel_ch_iso_EB_list_Significance_Bkg[j]->Fill(rel_pT_sum_MTD_significance[j]);
-
-            if (optionalPlots_) {
-              Ntracks_sim_EB_list_Significance_Bkg[j]->Fill(N_tracks_sim_MTD_significance[j]);
-              ch_iso_sim_EB_list_Significance_Bkg[j]->Fill(pT_sum_sim_MTD_significance[j]);
-              rel_ch_iso_sim_EB_list_Significance_Bkg[j]->Fill(rel_pT_sum_sim_MTD_significance[j]);
-            }
-          }
-
-          if (rel_pT_sum_noMTD < rel_iso_cut_) {  // filling hists for iso efficiency calculations
-            meEle_pt_noMTD_Bkg_EB_->Fill(ele.pt());
-            meEle_eta_noMTD_Bkg_EB_->Fill(std::abs(ele.eta()));
-            meEle_phi_noMTD_Bkg_EB_->Fill(ele.phi());
-          }
-          if (optionalPlots_) {
-            for (long unsigned int k = 0; k < Ntracks_EB_list_Bkg.size(); k++) {
-              if (rel_pT_sum_MTD[k] < rel_iso_cut_) {
-                Ele_pT_MTD_EB_list_Bkg[k]->Fill(ele.pt());
-                Ele_eta_MTD_EB_list_Bkg[k]->Fill(std::abs(ele.eta()));
-                Ele_phi_MTD_EB_list_Bkg[k]->Fill(ele.phi());
-
-                Ele_pT_sim_MTD_EB_list_Bkg[k]->Fill(ele_sim_pt);
-              }
-            }
-            if (rel_pT_sum_gen < rel_iso_cut_) {
-              meEle_pt_gen_Bkg_EB_->Fill(ele_sim_pt);
-              meEle_eta_gen_Bkg_EB_->Fill(ele_sim_eta);
-              meEle_phi_gen_Bkg_EB_->Fill(ele_sim_phi);
-            }
-          }
-          for (long unsigned int k = 0; k < Ntracks_EB_list_Significance_Bkg.size(); k++) {
-            if (rel_pT_sum_MTD_significance[k] < rel_iso_cut_) {
-              Ele_pT_MTD_EB_list_Significance_Bkg[k]->Fill(ele.pt());
-              Ele_eta_MTD_EB_list_Significance_Bkg[k]->Fill(std::abs(ele.eta()));
-              Ele_phi_MTD_EB_list_Significance_Bkg[k]->Fill(ele.phi());
-
-              if (optionalPlots_ and rel_pT_sum_sim_MTD_significance[k] < rel_iso_cut_)
-                Ele_pT_sim_MTD_EB_list_Significance_Bkg[k]->Fill(ele_sim_pt);
-            }
-          }
-
+	  }
         } else {  // for endcap
           meEleISO_Ntracks_Bkg_EE_->Fill(N_tracks_noMTD);
           meEleISO_chIso_Bkg_EE_->Fill(pT_sum_noMTD);
           meEleISO_rel_chIso_Bkg_EE_->Fill(rel_pT_sum_noMTD);
-          if (optionalPlots_) {
-            for (long unsigned int j = 0; j < Ntracks_EE_list_Bkg.size(); j++) {
-              Ntracks_EE_list_Bkg[j]->Fill(N_tracks_MTD[j]);
-              ch_iso_EE_list_Bkg[j]->Fill(pT_sum_MTD[j]);
-              rel_ch_iso_EE_list_Bkg[j]->Fill(rel_pT_sum_MTD[j]);
-
-              Ntracks_sim_EE_list_Bkg[j]->Fill(N_tracks_sim_MTD[j]);
-              ch_iso_sim_EE_list_Bkg[j]->Fill(pT_sum_sim_MTD[j]);
-              rel_ch_iso_sim_EE_list_Bkg[j]->Fill(rel_pT_sum_sim_MTD[j]);
-            }
-            meEleISO_Ntracks_gen_Bkg_EE_->Fill(N_tracks_gen);
-            meEleISO_chIso_gen_Bkg_EE_->Fill(pT_sum_gen);
-            meEleISO_rel_chIso_gen_Bkg_EE_->Fill(rel_pT_sum_gen);
-          }
-
-          for (long unsigned int j = 0; j < Ntracks_EE_list_Significance_Bkg.size(); j++) {
+	  for (long unsigned int j = 0; j < Ntracks_EE_list_Significance_Bkg.size(); j++) {
             Ntracks_EE_list_Significance_Bkg[j]->Fill(N_tracks_MTD_significance[j]);
             ch_iso_EE_list_Significance_Bkg[j]->Fill(pT_sum_MTD_significance[j]);
             rel_ch_iso_EE_list_Significance_Bkg[j]->Fill(rel_pT_sum_MTD_significance[j]);
-
-            if (optionalPlots_) {
-              Ntracks_sim_EE_list_Significance_Bkg[j]->Fill(N_tracks_sim_MTD_significance[j]);
-              ch_iso_sim_EE_list_Significance_Bkg[j]->Fill(pT_sum_sim_MTD_significance[j]);
-              rel_ch_iso_sim_EE_list_Significance_Bkg[j]->Fill(rel_pT_sum_sim_MTD_significance[j]);
-            }
           }
-
-          if (rel_pT_sum_noMTD < rel_iso_cut_) {  // filling hists for iso efficiency calculations
-            meEle_pt_noMTD_Bkg_EE_->Fill(ele.pt());
-            meEle_eta_noMTD_Bkg_EE_->Fill(std::abs(ele.eta()));
-            meEle_phi_noMTD_Bkg_EE_->Fill(ele.phi());
-          }
-          if (optionalPlots_) {
-            for (long unsigned int k = 0; k < Ntracks_EE_list_Bkg.size(); k++) {
-              if (rel_pT_sum_MTD[k] < rel_iso_cut_) {
-                Ele_pT_MTD_EE_list_Bkg[k]->Fill(ele.pt());
-                Ele_eta_MTD_EE_list_Bkg[k]->Fill(std::abs(ele.eta()));
-                Ele_phi_MTD_EE_list_Bkg[k]->Fill(ele.phi());
-
-                Ele_pT_sim_MTD_EE_list_Bkg[k]->Fill(ele_sim_pt);
-              }
-            }
-            if (rel_pT_sum_gen < rel_iso_cut_) {
-              meEle_pt_gen_Bkg_EE_->Fill(ele_sim_pt);
-              meEle_eta_gen_Bkg_EE_->Fill(ele_sim_eta);
-              meEle_phi_gen_Bkg_EE_->Fill(ele_sim_phi);
-            }
-          }
-
-          for (long unsigned int k = 0; k < Ntracks_EE_list_Significance_Bkg.size(); k++) {
-            if (rel_pT_sum_MTD_significance[k] < rel_iso_cut_) {
-              Ele_pT_MTD_EE_list_Significance_Bkg[k]->Fill(ele.pt());
-              Ele_eta_MTD_EE_list_Significance_Bkg[k]->Fill(std::abs(ele.eta()));
-              Ele_phi_MTD_EE_list_Significance_Bkg[k]->Fill(ele.phi());
-
-              if (optionalPlots_ and rel_pT_sum_sim_MTD_significance[k] < rel_iso_cut_)
-                Ele_pT_sim_MTD_EE_list_Significance_Bkg[k]->Fill(ele_sim_pt);
-            }
-          }
-        }
+	}
       }
     }  // electron matched to a track
   }  // electron collection inside single event
@@ -4305,21 +3890,23 @@ void MtdEleIsoValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<edm::InputTag>("TPtoRecoTrackAssoc", edm::InputTag("trackingParticleRecoTrackAsssociation"));
   desc.add<edm::InputTag>("t0PID", edm::InputTag("tofPID:t0"));
   desc.add<edm::InputTag>("sigmat0PID", edm::InputTag("tofPID:sigmat0"));
+  desc.add<edm::InputTag>("t0SafePID", edm::InputTag("tofPID:t0safe"));
+  desc.add<edm::InputTag>("sigmat0SafePID", edm::InputTag("tofPID:sigmat0safe"));
   desc.add<edm::InputTag>("trackMVAQual", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"));
   desc.add<double>("trackMinimumPt", 1.0);  // [GeV]
   desc.add<double>("trackMinimumEta", 1.5);
   desc.add<double>("trackMaximumEta", 3.2);
   desc.add<double>("rel_iso_cut", 0.08);
   desc.add<bool>("optionTrackMatchToPV", false);
-  desc.add<bool>("option_dtToTrack", true);  // default is dt with track, if false will do dt to vertex
+  desc.add<bool>("option_dtToTrack", false);  // default is dt with track, if false will do dt to vertex
   desc.add<bool>("option_plots", false);
-  desc.add<double>("min_dR_cut", 0.01);
+  desc.add<double>("min_dR_cut", 0.02);
   desc.add<double>("max_dR_cut", 0.3);
   desc.add<double>("min_pt_cut_EB", 0.7);
   desc.add<double>("min_pt_cut_EE", 0.4);
   desc.add<double>("max_dz_cut_EB", 0.5);  // PARAM
   desc.add<double>("max_dz_cut_EE", 0.5);  // PARAM
-  desc.add<double>("max_dz_vtx_cut", 0.5);
+  desc.add<double>("max_dz_vtx_cut", 0.2);
   desc.add<double>("max_dxy_vtx_cut", 0.2);
   desc.add<double>("min_strip_cut", 0.01);
   desc.add<double>("min_track_mtd_mva_cut", 0.5);

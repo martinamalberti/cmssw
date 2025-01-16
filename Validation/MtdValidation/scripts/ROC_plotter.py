@@ -23,8 +23,8 @@ class MTD_Ele_Iso: # Using class, so code would be a bit shorter
 
     def __init__(self,filename_Sig: str, filename_Bkg: str,dz_cut: str,dtSignif_cut: bool):
 
-        self.filename_sig = directory_path + filename_Sig
-        self.filename_bkg = directory_path + filename_Bkg
+        self.filename_sig = directory_path + '/' + filename_Sig
+        self.filename_bkg = directory_path + '/' + filename_Bkg
 
         self.cut_type = dtSignif_cut # True if dt_significance is used, false if absolute dt cut is used.
         self.dz_cut_description = dz_cut
@@ -198,6 +198,7 @@ class MTD_Ele_Iso: # Using class, so code would be a bit shorter
                 plt.savefig(ROC_plots_directory+f'ROC_curve_BTL_dtsignif_{self.dz_cut_description}')
             plt.show()
 
+            plt.clf()
             plt.plot(self.Sig_iso_eff['Sig_noMTD_EE'],self.Bkg_iso_eff['Bkg_noMTD_EE'], label = 'noMTD')
             plt.plot(self.Sig_iso_eff['Sig_4sigma_EE'],self.Bkg_iso_eff['Bkg_4sigma_EE'], label = '4sigma cut')
             plt.plot(self.Sig_iso_eff['Sig_3sigma_EE'],self.Bkg_iso_eff['Bkg_3sigma_EE'], label = '3sigma cut')
@@ -286,34 +287,34 @@ def Plot_ROC_curves_vs_dz_noMTD(xmin,xmax,ymin,ymax,save:bool,*objects):
 def main():
 
     #obj = MTD_Ele_Iso(Signal_DQM_file,Bakcground_DQM_file,dz_cut description,dt_significance_check(False if abs(dt) check))
-    dz010_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz010_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz010_v5.root','dz_1mm',True)
-    dz020_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz020_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz020_v5.root','dz_2mm',True)
-    dz030_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz030_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz030_v5.root','dz_3mm',True)
-    dz040_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz040_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz040_v5.root','dz_4mm',True)
-    dz050_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz050_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz050_v5.root','dz_5mm',True)
+    #dz010_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz010_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz010_v5.root','dz_1mm',True)
+    dz020_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_RelValZee.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_RelValTTbar.root','dz_20mm',True)
+    #dz030_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz030_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz030_v5.root','dz_3mm',True)
+    #dz040_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz040_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz040_v5.root','dz_4mm',True)
+    #dz050_cut_obj = MTD_Ele_Iso('DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Sig_dz050_v5.root','DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO_Bkg_dz050_v5.root','dz_5mm',True)
 
-    dz010_cut_obj.Read_hists()
+    #dz010_cut_obj.Read_hists()
     dz020_cut_obj.Read_hists()
-    dz030_cut_obj.Read_hists()
-    dz040_cut_obj.Read_hists()
-    dz050_cut_obj.Read_hists()
+    #dz030_cut_obj.Read_hists()
+    #dz040_cut_obj.Read_hists()
+    #dz050_cut_obj.Read_hists()
 
-    dz010_cut_obj.Calculate_efficiencies()
+    #dz010_cut_obj.Calculate_efficiencies()
     dz020_cut_obj.Calculate_efficiencies()
-    dz030_cut_obj.Calculate_efficiencies()
-    dz040_cut_obj.Calculate_efficiencies()
-    dz050_cut_obj.Calculate_efficiencies()
+    #dz030_cut_obj.Calculate_efficiencies()
+    #dz040_cut_obj.Calculate_efficiencies()
+    #dz050_cut_obj.Calculate_efficiencies()
 
     # .Plot_ROC_curves(xmin,xmax,ymix,ymax,savePlot) -> Saves plot for BTL and ETL parts
-    dz010_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
-    dz020_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
-    dz030_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
-    dz040_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
-    dz050_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
+    #dz010_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
+    dz020_cut_obj.Plot_ROC_curves(0.80,1.0,0.00,0.35,True)
+    #dz030_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
+    #dz040_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
+    #dz050_cut_obj.Plot_ROC_curves(0.75,1.0,0.05,0.4,True)
 
 
     # This function usually works, but sometimes??? it gives errors -> no idea why. (python version issue?)
-    Plot_ROC_curves_vs_dz_noMTD(0.75,1.0,0.05,0.4,True,dz010_cut_obj,dz020_cut_obj,dz030_cut_obj,dz040_cut_obj,dz050_cut_obj) 
+    #Plot_ROC_curves_vs_dz_noMTD(0.75,1.0,0.05,0.4,True,dz010_cut_obj,dz020_cut_obj,dz030_cut_obj,dz040_cut_obj,dz050_cut_obj) 
 
 
 if __name__ == "__main__":
