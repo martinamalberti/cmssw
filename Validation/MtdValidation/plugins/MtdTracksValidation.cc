@@ -316,6 +316,8 @@ private:
   MonitorElement* meBTLTrackMatchedTPnomtdAssocMVAQual_;
   MonitorElement* meBTLTrackMatchedTPnomtdAssocTimeRes_;
   MonitorElement* meBTLTrackMatchedTPnomtdAssocTimePull_;
+  //MonitorElement* meBTLTrackMatchedTPnomtdAssocTrackIdDiff_;
+  //MonitorElement* meBTLTrackMatchedTPnomtdAssocTrackIdOffset_;
 
   // - ETL: one, two o no sim hits
   MonitorElement* meETLTrackMatchedTPmtd1Eta_;  // -- sim hit in >=1 etl disk
@@ -983,7 +985,49 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             meBTLTrackMatchedTPnomtdEta_->Fill(std::abs(trackGen.eta()));
             meBTLTrackMatchedTPnomtdPt_->Fill(trackGen.pt());
             if (isBTL) {
-              fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPnomtdAssocEta_,
+
+	      std::cout << "!!!!!!!! Found TP w/o mtd sim hits, but with reco hit match" <<std::endl; 
+
+	      for (unsigned int igt = 0; igt < (*tp_info)->g4Tracks().size(); igt++) {
+                unsigned int tpTrackId = (*tp_info)->g4Tracks()[igt].trackId();
+                std::cout << "TP trackId = " << tpTrackId
+			  << "   pT = " << (*tp_info)->pt()
+			  << "   eta = " << (*tp_info)->eta()
+			  << "   pdgId = " <<  (*tp_info)->pdgId() << std::endl;
+              }
+
+	      std::cout << " withMTD = " << withMTD << std::endl;
+	      
+              //check what is this reco clus matched to a TP without sim hit in mtd:
+              for (const auto& recClusterRef : recoClustersRefs) {
+                if (recClusterRef.isNonnull()) {
+                  //std::cout << "Reco cluster energy = " << (*recClusterRef).energy() <<std::endl;
+                  auto itp = r2sAssociationMap.equal_range(recClusterRef);
+                  if (itp.first != itp.second) {
+                    auto& scRefs = (*itp.first).second;
+                    if (scRefs.size() == 0) std::cout << "MtdTracksValidation - scRefs.size() = " << scRefs.size() <<std::endl;
+                    for (const auto& scRef : scRefs) {
+                      std::cout << " Found sim cluster associated to reco cluster:" <<std::endl;                                   
+                      std::cout << "    simClus idOffset = " << (*scRef).trackIdOffset()                                           
+                                      << "    pdgId = " << (*scRef).pdgId()                                                        
+                                      << std::endl;                                                                                
+                      for (unsigned int igt = 0; igt < (*scRef).g4Tracks().size(); igt++) {                                        
+			std::cout << "  simClus trackId = " << (*scRef).g4Tracks()[igt].trackId()                    
+				  << "  (*scRef).g4Tracks().momentum().pt() = " <<(*scRef).g4Tracks()[igt].momentum().pt()   
+				  << "  (*scRef).g4Tracks().momentum().eta() = " <<(*scRef).g4Tracks()[igt].momentum().eta()
+				  << "  (*scRef).g4Tracks().type() = " <<(*scRef).g4Tracks()[igt].type()                     
+				  <<std::endl;                                                                               
+                      }                                                                                                            
+                    }
+                  }
+                  else{
+                    std::cout << "No sim cluster matched to reco cluster" << std::endl;
+                  }
+		}
+	      }
+
+	      
+	      fillTrackClusterMatchingHistograms(meBTLTrackMatchedTPnomtdAssocEta_,
                                                  meBTLTrackMatchedTPnomtdAssocPt_,
                                                  meBTLTrackMatchedTPnomtdAssocMVAQual_,
                                                  meBTLTrackMatchedTPnomtdAssocTimeRes_,
@@ -994,6 +1038,10 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
                                                  dT,
                                                  pullT,
                                                  hasTime);
+
+	      // check if reco clus has a corresponding sim clus
+	      //meBTLTrackMatchedTPnomtdAssocTtrackIdDiff_->Fill(); // difference between track id TP and track id sim clus
+	      
             }
           }
         }
