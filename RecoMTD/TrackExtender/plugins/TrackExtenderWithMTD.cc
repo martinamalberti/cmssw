@@ -1,3 +1,5 @@
+#define EDM_ML_DEBUG 1
+
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -1391,6 +1393,9 @@ reco::Track TrackExtenderWithMTDT<TrackCollection>::buildTrack(const reco::Track
     float pathlength;
     TrackSegments trs;
     bool validpropagation = trackPathLength(trajWithMtd, bs, thePropagator, pathlength, trs);
+
+    std::cout << " Track pathlegth = " << pathlength <<std::endl;
+    
     float thit = 0.f;
     float thiterror = -1.f;
     GlobalPoint thitpos{0., 0., 0.};
