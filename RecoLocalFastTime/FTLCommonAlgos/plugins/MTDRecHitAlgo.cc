@@ -19,14 +19,17 @@ public:
   FTLRecHit makeRecHit(const FTLUncalibratedRecHit& uRecHit, uint32_t& flags) const final;
 
 private:
-  double thresholdToKeep_, calibration_;
+  //double thresholdToKeep_, calibration_;
+  std::vector<double> thresholdToKeep_;
+  double calibration_;
   const MTDTimeCalib* time_calib_;
   edm::ESGetToken<MTDTimeCalib, MTDTimeCalibRecord> tcToken_;
 };
 
 MTDRecHitAlgo::MTDRecHitAlgo(const edm::ParameterSet& conf, edm::ConsumesCollector& sumes)
     : MTDRecHitAlgoBase(conf, sumes),
-      thresholdToKeep_(conf.getParameter<double>("thresholdToKeep")),
+      //thresholdToKeep_(conf.getParameter<double>("thresholdToKeep")),
+      thresholdToKeep_(conf.getParameter<std::vector<double>>("thresholdToKeep")),
       calibration_(conf.getParameter<double>("calibrationConstant")) {
   tcToken_ = sumes.esConsumes<MTDTimeCalib, MTDTimeCalibRecord>(edm::ESInputTag("", "MTDTimeCalib"));
 }
@@ -84,7 +87,18 @@ FTLRecHit MTDRecHitAlgo::makeRecHit(const FTLUncalibratedRecHit& uRecHit, uint32
 
   // Now fill flags
   // all rechits from the digitizer are "good" at present
-  if (energy > thresholdToKeep_) {
+  float thr = 0.;
+  if ( MTDDetId(uRecHit.id()).mtdSubDetector() == 1){ // BTL
+    BTLDetId cellId(uRecHit.id());
+    int ru = cellId.runit();
+    thr = thresholdToKeep_[ru-1];
+    //std::cout << cellId << "   RU = " << ru << "   thr = " << thr << std::endl;
+  }
+  else { // ETL
+    thr = thresholdToKeep_[0];
+  }
+  //  if (energy > thresholdToKeep_) {
+  if (energy > thr) {
     flags = FTLRecHit::kGood;
     rh.setFlag(flags);
   } else {
