@@ -140,7 +140,8 @@ void ETLDeviceSim::getHitsResponse(const std::vector<std::tuple<int, uint32_t, f
       continue;
 
     // Check if toa is within the ETROC TDC window [12.5 ns nominal]
-    if (toa < tdcWindowStart_ || tdcWindowEnd_ )
+    std::cout << "Toa = " << toa <<std::endl;
+    if (toa < tdcWindowStart_ || toa > tdcWindowEnd_ )
       continue;
     
     // Check if time index is ok and store energy
