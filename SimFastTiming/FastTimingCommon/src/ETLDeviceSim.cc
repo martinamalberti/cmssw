@@ -134,16 +134,15 @@ void ETLDeviceSim::getHitsResponse(const std::vector<std::tuple<int, uint32_t, f
     auto simHitIt =
         simHitAccumulator->emplace(mtd_digitizer::MTDCellId(id, row, col), mtd_digitizer::MTDCellInfo()).first;
 
+    // Check if toa is within the ETROC TDC window [12.5 ns nominal]
+    if ( toa < tdcWindowStart_ || toa > tdcWindowEnd_ )
+      continue;
+    
     // Accumulate in 15 buckets of 25ns (9 pre-samples, 1 in-time, 5 post-samples)
     const int itime = std::floor(toa / bxTime_) + mtd_digitizer::kInTimeBX;
     if (itime < 0 || itime >= mtd_digitizer::kNumberOfBX)
       continue;
 
-    // Check if toa is within the ETROC TDC window [12.5 ns nominal]
-    std::cout << "Toa = " << toa <<std::endl;
-    if (toa < tdcWindowStart_ || toa > tdcWindowEnd_ )
-      continue;
-    
     // Check if time index is ok and store energy
     if (itime >= (int)simHitIt->second.hit_info[0].size())
       continue;
