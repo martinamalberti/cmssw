@@ -49,6 +49,8 @@ private:
   const reco::FormulaEvaluator MPVKaon_;
   const reco::FormulaEvaluator MPVElectron_;
   const reco::FormulaEvaluator MPVProton_;
+  float tdcWindowStart_;
+  float tdcWindowEnd_;
 };
 
 #endif

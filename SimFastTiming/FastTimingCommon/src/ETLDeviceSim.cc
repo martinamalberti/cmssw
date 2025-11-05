@@ -28,7 +28,9 @@ ETLDeviceSim::ETLDeviceSim(const edm::ParameterSet& pset, edm::ConsumesCollector
       MPVPion_(pset.getParameter<std::string>("MPVPion")),
       MPVKaon_(pset.getParameter<std::string>("MPVKaon")),
       MPVElectron_(pset.getParameter<std::string>("MPVElectron")),
-      MPVProton_(pset.getParameter<std::string>("MPVProton")) {}
+      MPVProton_(pset.getParameter<std::string>("MPVProton")),
+      tdcWindowStart_(pset.getParameter<double>("tdcWindowStart")),
+      tdcWindowEnd_(pset.getParameter<double>("tdcWindowEnd")){}
 
 void ETLDeviceSim::getEventSetup(const edm::EventSetup& evs) { geom_ = &evs.getData(geomToken_); }
 
@@ -137,6 +139,10 @@ void ETLDeviceSim::getHitsResponse(const std::vector<std::tuple<int, uint32_t, f
     if (itime < 0 || itime >= mtd_digitizer::kNumberOfBX)
       continue;
 
+    // Check if toa is within the ETROC TDC window [12.5 ns nominal]
+    if (toa < tdcWindowStart_ || tdcWindowEnd_ )
+      continue;
+    
     // Check if time index is ok and store energy
     if (itime >= (int)simHitIt->second.hit_info[0].size())
       continue;

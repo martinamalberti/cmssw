@@ -77,8 +77,10 @@ _endcap_MTDDigitizer = cms.PSet(
         MPVPion             = cms.string("1.24531e-05 + 7.16578e-07 / (x * x)"),
         MPVKaon             = cms.string("1.20998e-05 + 2.47192e-06 / (x * x * x)"),
         MPVElectron         = cms.string("1.30030e-05 + 1.55166e-07 / (x * x)"),
-        MPVProton           = cms.string("1.13666e-05 + 1.20093e-05 / (x * x)")
-        ),
+        MPVProton           = cms.string("1.13666e-05 + 1.20093e-05 / (x * x)"),
+        tdcWindowStart      = cms.double(9.375), # 3 x ETROC_clock
+        tdcWindowEnd        = cms.double(21.875) # 3 x ETROC_clock + 12.5 ns
+    ),
     ElectronicsSimulation = cms.PSet(
         bxTime               = cms.double(25),
         IntegratedLuminosity = cms.double(1000.),      # [1/fb]
