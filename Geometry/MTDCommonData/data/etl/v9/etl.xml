@@ -1015,13 +1015,13 @@
     <PosPart copyNumber="1">
       <rParent name="etl:Half_Module_Back"/>
       <rChild name="etl:LGAD"/>
-      <rRotation name="rotations:R180" />
+      <rRotation name="rotations:RPCD" />
       <Translation x="-1*[LGAD_translation_x]" y="-1*[LGAD_translation_y]" z="-1*[LGAD_translation_z]" />
     </PosPart>
     <PosPart copyNumber="2">
       <rParent name="etl:Half_Module_Back"/>
       <rChild name="etl:LGAD"/>
-      <rRotation name="rotations:R180" />
+      <rRotation name="rotations:RPCD" />
       <Translation x="[LGAD_translation_x]" y="-1*[LGAD_translation_y]" z="-1*[LGAD_translation_z]" />
     </PosPart>
     
