@@ -9,3 +9,6 @@
   <use name="EventFilter/MTDRawToDigi"/>
   <flags EDM_PLUGIN="1"/>
 </library>
+
+<bin file="test_bitstream.cc">
+</bin>
