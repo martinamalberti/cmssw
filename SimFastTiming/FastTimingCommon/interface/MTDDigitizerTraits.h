@@ -29,8 +29,8 @@ public:
   // --- The ETL DIGI collection
   typedef ETLDigiCollection DigiCollection;
 
-  // --- The ETL DIGI collection in SoA format
-  typedef etldigi::ETLDigiHostCollection DigiCollectionSoA;
+  // --- The ETL DIGI collection in new format
+  typedef ETLDigiContentCollection MTDDigiCollection;
 
   // --- The ETL sensor response simulation
   typedef ETLDeviceSim DeviceSim;

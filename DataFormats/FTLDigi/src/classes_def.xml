@@ -7,6 +7,12 @@
    <class name="edm::Wrapper<BTLDigiContentCollection>"/>
    <class name="edm::SortedCollection<btldigi::BTLDigi,edm::StrictWeakOrdering<btldigi::BTLDigi> >"/>
    <class name="edm::Wrapper<edm::SortedCollection<btldigi::BTLDigi,edm::StrictWeakOrdering<btldigi::BTLDigi> > >"/>
+   <class name="etldigi::ETLDigi"/>
+   <class name="std::vector<etldigi::ETLDigi>"/>
+   <class name="ETLDigiContentCollection"/>
+   <class name="edm::Wrapper<ETLDigiContentCollection>"/>
+   <class name="edm::SortedCollection<etldigi::ETLDigi,edm::StrictWeakOrdering<etldigi::ETLDigi> >"/>
+   <class name="edm::Wrapper<edm::SortedCollection<etldigi::ETLDigi,edm::StrictWeakOrdering<etldigi::ETLDigi> > >"/>
 
    <class name="FTLSample"/>
    <class name="std::vector<FTLSample>"/>

@@ -699,7 +699,7 @@ void EtlDigiSoAHitsValidation::fillDescriptions(edm::ConfigurationDescriptions& 
   edm::ParameterSetDescription desc;
 
   desc.add<std::string>("folder", "MTD/ETL/DigiHitsSoA");
-  desc.add<edm::InputTag>("inputTag", edm::InputTag("mix", "FTLEndcapSoA"));
+  desc.add<edm::InputTag>("inputTag", edm::InputTag("etlDigiSoAProducer", "MTDEndcapSoA"));
   desc.add<bool>("optionalPlots", false);
 
   descriptions.add("etlDigiSoAHitsDefaultValid", desc);

@@ -25,14 +25,14 @@ private:
   // ----------member data ---------------------------
 
   edm::EDGetTokenT<BTLDigiContentCollection> tok_BTL_digi;
-  //edm::EDGetTokenT<ETLDigiCollection> tok_ETL_digi;
+  edm::EDGetTokenT<ETLDigiContentCollection> tok_ETL_digi;
 };
 
 MTDDigiContentDump::MTDDigiContentDump(const edm::ParameterSet& iConfig)
 
 {
   tok_BTL_digi = consumes<BTLDigiContentCollection>(edm::InputTag("mix", "MTDBarrel"));
-  //tok_ETL_digi = consumes<ETLDigiCollection>(edm::InputTag("mix", "FTLEndcap"));
+  tok_ETL_digi = consumes<ETLDigiContentCollection>(edm::InputTag("mix", "MTDEndcap"));
 }
 
 MTDDigiContentDump::~MTDDigiContentDump() {}
@@ -48,8 +48,8 @@ void MTDDigiContentDump::analyze(const edm::Event& iEvent, const edm::EventSetup
   edm::Handle<BTLDigiContentCollection> h_BTL_digi;
   iEvent.getByToken(tok_BTL_digi, h_BTL_digi);
 
-  //edm::Handle<ETLDigiCollection> h_ETL_digi;
-  //iEvent.getByToken(tok_ETL_digi, h_ETL_digi);
+  edm::Handle<ETLDigiContentCollection> h_ETL_digi;
+  iEvent.getByToken(tok_ETL_digi, h_ETL_digi);
 
   // --- BTL DIGIs:
 
@@ -66,33 +66,31 @@ void MTDDigiContentDump::analyze(const edm::Event& iEvent, const edm::EventSetup
 
   // --- ETL DIGIs:
 
-  //if (!h_ETL_digi->empty()) {
-  //std::cout << "\n ----------------------------------------" << std::endl;
-  //std::cout << " ETL DIGI collection: \n" << std::endl;
+  if (!h_ETL_digi->empty()) {
+    std::cout << "\n ----------------------------------------" << std::endl;
+    std::cout << " ETL DIGI collection: \n" << std::endl;
 
-  //for (const auto& dataFrame : *h_ETL_digi) {
-  //// --- detector element ID:
-  //std::cout << "\n ETL DIGI:  row = " << dataFrame.row() << " col = " << dataFrame.column()
-  //<< " ETLDetId = " << dataFrame.id();
+    for (const auto& etldigi : *h_ETL_digi) {
+      std::cout << etldigi << std::endl;
 
-  //// --- loop over the dataFrame samples
-  //for (int isample = 0; isample < dataFrame.size(); ++isample) {
-  //const auto& sample = dataFrame.sample(isample);
+      // --- loop over the dataFrame samples
+      //for (int isample = 0; isample < dataFrame.size(); ++isample) {
+      //  const auto& sample = dataFrame.sample(isample);
 
-  //std::cout << "       sample " << isample << ":";
-  //if (sample.data() == 0 && sample.toa() == 0) {
-  //std::cout << std::endl;
-  //continue;
-  //}
-  //std::cout << "  amplitude = " << sample.data() << "  time = " << sample.toa() << " r/c = " << sample.row()
-  //<< " / " << sample.column() << " th = " << sample.threshold() << " mode = " << sample.mode()
-  //<< std::endl;
+      //  std::cout << "       sample " << isample << ":";
+      //  if (sample.data() == 0 && sample.toa() == 0) {
+      //    std::cout << std::endl;
+      //    continue;
+      //  }
+      //  std::cout << "  amplitude = " << sample.data() << "  time = " << sample.toa() << " r/c = " << sample.row()
+      //  << " / " << sample.column() << " th = " << sample.threshold() << " mode = " << sample.mode()
+      //  << std::endl;
 
-  //}  // isample loop
+      //}  // isample loop
 
-  //}  // digi loop
+    }  // digi loop
 
-  //}  // if ( h_ETL_digi->size() > 0 )
+  }  // if ( h_ETL_digi->size() > 0 )
 }
 
 // ------------ method called once each job just before starting event loop  ------------

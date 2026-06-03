@@ -1,18 +1,19 @@
 #include <utility>
 
 #include "CommonTools/Utils/interface/FormulaEvaluator.h"
+#include "DataFormats/FTLRecHitSoA/interface/ETLBaseRecHitHostCollection.h"
 #include "DataFormats/FTLRecHitSoA/interface/alpaka/ETLBaseRecHitDeviceCollection.h"
 #include "DataFormats/FTLRecHitSoA/interface/alpaka/ETLRecHitDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
-#include "FWCore/Utilities/interface/StreamID.h"
+#include "FWCore/Utilities/interface/EDGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/global/EDProducer.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 #include "ETLRecHitSoAProducerAlgo.h"
@@ -21,12 +22,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
   using namespace ::etlrechit;
 
-  class ETLRecHitSoAProducer : public global::EDProducer<> {
+  class ETLRecHitSoAProducer : public stream::EDProducer<> {
   public:
     // constructor
     ETLRecHitSoAProducer(edm::ParameterSet const& config)
         : EDProducer<>(config),
-          baserh_{consumes(config.getParameter<edm::InputTag>("baserh"))},
+          baserh_{consumes<::etlrechit::ETLBaseRecHitHostCollection>(config.getParameter<edm::InputTag>("baserh"))},
           rh_{produces()},
           thresholdToKeep_(config.getParameter<double>("thresholdToKeep")),
           calibration_(config.getParameter<double>("calibrationConstant")) {}
@@ -39,23 +40,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
       descriptions.addWithDefaultLabel(desc);
     }
 
-    void produce(edm::StreamID sid, device::Event& event, device::EventSetup const& setup) const override {
+    void produce(device::Event& event, device::EventSetup const& setup) override {
       // NB should be inserted a method to retrieve calibrations, now they are fixed to default values
       // Get the base from the Event.
-      ETLBaseRecHitDeviceCollection const& baserh = event.get(baserh_);
+      auto const& hostBrh = event.get(baserh_);  // SoA BaseRecHit stored in the event
+      auto const N = hostBrh.const_view().metadata().size();
+
+      // Copy input to device for GPU inference
+      ETLBaseRecHitDeviceCollection deviceBrh(event.queue(), N);
+      alpaka::memcpy(event.queue(), deviceBrh.buffer(), hostBrh.buffer());
 
       // Allocate a new SoA for the rechit.
-      ETLRecHitDeviceCollection rh(event.queue(), baserh.view().metadata().size());
+      ETLRecHitDeviceCollection rh(event.queue(), N);
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      ETLRecHitSoAProducerAlgo::fromBaseToReco(event.queue(), baserh.view(), rh.view(), thresholdToKeep_, calibration_);
+      ETLRecHitSoAProducerAlgo::fromBaseToReco(event.queue(), deviceBrh.view(), rh.view(), thresholdToKeep_, calibration_);
 
       // Move the SoA with the rh into the Event.
       event.emplace(rh_, std::move(rh));
     }
 
   private:
-    const device::EDGetToken<ETLBaseRecHitDeviceCollection> baserh_;
+    const edm::EDGetTokenT<::etlrechit::ETLBaseRecHitHostCollection> baserh_;
     const device::EDPutToken<ETLRecHitDeviceCollection> rh_;
     //edm::ESGetToken<MTDTimeCalib, MTDTimeCalibRecord> tcToken_;
     const double thresholdToKeep_;

@@ -47,7 +47,7 @@ btlBaseRecHitsSoA = cms.EDProducer(
 
 etlBaseRecHitsSoA = cms.EDProducer(
     'etlrechit::ETLBaseRecHitSoAProducer@alpaka',
-    digi = cms.InputTag("mix", "FTLEndcapSoA"),
+    digi = cms.InputTag("etlDigiSoAProducer", "MTDEndcapSoA"),
     adcNbits      = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.adcNbits,
     adcSaturation = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.adcSaturation_MIP,
     toaLSB_ns     = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.toaLSB_ns,

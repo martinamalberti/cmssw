@@ -7,6 +7,8 @@
 namespace etldigi {
 
   using ETLDigiHostCollection = PortableHostCollection<ETLDigiSoA>;
+  using ETLDigiHostCollectionView = PortableHostCollection<ETLDigiSoA>::View;
+  using ETLDigiHostCollectionConstView = PortableHostCollection<ETLDigiSoA>::ConstView;
 
 }  //namespace etldigi
 
