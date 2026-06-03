@@ -174,7 +174,6 @@ namespace mtd_digitizer {
     //handle sim hits
     const int maxSimHitsAccTime_;
     MTDSimHitDataAccumulator simHitAccumulator_;
-    ETLDigiTempCollection etlDigiTempCollection_;
   };
 
   template <class Traits>
@@ -266,17 +265,12 @@ namespace mtd_digitizer {
 
     } else if constexpr (std::is_same_v<Traits, ETLDigitizerTraits>) {
       auto digiCollection = std::make_unique<DigiCollection>();
-      electronicsSim_.run(simHitAccumulator_, *digiCollection, etlDigiTempCollection_, hre);
-
-      typedef typename Traits::DigiCollectionSoA DigiCollectionSoA;
-      auto digiCollectionSoA =
-          std::make_unique<DigiCollectionSoA>(cms::alpakatools::host(), etlDigiTempCollection_.size());
-      electronicsSim_.updateOutputSoA(etlDigiTempCollection_, *digiCollectionSoA);
+      typedef typename Traits::MTDDigiCollection MTDDigiCollection;
+      auto digiMTDCollection = std::make_unique<MTDDigiCollection>();
+      electronicsSim_.run(simHitAccumulator_, *digiCollection, *digiMTDCollection, hre);
 
       e.put(std::move(digiCollection), digiCollection_);
-      e.put(std::move(digiCollectionSoA), digiCollectionSoA_);
-
-      etlDigiTempCollection_.clear();
+      e.put(std::move(digiMTDCollection), digiMTDCollection_);
     }
 
     //release memory for next event

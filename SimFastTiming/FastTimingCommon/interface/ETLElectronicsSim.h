@@ -10,6 +10,7 @@
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
+#include "DataFormats/FTLDigi/interface/MTDDigiCollections.h"
 #include "DataFormats/FTLDigiSoA/interface/ETLDigiHostCollection.h"
 #include "SimFastTiming/FastTimingCommon/interface/MTDDigitizerTypes.h"
 
@@ -37,7 +38,7 @@ public:
 
   void run(const mtd::MTDSimHitDataAccumulator& input,
            ETLDigiCollection& output,
-           mtd_digitizer::ETLDigiTempCollection& outputTemp,
+           ETLDigiContentCollection& etloutput,
            CLHEP::HepRandomEngine* hre) const;
 
   void runTrivialShaper(ETLDataFrame& dataFrame,
@@ -48,8 +49,6 @@ public:
                         const uint8_t column) const;
 
   bool checkValidHit(const ETLDataFrame& rawDataFrame) const;
-
-  void updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& outputTemp, etldigi::ETLDigiHostCollection& coll) const;
 
   void updateOutput(ETLDigiCollection& coll, const ETLDataFrame& rawDataFrame) const;
 

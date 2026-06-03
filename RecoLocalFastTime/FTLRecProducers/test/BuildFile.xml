@@ -9,4 +9,7 @@
 <library file="BTLRecoSoADump.cc" name="BTLRecoSoADump">
   <flags EDM_PLUGIN="1"/>
 </library>
+<library file="ETLRecoSoADump.cc" name="ETLRecoSoADump">
+  <flags EDM_PLUGIN="1"/>
+</library>
 

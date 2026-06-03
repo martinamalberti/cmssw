@@ -10,7 +10,6 @@
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 
 #include "DataFormats/FTLDigi/interface/MTDDigiCollections.h"
-#include "DataFormats/FTLDigiSoA/interface/ETLDigiHostCollection.h"
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
 #include "DataFormats/FTLDigi/interface/PMTDSimAccumulator.h"
 #include "SimFastTiming/FastTimingCommon/interface/MTDDigitizerTypes.h"
@@ -63,7 +62,7 @@ public:
         producesCollector.produces<PMTDSimAccumulator>(digiCollection_);
       } else {
         producesCollector.produces<ETLDigiCollection>(digiCollection_);
-        producesCollector.produces<etldigi::ETLDigiHostCollection>(digiCollectionSoA_);
+        producesCollector.produces<ETLDigiContentCollection>(digiMTDCollection_);
       }
     else
       throw cms::Exception("[MTDDigitizerBase::MTDDigitizerBase]") << name_ << " is an invalid MTD digitizer name";

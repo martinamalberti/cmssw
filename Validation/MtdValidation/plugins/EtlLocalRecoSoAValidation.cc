@@ -220,7 +220,7 @@ void EtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
   unsigned int n_reco_etl[4] = {0, 0, 0, 0};
   for (int i = 0; i < etlRecHitsSoAHandle->view().metadata().size(); i++) {
     auto recHit = etlRecHitsSoAHandle->view()[i];
-    LogTrace("BtlLocalRecoSoAValidation")
+    LogTrace("EtlLocalRecoSoAValidation")
         << "@RH detid " << recHit.detId().rawId() << " r/c/X/dX " << recHit.row() << " r/c/X/dX " << recHit.column()
         << " " << recHit.position() << " " << recHit.position_error() << " E,T,dT " << recHit.energy() << " "
         << recHit.toa() << " " << recHit.toa_error() << " " << recHit.tot();

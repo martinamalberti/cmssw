@@ -38,7 +38,7 @@ void ETLElectronicsSim::getEventSetup(const edm::EventSetup& evs) { geom_ = &evs
 
 void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
                             ETLDigiCollection& output,
-                            ETLDigiTempCollection& outputTemp,
+                            ETLDigiContentCollection& etloutput,
                             CLHEP::HepRandomEngine* hre) const {
   MTDSimHitData chargeColl, toa1, toa2, tot;
 
@@ -152,7 +152,8 @@ void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
       uint16_t ToTdata = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), totMask);
       //If time over threshold is 0 the event is assumed to not pass the threshold
       if (ToTdata > 0 && chargeColl[it] >= adcThreshold_MIP_) {
-        outputTemp.emplace_back(rawId, header, status, colID, rowID, ToAdata, ToTdata, CALdata);
+        etldigi::ETLDigi newDigi(rawId, header, status, colID, rowID, ToAdata, ToTdata, CALdata);
+        etloutput.emplace_back(newDigi);
       }
     }
   }
@@ -245,7 +246,7 @@ void ETLElectronicsSim::updateOutput(ETLDigiCollection& coll, const ETLDataFrame
   }
 }
 
-void ETLElectronicsSim::updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& outputTemp,
+/**void ETLElectronicsSim::updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& outputTemp,
                                         etldigi::ETLDigiHostCollection& hostColl) const {
   etldigi::ETLDigiSoAView& etlDigiView = hostColl.view();
   size_t nDigis = outputTemp.size();
@@ -274,4 +275,4 @@ void ETLElectronicsSim::updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& ou
                                          << ", cal: " << etlDigiView[hitIndex].CALdata() << std::endl;
     }
   }
-}
+}**/
