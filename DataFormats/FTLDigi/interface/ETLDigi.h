@@ -70,11 +70,11 @@ namespace etldigi {
     uint16_t kToTdata_;
     uint16_t kCALdata_;
 
-    static const int kGlobalOffset = 8;
-    static const int kColMask = 0xF;
-    static const int kRowMask = 0xF;
-    static const int kColOffset = 0;
-    static const int kRowOffset = 4;
+    static constexpr int kGlobalOffset = 8;
+    static constexpr int kColMask = 0xF;
+    static constexpr int kRowMask = 0xF;
+    static constexpr int kColOffset = 0;
+    static constexpr int kRowOffset = 4;
 
   };
 

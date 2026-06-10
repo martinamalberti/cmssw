@@ -221,9 +221,8 @@ void EtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
   for (int i = 0; i < etlRecHitsSoAHandle->view().metadata().size(); i++) {
     auto recHit = etlRecHitsSoAHandle->view()[i];
     LogTrace("EtlLocalRecoSoAValidation")
-        << "@RH detid " << recHit.detId().rawId() << " r/c/X/dX " << recHit.row() << " r/c/X/dX " << recHit.column()
-        << " " << recHit.position() << " " << recHit.position_error() << " E,T,dT " << recHit.energy() << " "
-        << recHit.toa() << " " << recHit.toa_error() << " " << recHit.tot();
+        << "@RH detid " << recHit.detId().rawId() << " r/c " << recHit.row() << "/" << recHit.column()
+        << " ToA,dToA,ToT " << recHit.toa() << ", " << recHit.toa_error() << ", " << recHit.tot();
     double weight = 1.0;
     ETLDetId detId = recHit.detId();
     DetId geoId = detId.geographicalId();

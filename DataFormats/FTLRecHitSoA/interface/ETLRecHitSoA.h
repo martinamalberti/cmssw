@@ -11,10 +11,7 @@ namespace etlrechit {
                       SOA_COLUMN(uint8_t, column),
                       SOA_COLUMN(float, toa),
                       SOA_COLUMN(float, tot),
-                      SOA_COLUMN(float, energy),
-                      SOA_COLUMN(float, position),
                       SOA_COLUMN(float, toa_error),
-                      SOA_COLUMN(float, position_error),
                       SOA_COLUMN(uint8_t, flags))
 
   using ETLRecHitSoA = ETLRecHitSoALayout<>;

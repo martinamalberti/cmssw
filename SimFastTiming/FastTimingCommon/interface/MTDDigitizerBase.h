@@ -39,9 +39,6 @@ public:
         digiMTDCollection_(config.existsAs<std::string>("digiMTDCollectionTag")
                                ? config.getParameter<std::string>("digiMTDCollectionTag")
                                : ""),
-        digiCollectionSoA_(config.existsAs<std::string>("digiCollectionSoATag")
-                               ? config.getParameter<std::string>("digiCollectionSoATag")
-                               : ""),
         verbosity_(config.getUntrackedParameter<uint32_t>("verbosity", 0)),
         refSpeed_(0.1 * CLHEP::c_light),
         premixStage1MinCharge_(config.getParameter<double>("premixStage1MinCharge")),
@@ -94,7 +91,6 @@ protected:
   const edm::InputTag inputSimHits_;
   const std::string digiCollection_;
   const std::string digiMTDCollection_;
-  const std::string digiCollectionSoA_;
 
   //misc switches
   const uint32_t verbosity_;
