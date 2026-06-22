@@ -21,6 +21,9 @@
 #include "Geometry/MTDGeometryBuilder/interface/ProxyMTDTopology.h"
 #include "Geometry/MTDGeometryBuilder/interface/RectangularMTDTopology.h"
 
+#include "CondFormats/MTDObjects/interface/BTLReadoutMap.h"
+#include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
+
 #include "SimGeneral/MixingModule/interface/PileUpEventPrincipal.h"
 
 #include "DataFormats/Math/interface/liblogintpack.h"
@@ -138,6 +141,7 @@ namespace mtd_digitizer {
         : MTDDigitizerBase(config, producesCollector, iC),
           geomToken_(iC.esConsumes()),
           geom_(nullptr),
+          btlReadoutMapToken_(iC.esConsumes()),
           deviceSim_(config.getParameterSet("DeviceSimulation"), iC),
           electronicsSim_(config.getParameterSet("ElectronicsSimulation"), iC),
           maxSimHitsAccTime_(config.getParameter<uint32_t>("maxSimHitsAccTime")) {}
@@ -166,6 +170,7 @@ namespace mtd_digitizer {
 
     const edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> geomToken_;
     const MTDGeometry* geom_;
+    const edm::ESGetToken<BTLReadoutMap, BTLReadoutMapRcd> btlReadoutMapToken_;
 
     // implementations
     DeviceSim deviceSim_;            // processes a given simhit into an entry in a MTDSimHitDataAccumulator
@@ -258,7 +263,9 @@ namespace mtd_digitizer {
       auto digiCollection = std::make_unique<DigiCollection>();
       typedef typename Traits::MTDDigiCollection MTDDigiCollection;
       auto digiMTDCollection = std::make_unique<MTDDigiCollection>();
-      electronicsSim_.run(simHitAccumulator_, *digiCollection, *digiMTDCollection, hre);
+      
+      auto const& btlReadoutMap = c.getData(btlReadoutMapToken_);
+      electronicsSim_.run(simHitAccumulator_, *digiCollection, *digiMTDCollection, hre, btlReadoutMap);
 
       e.put(std::move(digiCollection), digiCollection_);
       e.put(std::move(digiMTDCollection), digiMTDCollection_);

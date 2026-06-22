@@ -5,6 +5,9 @@
 
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 
+#include "CondFormats/MTDObjects/interface/BTLReadoutMap.h"
+#include "CondFormats/MTDObjects/interface/BTLElectronicsId.h"
+
 #include "CLHEP/Random/RandPoissonQ.h"
 #include "CLHEP/Random/RandGaussQ.h"
 
@@ -78,7 +81,9 @@ BTLElectronicsSim::~BTLElectronicsSim() { delete smearingClockRU_; }
 void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
                             BTLDigiCollection& output,
                             BTLDigiContentCollection& btloutput,
-                            CLHEP::HepRandomEngine* hre) const {
+                            CLHEP::HepRandomEngine* hre,
+                            const BTLReadoutMap& btlReadoutMap) const {
+
   // --- Fill the readout-unit clock jitter array
   for (unsigned int iRU = 0; iRU < numberOfRUs_; ++iRU) {
     (*smearingClockRU_)[iRU] = CLHEP::RandGaussQ::shoot(hre, 0., sigmaClockRU_);
@@ -270,7 +275,9 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     bool status = true;    // status is always true in this implementation
     uint32_t BCcount = 0;  // BCcount is always 0 in this implementation
 
-    uint8_t chIDR = static_cast<uint8_t>(elMap_.TOFHIRCh(static_cast<uint32_t>(rawId), static_cast<uint32_t>(1)));
+    auto const& elecIds = btlReadoutMap.getElectronicsId(rawId);
+
+    uint8_t chIDR = static_cast<uint8_t>(elecIds[1].channelId());
     uint16_t T1coarseR = timetoTcoarse(toa1[1], T1coarseMask);
     uint16_t T2coarseR = timetoTcoarse(toa2[1], T2coarseMask);
     uint16_t EOIcoarseR = T1coarseR + static_cast<uint16_t>(integrationTimeFixed_);
@@ -281,7 +288,7 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     uint8_t PrevTrigFR = 0;  // Previous trigger flag is not used in this implementation
     uint8_t TACIDR = 0;      // TACIDR is not used in this implementation
 
-    uint8_t chIDL = static_cast<uint8_t>(elMap_.TOFHIRCh(static_cast<uint32_t>(rawId), static_cast<uint32_t>(0)));
+    uint8_t chIDL = static_cast<uint8_t>(elecIds[0].channelId());
     uint16_t T1coarseL = timetoTcoarse(toa1[0], T1coarseMask);
     uint16_t T2coarseL = timetoTcoarse(toa2[0], T2coarseMask);
     uint16_t EOIcoarseL = T1coarseL + static_cast<uint16_t>(integrationTimeFixed_);
@@ -376,42 +383,6 @@ void BTLElectronicsSim::updateOutput(BTLDigiCollection& coll, const BTLDataFrame
   dataFrame.resize(dfSIZE);
   coll.push_back(rawDataFrame);
 }
-
-//void BTLElectronicsSim::updateOutputSoA(mtd_digitizer::BTLDigiTempCollection& outputTemp,
-//btldigi::BTLDigiHostCollection& hostColl) const {
-//btldigi::BTLDigiSoAView& btlDigiView = hostColl.view();
-//size_t nDigis = outputTemp.size();
-//if (debug_) {
-//edm::LogError("BTLElectronicsSim") << "Updating output SoA with " << nDigis << " digis." << std::endl;
-//}
-//for (size_t hitIndex = 0; hitIndex < nDigis; ++hitIndex) {
-//const auto& digiTemp = outputTemp[hitIndex];
-//btlDigiView[hitIndex] = {digiTemp.rawId_,      digiTemp.BC0count_,   digiTemp.status_,     digiTemp.BCcount_,
-//digiTemp.chIDR_,      digiTemp.T1coarseR_,  digiTemp.T2coarseR_,  digiTemp.EOIcoarseR_,
-//digiTemp.ChargeR_,    digiTemp.T1fineR_,    digiTemp.T2fineR_,    digiTemp.IdleTimeR_,
-//digiTemp.PrevTrigFR_, digiTemp.TACIDR_,     digiTemp.chIDL_,      digiTemp.T1coarseL_,
-//digiTemp.T2coarseL_,  digiTemp.EOIcoarseL_, digiTemp.ChargeL_,    digiTemp.T1fineL_,
-//digiTemp.T2fineL_,    digiTemp.IdleTimeL_,  digiTemp.PrevTrigFL_, digiTemp.TACIDL_};
-
-//if (debug_) {
-//edm::LogError("BTLElectronicsSim") << "Processed hit with rawId: " << btlDigiView[hitIndex].rawId()
-//<< ", chIDL: " << static_cast<int>(btlDigiView[hitIndex].chIDL())
-//<< ", T1coarseL: " << btlDigiView[hitIndex].T1coarseL()
-//<< ", T1fineL: " << btlDigiView[hitIndex].T1fineL()
-//<< ", T2coarseL: " << btlDigiView[hitIndex].T2coarseL()
-//<< ", T2fineL: " << btlDigiView[hitIndex].T2fineL()
-//<< ", EOIcoarseL: " << btlDigiView[hitIndex].EOIcoarseL()
-//<< ", ChargeL: " << btlDigiView[hitIndex].ChargeL()
-//<< ", chIDR: " << static_cast<int>(btlDigiView[hitIndex].chIDR())
-//<< ", T1coarseR: " << btlDigiView[hitIndex].T1coarseR()
-//<< ", T1fineR: " << btlDigiView[hitIndex].T1fineR()
-//<< ", T2coarseR: " << btlDigiView[hitIndex].T2coarseR()
-//<< ", T2fineR: " << btlDigiView[hitIndex].T2fineR()
-//<< ", EOIcoarseR: " << btlDigiView[hitIndex].EOIcoarseR()
-//<< ", ChargeR: " << btlDigiView[hitIndex].ChargeR() << std::endl;
-//}
-//}
-//}
 
 float BTLElectronicsSim::rearming_time(const float& hit_time, const float& hit_npe) const {
   // mode 1: the channel is rearmed after the falling edge of the trigger_B signal

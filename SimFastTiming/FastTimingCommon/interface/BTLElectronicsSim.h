@@ -7,8 +7,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 
-#include "CondFormats/MTDObjects/interface/BTLElectronicsMapping.h"
-
+#include "CondFormats/MTDObjects/interface/BTLReadoutMap.h"
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
 #include "DataFormats/FTLDigi/interface/MTDDigiCollections.h"
 #include "DataFormats/FTLDigiSoA/interface/BTLDigiHostCollection.h"
@@ -35,7 +34,8 @@ public:
   void run(const mtd::MTDSimHitDataAccumulator& input,
            BTLDigiCollection& output,
            BTLDigiContentCollection& btloutput,
-           CLHEP::HepRandomEngine* hre) const;
+           CLHEP::HepRandomEngine* hre,
+           const BTLReadoutMap& btlReadoutMap) const;
 
   void runTrivialShaper(BTLDataFrame& dataFrame,
                         const float (&charge)[2],
@@ -49,8 +49,6 @@ public:
   void updateOutput(BTLDigiCollection& coll, const BTLDataFrame& rawDataFrame) const;
 
   static constexpr int dfSIZE = 2;
-
-  BTLElectronicsMapping elMap_ = BTLElectronicsMapping(BTLDetId::CrysLayout::v4);
 
 private:
   float rearming_time(const float& time, const float& npe) const;
