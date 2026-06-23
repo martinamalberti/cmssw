@@ -25,11 +25,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                   const double adcSaturation_,
                                   const double adcLSB_,
                                   const double toaLSB_ns_,
-                                  const double tdcWindowStart_,
-                                  const double timeCorr_p0_,
-                                  const double timeCorr_p2_,
-                                  const double timeCorr_p1_,
-                                  const double timeCorr_p3_) const {
+                                  const double tdcWindowStart_) const {
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
@@ -39,13 +35,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
         // atm tdc and qdc calibs are fixed to dummy values for each channel, hence rawId, ch, and the bool to select branch 1 or 2 are not used.
         float time = 12.5 - entry.ToAdata() * toaLSB_ns_ + tdcWindowStart_;
         float time_over_threshold = entry.ToTdata() * toaLSB_ns_;
-        if (time_over_threshold > 0) {
-          // Time-walk correction for toa
-          float timeWalkCorr = timeCorr_p0_ + timeCorr_p1_ * time_over_threshold +
-                               timeCorr_p2_ * time_over_threshold * time_over_threshold +
-                               timeCorr_p3_ * time_over_threshold * time_over_threshold * time_over_threshold;
-          time -= timeWalkCorr;
-        }
 
         // detId from rawId
         DetId detId(entry.rawId());
@@ -55,8 +44,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
 #ifdef EDM_ML_DEBUG
         printf("Base recHit SoA with raw id %i \n", entry.rawId());
-        printf("ToA after corrections: %f \n", time);
-        printf("ToT after corrections: %f \n", time_over_threshold);
+        printf("ToA before corrections: %f \n", time);
+        printf("ToT before corrections: %f \n", time_over_threshold);
 #endif
 
         // fill the base rechit
@@ -79,11 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                                     const double adcSaturation_,
                                                     const double adcLSB_,
                                                     const double toaLSB_ns_,
-                                                    const double tdcWindowStart_,
-                                                    const double timeCorr_p0_,
-                                                    const double timeCorr_p2_,
-                                                    const double timeCorr_p1_,
-                                                    const double timeCorr_p3_) {
+                                                    const double tdcWindowStart_) {
     // Use 64 items per group.
     // This value is arbitrary, but it's a reasonable starting point.
     uint32_t items = 64;
@@ -102,11 +87,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                         adcSaturation_,
                         adcLSB_,
                         toaLSB_ns_,
-                        tdcWindowStart_,
-                        timeCorr_p0_,
-                        timeCorr_p2_,
-                        timeCorr_p1_,
-                        timeCorr_p3_);
+                        tdcWindowStart_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit

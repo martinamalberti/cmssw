@@ -16,7 +16,7 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
   using namespace ::etlrechit;
-  ALPAKA_FN_ACC float timeResolutionInNs(float amp) { return 0.0370; }
+  ALPAKA_FN_ACC float timeResolutionInNs() { return 0.0370; }
 
   class ETLBaseToRecoKernel {
   public:
@@ -24,7 +24,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                   ETLBaseRecHitSoA::ConstView input,
                                   ETLRecHitSoA::View output,
                                   const double thresholdToKeep_,
-                                  const double calibration_) const {
+                                  const double calibration_,
+                                  const double timeCorr_p0_,
+                                  const double timeCorr_p2_,
+                                  const double timeCorr_p1_,
+                                  const double timeCorr_p3_) const {
       // make a strided loop over the kernel grid, covering up to "size" elements
 
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
@@ -41,11 +45,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
         toa = entry.toa();
         tot = entry.tot();
 
+        // Time-walk correction for toa
+        float timeWalkCorr = timeCorr_p0_ + timeCorr_p1_ * tot + timeCorr_p2_ * tot * tot + timeCorr_p3_ * tot * tot * tot;
+        toa -= timeWalkCorr;
+
         // --- Energy calibration
         energy = tot;  //for ETL, it is the time_over_threshold
-        energy *= calibration_;
+        energy *= calibration_; // in GeV
 
-        time_error = timeResolutionInNs(energy);
+        time_error = timeResolutionInNs();
 
         if (energy > thresholdToKeep_) {
           flag = 1;
@@ -74,7 +82,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                                 ETLBaseRecHitSoA::ConstView const& input,
                                                 ETLRecHitSoA::View& output,
                                                 const double thresholdToKeep_,
-                                                const double calibration_) {
+                                                const double calibration_,
+                                                const double timeCorr_p0_,
+                                                const double timeCorr_p2_,
+                                                const double timeCorr_p1_,
+                                                const double timeCorr_p3_) {
     // Use 64 items per group.
     // This value is arbitrary, but it's a reasonable starting point.
     uint32_t items = 64;
@@ -84,7 +96,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, ETLBaseToRecoKernel{}, input, output, thresholdToKeep_, calibration_);
+    alpaka::exec<Acc1D>(queue, grid, 
+                        ETLBaseToRecoKernel{}, 
+                        input, 
+                        output, 
+                        thresholdToKeep_, 
+                        calibration_,
+                        timeCorr_p0_,
+                        timeCorr_p2_,
+                        timeCorr_p1_,
+                        timeCorr_p3_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit

@@ -29,19 +29,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
           digi_(consumes<::btldigi::BTLDigiHostCollection>(config.getParameter<edm::InputTag>("digi"))),
           uncalibrh_{produces()},
           npeToADC0_(config.getParameter<double>("npeToADC0")),
-          npeToADC1_(config.getParameter<double>("npeToADC1")),
-          npeSaturationCorr0_(config.getParameter<double>("npeSaturationCorr0")),
-          npeSaturationCorr1_(config.getParameter<double>("npeSaturationCorr1")),
-          npePerMeV_(config.getParameter<double>("npePerMeV")) {}
+          npeToADC1_(config.getParameter<double>("npeToADC1")) {}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("digi");
       desc.add<double>("npeToADC0");
       desc.add<double>("npeToADC1");
-      desc.add<double>("npeSaturationCorr0");
-      desc.add<double>("npeSaturationCorr1");
-      desc.add<double>("npePerMeV");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -63,10 +57,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                    deviceDigi.view(),
                                                    uncalibrh.view(),
                                                    npeToADC0_,
-                                                   npeToADC1_,
-                                                   npeSaturationCorr0_,
-                                                   npeSaturationCorr1_,
-                                                   npePerMeV_);
+                                                   npeToADC1_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));
@@ -77,9 +68,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     const device::EDPutToken<BTLBaseRecHitDeviceCollection> uncalibrh_;
     const double npeToADC0_;
     const double npeToADC1_;
-    const double npeSaturationCorr0_;
-    const double npeSaturationCorr1_;
-    const double npePerMeV_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

@@ -32,7 +32,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
           invLightSpeedLYSO_(config.getParameter<double>("invLightSpeedLYSO")),
           c_LYSO_(1. / invLightSpeedLYSO_),
           thresholdToKeep_(config.getParameter<double>("thresholdToKeep")),
-          calibration_(config.getParameter<double>("calibrationConstant")) {}
+          calibration_(config.getParameter<double>("calibrationConstant")),
+          npeSaturationCorr0_(config.getParameter<double>("npeSaturationCorr0")),
+          npeSaturationCorr1_(config.getParameter<double>("npeSaturationCorr1")),
+          npePerGeV_(config.getParameter<double>("npePerGeV")) {}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
@@ -40,6 +43,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       desc.add<double>("invLightSpeedLYSO");
       desc.add<double>("thresholdToKeep");
       desc.add<double>("calibrationConstant");
+      desc.add<double>("npeSaturationCorr0");
+      desc.add<double>("npeSaturationCorr1");
+      desc.add<double>("npePerGeV");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -57,8 +63,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       BTLRecHitDeviceCollection rh(event.queue(), N);
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      BTLRecHitSoAProducerAlgo::fromBaseToReco(
-          event.queue(), deviceBrh.view(), rh.view(), c_LYSO_, thresholdToKeep_, calibration_);
+      BTLRecHitSoAProducerAlgo::fromBaseToReco(event.queue(),
+                                               deviceBrh.view(),
+                                               rh.view(),
+                                               c_LYSO_,
+                                               thresholdToKeep_,
+                                               calibration_,
+                                               npeSaturationCorr0_,
+                                               npeSaturationCorr1_,
+                                               npePerGeV_);
 
       // Move the SoA with the rh into the Event.
       event.emplace(rh_, std::move(rh));
@@ -71,6 +84,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     const double c_LYSO_;
     const double thresholdToKeep_;
     const double calibration_;
+    const double npeSaturationCorr0_;
+    const double npeSaturationCorr1_;
+    const double npePerGeV_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit
