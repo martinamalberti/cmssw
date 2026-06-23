@@ -18,7 +18,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                ETLBaseRecHitSoA::ConstView const& input,
                                ETLRecHitSoA::View& output,
                                double thresholdToKeep_,
-                               double calibration_);
+                               double calibration_,
+                               const double timeCorr_p0_,
+                               const double timeCorr_p2_,
+                               const double timeCorr_p1_,
+                               const double timeCorr_p3_);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit

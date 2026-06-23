@@ -32,11 +32,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
           adcSaturation_(config.getParameter<double>("adcSaturation")),
           adcLSB_(adcSaturation_ / (1 << adcNBits_)),
           toaLSB_ns_(config.getParameter<double>("toaLSB_ns")),
-          tdcWindowStart_(config.getParameter<double>("tdcWindowStart")),
-          timeCorr_p0_(config.getParameter<double>("timeCorr_p0")),
-          timeCorr_p1_(config.getParameter<double>("timeCorr_p1")),
-          timeCorr_p2_(config.getParameter<double>("timeCorr_p2")),
-          timeCorr_p3_(config.getParameter<double>("timeCorr_p3")) {}
+          tdcWindowStart_(config.getParameter<double>("tdcWindowStart")) {}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
@@ -45,10 +41,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
       desc.add<double>("adcSaturation");
       desc.add<double>("toaLSB_ns");
       desc.add<double>("tdcWindowStart");
-      desc.add<double>("timeCorr_p0");
-      desc.add<double>("timeCorr_p1");
-      desc.add<double>("timeCorr_p2");
-      desc.add<double>("timeCorr_p3");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -73,11 +65,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                                    adcSaturation_,
                                                    adcLSB_,
                                                    toaLSB_ns_,
-                                                   tdcWindowStart_,
-                                                   timeCorr_p0_,
-                                                   timeCorr_p2_,
-                                                   timeCorr_p1_,
-                                                   timeCorr_p3_);
+                                                   tdcWindowStart_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));
@@ -91,10 +79,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
     const double adcLSB_;
     const double toaLSB_ns_;
     const double tdcWindowStart_;
-    const double timeCorr_p0_;
-    const double timeCorr_p1_;
-    const double timeCorr_p2_;
-    const double timeCorr_p3_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit

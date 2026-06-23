@@ -17,7 +17,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                BTLRecHitSoA::View& output,
                                double c_LYSO_,
                                double thresholdToKeep_,
-                               double calibration_);
+                               double calibration_,
+                               const double npeSaturationCorr0_,
+                               const double npeSaturationCorr1_,
+                               const double npePerGeV_);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

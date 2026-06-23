@@ -40,9 +40,6 @@ btlBaseRecHitsSoA = cms.EDProducer(
     digi = cms.InputTag("btlDigiSoAProducer", "MTDBarrelSoA"),
     npeToADC0 = cms.double(-22.5),
     npeToADC1 = cms.double(0.0348), # Npe to ADC counts conversion
-    npeSaturationCorr0 = cms.double(-8.54e-06),
-    npeSaturationCorr1 = cms.double(1.034),
-    npePerMeV = mtdDigitizer.barrelDigitizer.DeviceSimulation.LightOutput # [Npe/MeV]
 )
 
 etlBaseRecHitsSoA = cms.EDProducer(

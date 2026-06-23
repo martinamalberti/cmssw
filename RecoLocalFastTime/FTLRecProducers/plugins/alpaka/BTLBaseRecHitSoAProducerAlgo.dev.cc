@@ -62,12 +62,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     return adc;
   }
 
-  ALPAKA_FN_ACC float timeWalkCorr(float amp) {
-    float tdcLSB_ns = 0.020;
-    float corr = 1.9e6 / 0.020 * pow(9.389e5 / 0.0348 * (amp + 22.5), -0.663) - 7.5e-4 * amp - 3.5e-3;
-    return tdcLSB_ns * corr;
-  }
-
   class BTLdigiToBaseKernel {
   public:
     ALPAKA_FN_ACC void operator()(
@@ -75,10 +69,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         ::btldigi::BTLDigiSoA::ConstView input,
         BTLBaseRecHitSoA::View output,
         const double npeToADC0_,
-        const double npeToADC1_,
-        const double npeSaturationCorr0_,
-        const double npeSaturationCorr1_,
-        const double npePerMeV_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
+        const double npeToADC1_) const {
 
       static constexpr uint32_t adcBitSaturation_ = 1023;
       static constexpr float tclock = 6.25;
@@ -131,39 +122,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         time2R *= tclock;
         time2L *= tclock;
 
-        // amp walk correction
-        auto corrR = timeWalkCorr(ampR);
-        auto corrL = timeWalkCorr(ampL);
-
-        // convert from clock units to ps, apply amp walk corrections
-        auto time1Rcorr = time1R - corrR;
-        auto time1Lcorr = time1L - corrL;
-
-        auto time2Rcorr = time2R - corrR;
-        auto time2Lcorr = time2L - corrL;
-
         // converting the energy from ADC to energy
         auto energyR = float((float(ampR) - npeToADC0_) / npeToADC1_);
-        // Correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
-        float dR = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * energyR;
-        energyR = (-npeSaturationCorr1_ + sqrt(dR)) / (2. * (npeSaturationCorr0_));
-        energyR /= npePerMeV_;
-
         auto energyL = float((float(ampL) - npeToADC0_) / npeToADC1_);
-        // Correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
-        float dL = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * energyL;
-        energyL = (-npeSaturationCorr1_ + sqrt(dL)) / (2. * (npeSaturationCorr0_));
-        energyL /= npePerMeV_;
 
 #ifdef EDM_ML_DEBUG
         printf("Base recHit SoA with raw id %i \n", entry.rawId());
         printf("Time 1 before corrections L,R (%f, %f) - ", time1L, time1R);
-        printf("Amp Walk Corrections L,R (%f , %f) -->  ", corrL, corrR);
-        printf("Time 1 after corrections L,R (%f, %f) \n", time1Lcorr, time1Rcorr);
-
         printf("Time 2 before corrections L,R (%f, %f) - ", time2L, time2R);
-        printf("Amp Walk Corrections L,R (%f , %f) -->  ", corrL, corrR);
-        printf("Time 2 after corrections L,R (%f, %f) \n", time2Lcorr, time2Rcorr);
 
         printf("Amplidute in ADC L,R (%i, %i) - ", ampL, ampR);
         printf("converting to energy L,R (%f, %f) --> ", npeToADC0_, invADCPerMeV_);
@@ -174,13 +140,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         output[i] = {
             detId,
             row,
-            time1Rcorr,  // in ns
-            time2Rcorr,
+            time1R,  // in ns
+            time2R,
             energyR,  // energy
             entry.IdleTimeR(),
             flagsR,
-            time1Lcorr,  // in ns
-            time2Lcorr,
+            time1L,  // in ns
+            time2L,
             energyL,  // energy
             entry.IdleTimeL(),
             flagsL,
@@ -194,10 +160,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                     ::btldigi::BTLDigiSoA::ConstView const& input,
                                                     BTLBaseRecHitSoA::View& output,
                                                     const double npeToADC0_,
-                                                    const double npeToADC1_,
-                                                    const double npeSaturationCorr0_,
-                                                    const double npeSaturationCorr1_,
-                                                    const double npePerMeV_) {
+                                                    const double npeToADC1_) {
     //,
     //Table const& tdc,
     //Table const& qdc) {
@@ -216,10 +179,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                         input,
                         output,
                         npeToADC0_,
-                        npeToADC1_,
-                        npeSaturationCorr0_,
-                        npeSaturationCorr1_,
-                        npePerMeV_);
+                        npeToADC1_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

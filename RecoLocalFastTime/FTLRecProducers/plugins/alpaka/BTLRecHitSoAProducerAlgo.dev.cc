@@ -20,6 +20,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   ALPAKA_FN_ACC float getTimeCalib() { return 0.25; }
 
+  ALPAKA_FN_ACC float timeWalkCorr(float amp) {
+    float tdcLSB_ns = 0.020;
+    float corr = 1.9e6 / 0.020 * pow(9.389e5 / 0.0348 * (amp + 22.5), -0.663) - 7.5e-4 * amp - 3.5e-3;
+    return tdcLSB_ns * corr;
+  }
+
   class BTLBaseToRecoKernel {
   public:
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
@@ -27,11 +33,38 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                   BTLRecHitSoA::View output,
                                   const double c_LYSO_,
                                   const double thresholdToKeep_,
-                                  const double calibration_) const {
+                                  const double calibration_,
+                                  const double npeSaturationCorr0_,
+                                  const double npeSaturationCorr1_,
+                                  const double npePerGeV_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
       // make a strided loop over the kernel grid, covering up to "size" elements
 
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
+        float time1R = entry.time1R();
+        float time1L = entry.time1L();
+        float time2R = entry.time2R();
+        float time2L = entry.time2L();
+        float ampR = entry.ampR();
+        float ampL = entry.ampL();
+
+        // Apply time and energy corrections
+        //   apply amp walk corrections
+        auto corrR = timeWalkCorr(ampR);
+        auto corrL = timeWalkCorr(ampL);
+        time1R = time1R - corrR;
+        time1L = time1L - corrL;
+        time2R = time2R - corrR;
+        time2L = time2L - corrL;
+
+        //   correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
+        float dR = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampR;
+        ampR = (-npeSaturationCorr1_ + sqrt(dR)) / (2. * (npeSaturationCorr0_));
+        ampR /= npePerGeV_;
+        float dL = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampL;
+        ampL = (-npeSaturationCorr1_ + sqrt(dL)) / (2. * (npeSaturationCorr0_));
+        ampL /= npePerGeV_;
+
         float time1 = 0;
         float time2 = 0;
         float position = -1.;
@@ -45,26 +78,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
         // -- if you have both sipm info and they are not saturated
         if (entry.flagsR() == 0x1 && entry.flagsL() == 0x1) {
-          time1 = 0.5f * (entry.time1L() + entry.time1R());
-          time2 = 0.5f * (entry.time2L() + entry.time2R());  // to be discussed
-          position = 0.5f * c_LYSO_ * (entry.time1L() - entry.time1R());
+          time1 = 0.5f * (time1L + time1R);
+          time2 = 0.5f * (time2L + time2R);  // to be discussed
+          position = 0.5f * c_LYSO_ * (time1L - time1R);
           position_error = 0.6;  // as in the std btl uncalibrated hit producer
-          energy = (entry.ampR() + entry.ampL()) / 2.;
+          energy = (ampR + ampL) / 2.;
           flag |= 0x3;
 
         }
         // --- If only one SiPM has good not saturated signal
-        else if (entry.flagsL() == 0x1 && (entry.time1R() == 0x3 || entry.time1R() == 0)) {
-          time1 = entry.time1L();
-          time2 = entry.time2L();
-          energy = entry.ampL();
+        else if (entry.flagsL() == 0x1 && (time1R == 0x3 || time1R == 0)) {
+          time1 = time1L;
+          time2 = time2L;
+          energy = ampL;
           flag |= (0x1 << 1);
         }
 
         else if (entry.flagsR() == 0x1 && (entry.flagsL() == 0x3 || entry.flagsR() == 0)) {
-          time1 = entry.time1R();
-          time2 = entry.time2R();
-          energy = entry.ampR();
+          time1 = time1R;
+          time2 = time2R;
+          energy = ampR;
           flag |= 0x1;
         }
 
@@ -88,9 +121,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
         printf("RecHit SoA with raw id %i \n", entry.detId().rawId());
         printf(
-            "Time 1  L,R (%f, %f) and average, error (%f, %f) \n", entry.time1L(), entry.time1R(), time1, time_error);
-        printf("Time 2  L,R (%f, %f) and average %f \n", entry.time2L(), entry.time2R(), time2);
-        printf("Energy  L,R (%f, %f) and average %f \n", entry.ampL(), entry.ampR(), energy);
+            "Time 1  L,R (%f, %f) and average, error (%f, %f) \n", time1L, time1R, time1, time_error);
+        printf("Time 2  L,R (%f, %f) and average %f \n", time2L, time2R, time2);
+        printf("Energy  L,R (%f, %f) and average %f \n", ampL, ampR, energy);
         printf("Position and error (%f, %f) \n", position, position_error);
 
 #endif
@@ -114,7 +147,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                 BTLRecHitSoA::View& output,
                                                 const double c_LYSO_,
                                                 const double thresholdToKeep_,
-                                                const double calibration_) {
+                                                const double calibration_,
+                                                const double npeSaturationCorr0_,
+                                                const double npeSaturationCorr1_,
+                                                const double npePerGeV_) {
     // Use 64 items per group.
     // This value is arbitrary, but it's a reasonable starting point.
     uint32_t items = 64;
@@ -124,7 +160,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLBaseToRecoKernel{}, input, output, c_LYSO_, thresholdToKeep_, calibration_);
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        BTLBaseToRecoKernel{},
+                        input,
+                        output,
+                        c_LYSO_,
+                        thresholdToKeep_,
+                        calibration_,
+                        npeSaturationCorr0_,
+                        npeSaturationCorr1_,
+                        npePerGeV_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit
