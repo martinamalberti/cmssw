@@ -28,14 +28,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         : EDProducer<>(config),
           digi_(consumes<::btldigi::BTLDigiHostCollection>(config.getParameter<edm::InputTag>("digi"))),
           uncalibrh_{produces()},
-          npeToADC0_(config.getParameter<double>("npeToADC0")),
-          npeToADC1_(config.getParameter<double>("npeToADC1")) {}
+          adcBitSaturation_(config.getParameter<uint32_t>("adcBitSaturation")),
+          tclock_(config.getParameter<double>("tclock")),
+          tdcCalParams_(config.getParameter<std::vector<double>>("tdcCalParams")),
+          qdcCalParams_(config.getParameter<std::vector<double>>("qdcCalParams")) {}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("digi");
-      desc.add<double>("npeToADC0");
-      desc.add<double>("npeToADC1");
+      desc.add<uint32_t>("adcBitSaturation");
+      desc.add<double>("tclock");
+      desc.add<std::vector<double>>("tdcCalParams");
+      desc.add<std::vector<double>>("qdcCalParams");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -53,11 +57,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       BTLBaseRecHitDeviceCollection uncalibrh(event.queue(), N);
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
+      std::array<double,4> tdcCalParamsArray_;
+      std::array<double,10> qdcCalParamsArray_;
+      std::copy_n(tdcCalParams_.begin(), 4, tdcCalParamsArray_.begin());
+      std::copy_n(qdcCalParams_.begin(), 10, qdcCalParamsArray_.begin());
       BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(event.queue(),
                                                    deviceDigi.view(),
                                                    uncalibrh.view(),
-                                                   npeToADC0_,
-                                                   npeToADC1_);
+                                                   adcBitSaturation_,
+                                                   tclock_,
+                                                   tdcCalParamsArray_,
+                                                   qdcCalParamsArray_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));
@@ -66,8 +76,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   private:
     const edm::EDGetTokenT<::btldigi::BTLDigiHostCollection> digi_;
     const device::EDPutToken<BTLBaseRecHitDeviceCollection> uncalibrh_;
-    const double npeToADC0_;
-    const double npeToADC1_;
+    const uint32_t adcBitSaturation_;
+    const double tclock_;
+    const std::vector<double> tdcCalParams_;
+    const std::vector<double> qdcCalParams_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

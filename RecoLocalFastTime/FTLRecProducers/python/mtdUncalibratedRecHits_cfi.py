@@ -38,8 +38,10 @@ mtdUncalibratedRecHits = cms.EDProducer(
 btlBaseRecHitsSoA = cms.EDProducer(
     'btlrechit::BTLBaseRecHitSoAProducer@alpaka',
     digi = cms.InputTag("btlDigiSoAProducer", "MTDBarrelSoA"),
-    npeToADC0 = cms.double(-22.5),
-    npeToADC1 = cms.double(0.0348), # Npe to ADC counts conversion
+    adcBitSaturation = cms.uint32(1023),
+    tclock = cms.double(6.25),
+    tdcCalParams = cms.vdouble(57.244545, 511.27832, -7.8838577, -0.048343264),
+    qdcCalParams = cms.vdouble(49.542229, -0.323424, 0.062578, -0.002484, 0., 0., 0., 0., 0., 0.),
 )
 
 etlBaseRecHitsSoA = cms.EDProducer(
@@ -49,10 +51,6 @@ etlBaseRecHitsSoA = cms.EDProducer(
     adcSaturation = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.adcSaturation_MIP,
     toaLSB_ns     = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.toaLSB_ns,
     tdcWindowStart     = cms.double(9.375), # now set to 3 x ETROC_clock, phase can be adjusted to set the start at any value
-    timeCorr_p0 = cms.double(0.967683), # 0.974683 - 0.007, ad hoc correction for bias from global delay removal
-    timeCorr_p1 = cms.double(-0.237274),
-    timeCorr_p2 = cms.double(0.021455),
-    timeCorr_p3 = cms.double(-0.000727429)
 )
 
 from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2

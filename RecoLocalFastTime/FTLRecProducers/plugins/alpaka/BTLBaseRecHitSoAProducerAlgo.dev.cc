@@ -23,13 +23,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   }
 
   ALPAKA_FN_ACC float TcoarseTfineToTime(
-      uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t tcoarse, uint16_t tfine, bool isT1) {
+      std::array<double,4> tdcCalParams, uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t tcoarse, uint16_t tfine, bool isT1) {
     // tdc calibration parameters
     // (to be modified: these parameters are evaluated by channel and stored in parquet files)
-    static constexpr float a0 = 57.244545;
-    static constexpr float a1 = 511.27832;
-    static constexpr float a2 = -7.8838577;
-    static constexpr float t0 = -0.048343264;
+    double a0 = tdcCalParams[0];
+    double a1 = tdcCalParams[1];
+    double a2 = tdcCalParams[2];
+    double t0 = tdcCalParams[3];
 
     float const qT = (-a1 + sqrt(a1 * a1 - 4.0 * (a0 - float(tfine)) * a2)) / (2.0 * a2);
     float const time = tcoarse - qT - t0;
@@ -37,19 +37,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   }
 
   ALPAKA_FN_ACC uint32_t
-  QfineToADC(uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t qfine, float time1, uint16_t timeEndQ) {
+  QfineToADC(std::array<double,10> qdcCalParams, uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t qfine, float time1, uint16_t timeEndQ) {
     // qdc calibration parameters
     // (to be modified: these parameters are evaluated by channel and stored in parquet files)
-    static constexpr float p0 = 49.542229;
-    static constexpr float p1 = -0.323424;
-    static constexpr float p2 = 0.062578;
-    static constexpr float p3 = -0.002484;
-    static constexpr float p4 = 0.0;
-    static constexpr float p5 = 0.0;
-    static constexpr float p6 = 0.0;
-    static constexpr float p7 = 0.0;
-    static constexpr float p8 = 0.0;
-    static constexpr float p9 = 0.0;
+    double p0 = qdcCalParams[0];
+    double p1 = qdcCalParams[1];
+    double p2 = qdcCalParams[2];
+    double p3 = qdcCalParams[3];
+    double p4 = qdcCalParams[4];
+    double p5 = qdcCalParams[5];
+    double p6 = qdcCalParams[6];
+    double p7 = qdcCalParams[7];
+    double p8 = qdcCalParams[8];
+    double p9 = qdcCalParams[9];
     float const ti = float(timeEndQ) - time1;
 
     uint32_t pedestal = (  // check the type
@@ -68,11 +68,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         Acc1D const& acc,
         ::btldigi::BTLDigiSoA::ConstView input,
         BTLBaseRecHitSoA::View output,
-        const double npeToADC0_,
-        const double npeToADC1_) const {
+        const uint32_t adcBitSaturation_,
+        const double tclock_,
+        const std::array<double,4> tdcCalParams_,
+        const std::array<double,10> qdcCalParams_) const {
 
-      static constexpr uint32_t adcBitSaturation_ = 1023;
-      static constexpr float tclock = 6.25;
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
@@ -80,76 +80,70 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
         // for the times at first and second th, still in clock units
         // atm tdc and qdc calibs are fixed to dummy values for each channel, hence rawId, ch, and the bool to select branch 1 or 2 are not used.
-        auto time1R =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.T1coarseR(), entry.T1fineR(), true);
-        auto time1L =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.T1coarseL(), entry.T1fineL(), true);
+        auto time1Plus =
+            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.T1coarsePlus(), entry.T1finePlus(), true);
+        auto time1Minus =
+            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.T1coarseMinus(), entry.T1fineMinus(), true);
 
-        auto time2R =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.T2coarseR(), entry.T2fineR(), false);
-        auto time2L =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.T2coarseL(), entry.T2fineL(), false);
+        auto time2Plus =
+            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.T2coarsePlus(), entry.T2finePlus(), false);
+        auto time2Minus =
+            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.T2coarseMinus(), entry.T2fineMinus(), false);
 
         // from qfine to energy in adc, NB you need to pass calibrated time
-        auto ampL =
-            QfineToADC(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.ChargeL(), time1L, entry.EOIcoarseL());
-        auto ampR =
-            QfineToADC(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.ChargeR(), time1R, entry.EOIcoarseR());
+        auto ampMinus =
+            QfineToADC(qdcCalParams_, entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.ChargeMinus(), time1Minus, entry.EOIcoarseMinus());
+        auto ampPlus =
+            QfineToADC(qdcCalParams_, entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.ChargePlus(), time1Plus, entry.EOIcoarsePlus());
 
         uint8_t row = rowFromId(entry.rawId());
 
         // flags for the usability of the channel uint_8: atm 2 bit are used
         //  first bit is channel has signal (1) or not (0)
         //  second bit channel was saturated (1) or not (0)
-        uint8_t flagsL = 0;
-        uint8_t flagsR = 0;
+        uint8_t flagsMinus = 0;
+        uint8_t flagsPlus = 0;
 
-        if (ampL > 0)
-          flagsL |= 0x1;
-        if (ampL == adcBitSaturation_)
-          flagsL |= (0x1 << 1);
-        if (ampR > 0)
-          flagsR |= 0x1;
-        if (ampR == adcBitSaturation_)
-          flagsR |= (0x1 << 1);
+        if (ampMinus > 0)
+          flagsMinus |= 0x1;
+        if (ampMinus == adcBitSaturation_)
+          flagsMinus |= (0x1 << 1);
+        if (ampPlus > 0)
+          flagsPlus |= 0x1;
+        if (ampPlus == adcBitSaturation_)
+          flagsPlus |= (0x1 << 1);
 
         // detId from rawId
         DetId detId(entry.rawId());
 
         // convert from clock units to ps
-        time1R *= tclock;
-        time1L *= tclock;
-        time2R *= tclock;
-        time2L *= tclock;
-
-        // converting the energy from ADC to energy
-        auto energyR = float((float(ampR) - npeToADC0_) / npeToADC1_);
-        auto energyL = float((float(ampL) - npeToADC0_) / npeToADC1_);
+        time1Plus *= tclock_;
+        time1Minus *= tclock_;
+        time2Plus *= tclock_;
+        time2Minus *= tclock_;
 
 #ifdef EDM_ML_DEBUG
         printf("Base recHit SoA with raw id %i \n", entry.rawId());
-        printf("Time 1 before corrections L,R (%f, %f) - ", time1L, time1R);
-        printf("Time 2 before corrections L,R (%f, %f) - ", time2L, time2R);
-
-        printf("Amplidute in ADC L,R (%i, %i) - ", ampL, ampR);
-        printf("converting to energy L,R (%f, %f) --> ", npeToADC0_, invADCPerMeV_);
-        printf("Energy in MeV L,R (%f, %f) \n", energyL, energyR);
+        printf("Calibrations: tclock = %f \n", tclock_);
+        printf("Time 1 before corrections -,+ (%f, %f) - \n", time1Minus, time1Plus);
+        printf("Time 2 before corrections -,+ (%f, %f) - \n", time2Minus, time2Plus);
+        printf("Amplidute in ADC -,+ (%i, %i) - \n", ampMinus, ampPlus);
 #endif
 
         // fill the base rechit
         output[i] = {
             detId,
             row,
-            time1R,  // in ns
-            time2R,
-            energyR,  // energy
-            entry.IdleTimeR(),
-            flagsR,
-            time1L,  // in ns
-            time2L,
-            energyL,  // energy
-            entry.IdleTimeL(),
-            flagsL,
+            time1Plus,  // in ns
+            time2Plus,
+            float(ampPlus),  // energy
+            entry.IdleTimePlus(),
+            flagsPlus,
+            time1Minus,  // in ns
+            time2Minus,
+            float(ampMinus),  // energy
+            entry.IdleTimeMinus(),
+            flagsMinus,
 
         };
       }
@@ -159,8 +153,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   void BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(Queue& queue,
                                                     ::btldigi::BTLDigiSoA::ConstView const& input,
                                                     BTLBaseRecHitSoA::View& output,
-                                                    const double npeToADC0_,
-                                                    const double npeToADC1_) {
+                                                    const uint32_t adcBitSaturation_,
+                                                    const double tclock_,
+                                                    const std::array<double,4> tdcCalParams_,
+                                                    const std::array<double,10> qdcCalParams_) {
     //,
     //Table const& tdc,
     //Table const& qdc) {
@@ -178,8 +174,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                         BTLdigiToBaseKernel{},
                         input,
                         output,
-                        npeToADC0_,
-                        npeToADC1_);
+                        adcBitSaturation_,
+                        tclock_,
+                        tdcCalParams_,
+                        qdcCalParams_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

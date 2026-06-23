@@ -33,9 +33,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
           c_LYSO_(1. / invLightSpeedLYSO_),
           thresholdToKeep_(config.getParameter<double>("thresholdToKeep")),
           calibration_(config.getParameter<double>("calibrationConstant")),
-          npeSaturationCorr0_(config.getParameter<double>("npeSaturationCorr0")),
-          npeSaturationCorr1_(config.getParameter<double>("npeSaturationCorr1")),
-          npePerGeV_(config.getParameter<double>("npePerGeV")) {}
+          npeSaturationCorr_(config.getParameter<std::vector<double>>("npeSaturationCorr")),
+          npeToADC_(config.getParameter<std::vector<double>>("npeToADC")),
+          npePerGeV_(config.getParameter<double>("npePerGeV")),
+          timeCalibration_(config.getParameter<double>("timeCalibrationConstant")),
+          tResParams_(config.getParameter<std::vector<double>>("tResParams")),
+          twcParams_(config.getParameter<std::vector<double>>("twcParams")) {}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
@@ -43,9 +46,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       desc.add<double>("invLightSpeedLYSO");
       desc.add<double>("thresholdToKeep");
       desc.add<double>("calibrationConstant");
-      desc.add<double>("npeSaturationCorr0");
-      desc.add<double>("npeSaturationCorr1");
+      desc.add<std::vector<double>>("npeSaturationCorr");
+      desc.add<std::vector<double>>("npeToADC");
       desc.add<double>("npePerGeV");
+      desc.add<double>("timeCalibrationConstant");
+      desc.add<std::vector<double>>("tResParams");
+      desc.add<std::vector<double>>("twcParams");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -63,15 +69,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       BTLRecHitDeviceCollection rh(event.queue(), N);
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
+      std::array<double,2> npeSaturationCorrArray_;
+      std::array<double,2> npeToADCArray_;
+      std::array<double,3> tResParamsArray_;
+      std::array<double,3> twcParamsArray_;
+      std::copy_n(npeSaturationCorr_.begin(), 2, npeSaturationCorrArray_.begin());
+      std::copy_n(npeToADC_.begin(), 2, npeToADCArray_.begin());
+      std::copy_n(tResParams_.begin(), 3, tResParamsArray_.begin());
+      std::copy_n(twcParams_.begin(), 3, twcParamsArray_.begin());
       BTLRecHitSoAProducerAlgo::fromBaseToReco(event.queue(),
                                                deviceBrh.view(),
                                                rh.view(),
                                                c_LYSO_,
                                                thresholdToKeep_,
                                                calibration_,
-                                               npeSaturationCorr0_,
-                                               npeSaturationCorr1_,
-                                               npePerGeV_);
+                                               npeSaturationCorrArray_,
+                                               npeToADCArray_,
+                                               npePerGeV_,
+                                               timeCalibration_,
+                                               tResParamsArray_,
+                                               twcParamsArray_);
 
       // Move the SoA with the rh into the Event.
       event.emplace(rh_, std::move(rh));
@@ -84,9 +101,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     const double c_LYSO_;
     const double thresholdToKeep_;
     const double calibration_;
-    const double npeSaturationCorr0_;
-    const double npeSaturationCorr1_;
+    const std::vector<double> npeSaturationCorr_;
+    const std::vector<double> npeToADC_;
     const double npePerGeV_;
+    const double timeCalibration_;
+    const std::vector<double> tResParams_;
+    const std::vector<double> twcParams_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

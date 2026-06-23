@@ -16,8 +16,8 @@ namespace mtd_digitizer {
 
   struct MTDCellInfo {
     // for BTL:
-    //     0 --> number of photo-electrons (left side),  1 --> time of flight (left side)
-    //     2 --> number of photo-electrons (right side), 3 --> time of flight (right side)
+    //     0 --> number of photo-electrons (minus side),  1 --> time of flight (minus side)
+    //     2 --> number of photo-electrons (plus side), 3 --> time of flight (plus side)
     std::array<MTDSimHitData, 4> hit_info;
   };
 
@@ -41,100 +41,100 @@ namespace mtd_digitizer {
           BC0count_(0),
           status_(false),
           BCcount_(0),
-          chIDR_(0),
-          T1coarseR_(0),
-          T2coarseR_(0),
-          EOIcoarseR_(0),
-          ChargeR_(0),
-          T1fineR_(0),
-          T2fineR_(0),
-          IdleTimeR_(0),
-          PrevTrigFR_(0),
-          TACIDR_(0),
-          chIDL_(0),
-          T1coarseL_(0),
-          T2coarseL_(0),
-          EOIcoarseL_(0),
-          ChargeL_(0),
-          T1fineL_(0),
-          T2fineL_(0),
-          IdleTimeL_(0),
-          PrevTrigFL_(0),
-          TACIDL_(0) {}
+          chIDPlus_(0),
+          T1coarsePlus_(0),
+          T2coarsePlus_(0),
+          EOIcoarsePlus_(0),
+          ChargePlus_(0),
+          T1finePlus_(0),
+          T2finePlus_(0),
+          IdleTimePlus_(0),
+          PrevTrigFPlus_(0),
+          TACIDPlus_(0),
+          chIDMinus_(0),
+          T1coarseMinus_(0),
+          T2coarseMinus_(0),
+          EOIcoarseMinus_(0),
+          ChargeMinus_(0),
+          T1fineMinus_(0),
+          T2fineMinus_(0),
+          IdleTimeMinus_(0),
+          PrevTrigFMinus_(0),
+          TACIDMinus_(0) {}
 
     uint32_t rawId_;
     uint16_t BC0count_;
     bool status_;
     uint32_t BCcount_;
-    uint8_t chIDR_;       // TOFHIR channel ID, right side of crystal
-    uint16_t T1coarseR_;  // data from crystal right side
-    uint16_t T2coarseR_;
-    uint16_t EOIcoarseR_;
-    uint16_t ChargeR_;
-    uint16_t T1fineR_;
-    uint16_t T2fineR_;
-    uint16_t IdleTimeR_;
-    uint8_t PrevTrigFR_;
-    uint8_t TACIDR_;
-    uint8_t chIDL_;       // TOFHIR channel ID, left side of crystal
-    uint16_t T1coarseL_;  // data from crystal left side
-    uint16_t T2coarseL_;
-    uint16_t EOIcoarseL_;
-    uint16_t ChargeL_;
-    uint16_t T1fineL_;
-    uint16_t T2fineL_;
-    uint16_t IdleTimeL_;
-    uint8_t PrevTrigFL_;
-    uint8_t TACIDL_;
+    uint8_t chIDPlus_;       // TOFHIR channel ID, plus side of crystal
+    uint16_t T1coarsePlus_;  // data from crystal plus side
+    uint16_t T2coarsePlus_;
+    uint16_t EOIcoarsePlus_;
+    uint16_t ChargePlus_;
+    uint16_t T1finePlus_;
+    uint16_t T2finePlus_;
+    uint16_t IdleTimePlus_;
+    uint8_t PrevTrigFPlus_;
+    uint8_t TACIDPlus_;
+    uint8_t chIDMinus_;       // TOFHIR channel ID, minus side of crystal
+    uint16_t T1coarseMinus_;  // data from crystal minus side
+    uint16_t T2coarseMinus_;
+    uint16_t EOIcoarseMinus_;
+    uint16_t ChargeMinus_;
+    uint16_t T1fineMinus_;
+    uint16_t T2fineMinus_;
+    uint16_t IdleTimeMinus_;
+    uint8_t PrevTrigFMinus_;
+    uint8_t TACIDMinus_;
 
     BTLDigiContent(uint32_t rawId,
                    uint16_t BC0count,
                    bool status,
                    uint32_t BCcount,
-                   uint8_t chIDR,
-                   uint16_t T1coarseR,
-                   uint16_t T2coarseR,
-                   uint16_t EOIcoarseR,
-                   uint16_t ChargeR,
-                   uint16_t T1fineR,
-                   uint16_t T2fineR,
-                   uint16_t IdleTimeR,
-                   uint8_t PrevTrigFR,
-                   uint8_t TACIDR,
-                   uint8_t chIDL,
-                   uint16_t T1coarseL,
-                   uint16_t T2coarseL,
-                   uint16_t EOIcoarseL,
-                   uint16_t ChargeL,
-                   uint16_t T1fineL,
-                   uint16_t T2fineL,
-                   uint16_t IdleTimeL,
-                   uint8_t PrevTrigFL,
-                   uint8_t TACIDL)
+                   uint8_t chIDPlus,
+                   uint16_t T1coarsePlus,
+                   uint16_t T2coarsePlus,
+                   uint16_t EOIcoarsePlus,
+                   uint16_t ChargePlus,
+                   uint16_t T1finePlus,
+                   uint16_t T2finePlus,
+                   uint16_t IdleTimePlus,
+                   uint8_t PrevTrigFPlus,
+                   uint8_t TACIDPlus,
+                   uint8_t chIDMinus,
+                   uint16_t T1coarseMinus,
+                   uint16_t T2coarseMinus,
+                   uint16_t EOIcoarseMinus,
+                   uint16_t ChargeMinus,
+                   uint16_t T1fineMinus,
+                   uint16_t T2fineMinus,
+                   uint16_t IdleTimeMinus,
+                   uint8_t PrevTrigFMinus,
+                   uint8_t TACIDMinus)
         : rawId_(rawId),
           BC0count_(BC0count),
           status_(status),
           BCcount_(BCcount),
-          chIDR_(chIDR),
-          T1coarseR_(T1coarseR),
-          T2coarseR_(T2coarseR),
-          EOIcoarseR_(EOIcoarseR),
-          ChargeR_(ChargeR),
-          T1fineR_(T1fineR),
-          T2fineR_(T2fineR),
-          IdleTimeR_(IdleTimeR),
-          PrevTrigFR_(PrevTrigFR),
-          TACIDR_(TACIDR),
-          chIDL_(chIDL),
-          T1coarseL_(T1coarseL),
-          T2coarseL_(T2coarseL),
-          EOIcoarseL_(EOIcoarseL),
-          ChargeL_(ChargeL),
-          T1fineL_(T1fineL),
-          T2fineL_(T2fineL),
-          IdleTimeL_(IdleTimeL),
-          PrevTrigFL_(PrevTrigFL),
-          TACIDL_(TACIDL) {}
+          chIDPlus_(chIDPlus),
+          T1coarsePlus_(T1coarsePlus),
+          T2coarsePlus_(T2coarsePlus),
+          EOIcoarsePlus_(EOIcoarsePlus),
+          ChargePlus_(ChargePlus),
+          T1finePlus_(T1finePlus),
+          T2finePlus_(T2finePlus),
+          IdleTimePlus_(IdleTimePlus),
+          PrevTrigFPlus_(PrevTrigFPlus),
+          TACIDPlus_(TACIDPlus),
+          chIDMinus_(chIDMinus),
+          T1coarseMinus_(T1coarseMinus),
+          T2coarseMinus_(T2coarseMinus),
+          EOIcoarseMinus_(EOIcoarseMinus),
+          ChargeMinus_(ChargeMinus),
+          T1fineMinus_(T1fineMinus),
+          T2fineMinus_(T2fineMinus),
+          IdleTimeMinus_(IdleTimeMinus),
+          PrevTrigFMinus_(PrevTrigFMinus),
+          TACIDMinus_(TACIDMinus) {}
   };
 
   struct ETLDigiContent {

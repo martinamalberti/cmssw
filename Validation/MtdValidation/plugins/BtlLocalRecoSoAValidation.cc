@@ -127,13 +127,13 @@ private:
 
   // --- BaseratedRecHits histograms
 
-  MonitorElement* meUncEneLVsX_;
-  MonitorElement* meUncEneRVsX_;
-  MonitorElement* meUncTimeLVsX_;
-  MonitorElement* meUncTimeRVsX_;
+  MonitorElement* meUncEneMinusVsX_;
+  MonitorElement* meUncEnePlusVsX_;
+  MonitorElement* meUncTimeMinusVsX_;
+  MonitorElement* meUncTimePlusVsX_;
 
   static constexpr int nBinsQ_ = 30;
-  static constexpr float binWidthQ_ = 0.5;  // [MeV]
+  static constexpr float binWidthQ_ = 0.0005;  // [GeV]
   static constexpr int nBinsQEta_ = 3;
   static constexpr float binsQEta_[nBinsQEta_ + 1] = {0., 0.65, 1.15, 1.55};
 
@@ -194,8 +194,8 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
 
     auto simHitIt = m_btlSimHits.emplace(id.rawId(), MTDHit()).first;
 
-    // --- Accumulate the energy (in MeV) of SIM hits in the same detector cell
-    (simHitIt->second).energy += convertUnitsTo(0.001_MeV, simHit.energyLoss());
+    // --- Accumulate the energy (in GeV) of SIM hits in the same detector cell
+    (simHitIt->second).energy += simHit.energyLoss(); // [GeV]
 
     // --- Get the time of the first SIM hit in the cell
     if ((simHitIt->second).time == 0 || simHit.tof() < (simHitIt->second).time) {
@@ -314,8 +314,8 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
       auto uRecHit = btlBaseRecHitsSoAHandle->view()[i];
       BTLDetId detId = uRecHit.detId();
 
-      LogTrace("BtlLocalRecoSoAValidation") << "@URH detid " << detId.rawId() << " A " << uRecHit.ampR() << " "
-                                            << uRecHit.ampL() << " T " << uRecHit.time1R() << " " << uRecHit.time1L();
+      LogTrace("BtlLocalRecoSoAValidation") << "@URH detid " << detId.rawId() << " A " << uRecHit.ampPlus() << " "
+                                            << uRecHit.ampMinus() << " T " << uRecHit.time1Plus() << " " << uRecHit.time1Minus();
 
       // --- Skip BaseratedRecHits not matched to SimHits
       if (m_btlSimHits.count(detId.rawId()) != 1)
@@ -328,15 +328,15 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
       float hit_time = 0.;
 
       // left side:
-      if (uRecHit.ampR() > 0.) {
-        hit_amplitude += uRecHit.ampR();
-        hit_time += uRecHit.time1R();
+      if (uRecHit.ampPlus() > 0.) {
+        hit_amplitude += uRecHit.ampPlus();
+        hit_time += uRecHit.time1Plus();
         nHits += 1.;
       }
       // right side:
-      if (uRecHit.ampL() > 0.) {
-        hit_amplitude += uRecHit.ampL();
-        hit_time += uRecHit.time1L();
+      if (uRecHit.ampMinus() > 0.) {
+        hit_amplitude += uRecHit.ampMinus();
+        hit_time += uRecHit.time1Minus();
         nHits += 1.;
       }
 
@@ -414,13 +414,13 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
 
   meNhits_ = ibook.book1D("BtlNhits", "Number of BTL RECO hits;log_{10}(N_{RECO})", 100, 0., 5.25);
 
-  meHitEnergy_ = ibook.book1D("BtlHitEnergy", "BTL RECO hits energy;E_{RECO} [MeV]", 100, 0., 20.);
+  meHitEnergy_ = ibook.book1D("BtlHitEnergy", "BTL RECO hits energy;E_{RECO} [GeV]", 100, 0., 0.020);
   for (unsigned int ihistoRU = 0; ihistoRU < nRU_; ++ihistoRU) {
     std::string name_Energy = "BtlHitEnergyRUSlice" + std::to_string(ihistoRU);
-    std::string title_Energy = "BTL RECO hits energy (RU " + std::to_string(ihistoRU) + ");E_{RECO} [MeV])";
-    meHitEnergyRUSlice_[ihistoRU] = ibook.book1D(name_Energy, title_Energy, 100, 0., 20.);
+    std::string title_Energy = "BTL RECO hits energy (RU " + std::to_string(ihistoRU) + ");E_{RECO} [GeV])";
+    meHitEnergyRUSlice_[ihistoRU] = ibook.book1D(name_Energy, title_Energy, 100, 0., 0.020);
   }
-  meHitLogEnergy_ = ibook.book1D("BtlHitLogEnergy", "BTL RECO hits energy;log_{10}(E_{RECO} [MeV])", 16, -0.1, 1.5);
+  meHitLogEnergy_ = ibook.book1D("BtlHitLogEnergy", "BTL RECO hits energy;log_{10}(E_{RECO} [GeV])", 16, -3.1, -1.5);
   meHitTime_ = ibook.book1D("BtlHitTime", "BTL RECO hits ToA;ToA_{RECO} [ns]", 100, 0., 25.);
   meHitTimeError_ = ibook.book1D("BtlHitTimeError", "BTL RECO hits ToA error;#sigma^{ToA}_{RECO} [ns]", 50, 0., 0.1);
   meOccupancy_ = ibook.book2D(
@@ -442,13 +442,13 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
   meHitPhi_ = ibook.book1D("BtlHitPhi", "BTL RECO hits #phi;#phi_{RECO} [rad]", 126, -3.2, 3.2);
   meHitEta_ = ibook.book1D("BtlHitEta", "BTL RECO hits #eta;#eta_{RECO}", 100, -1.55, 1.55);
   meHitTvsE_ = ibook.bookProfile(
-      "BtlHitTvsE", "BTL RECO hits ToA vs energy;E_{RECO} [MeV];ToA_{RECO} [ns]", 50, 0., 20., 0., 100.);
+      "BtlHitTvsE", "BTL RECO hits ToA vs energy;E_{RECO} [GeV];ToA_{RECO} [ns]", 50, 0., 0.02, 0., 100.);
   meHitEvsPhi_ = ibook.bookProfile(
-      "BtlHitEvsPhi", "BTL RECO hits energy vs #phi;#phi_{RECO} [rad];E_{RECO} [MeV]", 50, -3.2, 3.2, 0., 100.);
+      "BtlHitEvsPhi", "BTL RECO hits energy vs #phi;#phi_{RECO} [rad];E_{RECO} [GeV]", 50, -3.2, 3.2, 0., 0.1);
   meHitEvsEta_ = ibook.bookProfile(
-      "BtlHitEvsEta", "BTL RECO hits energy vs #eta;#eta_{RECO};E_{RECO} [MeV]", 50, -1.55, 1.55, 0., 100.);
+      "BtlHitEvsEta", "BTL RECO hits energy vs #eta;#eta_{RECO};E_{RECO} [GeV]", 50, -1.55, 1.55, 0., 0.1);
   meHitEvsZ_ = ibook.bookProfile(
-      "BtlHitEvsZ", "BTL RECO hits energy vs Z;Z_{RECO} [cm];E_{RECO} [MeV]", 50, -260., 260., 0., 100.);
+      "BtlHitEvsZ", "BTL RECO hits energy vs Z;Z_{RECO} [cm];E_{RECO} [GeV]", 50, -260., 260., 0., 0.1);
   meHitTvsPhi_ = ibook.bookProfile(
       "BtlHitTvsPhi", "BTL RECO hits ToA vs #phi;#phi_{RECO} [rad];ToA_{RECO} [ns]", 50, -3.2, 3.2, 0., 100.);
   meHitTvsEta_ = ibook.bookProfile(
@@ -458,31 +458,31 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
   meHitLongPos_ = ibook.book1D("BtlLongPos", "BTL RECO hits longitudinal position; L_{RECO} [cm]", 50, -5, 5);
   meTimeRes_ = ibook.book1D("BtlTimeRes", "BTL RECO hits time resolution;T_{RECO}-T_{SIM} [ns]", 100, -0.5, 0.5);
   meTimeResVsE_ = ibook.bookProfile("BtlTimeResvsE",
-                                    "BTL RECO hits time resolution vs energy;E_{RECO} [MeV];T_{RECO}-T_{SIM} [ns]",
+                                    "BTL RECO hits time resolution vs energy;E_{RECO} [GeV];T_{RECO}-T_{SIM} [ns]",
                                     50,
                                     0.,
-                                    20.,
+                                    0.020,
                                     -0.5,
                                     0.5,
                                     "S");
-  meEnergyRes_ = ibook.book1D("BtlEnergyRes", "BTL RECO hits energy resolution;E_{RECO}-E_{SIM} [MeV]", 100, -0.5, 0.5);
+  meEnergyRes_ = ibook.book1D("BtlEnergyRes", "BTL RECO hits energy resolution;E_{RECO}-E_{SIM} [GeV]", 100, -0.0005, 0.0005);
   meEnergyRelResVsE_ =
       ibook.bookProfile("BtlEnergyRelResvsE",
-                        "BTL relative energy resolution vs hit energy;E_{RECO} [MeV];E_{RECO}-E_{SIM} [MeV]",
+                        "BTL relative energy resolution vs hit energy;E_{RECO} [GeV];E_{RECO}-E_{SIM} [GeV]",
                         50,
                         0.,
-                        20.,
-                        -0.15,
-                        0.15,
+                        0.020,
+                        -0.00015,
+                        0.00015,
                         "S");
   meLongPosPull_ = ibook.book1D(
       "BtlLongPosPull", "BTL longitudinal position pull;(L_{RECO}-L_{SIM})/#sigma_{L_{RECO}}", 100, -5., 5.);
   meLongPosPullvsE_ =
       ibook.bookProfile("BtlLongposPullvsE",
-                        "BTL longitudinal position pull vs E;E_{SIM} [MeV];(L_{RECO}-L_{SIM})/#sigma_{L_{RECO}}",
+                        "BTL longitudinal position pull vs E;E_{SIM} [GeV];(L_{RECO}-L_{SIM})/#sigma_{L_{RECO}}",
                         20,
                         0.,
-                        20.,
+                        0.020,
                         -5.,
                         5.,
                         "S");
@@ -496,7 +496,7 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
                         5.,
                         "S");
   meTPullvsE_ = ibook.bookProfile(
-      "BtlTPullvsE", "BTL time pull vs E;E_{SIM} [MeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}", 20, 0., 20., -5., 5., "S");
+      "BtlTPullvsE", "BTL time pull vs E;E_{SIM} [GeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}", 20, 0., 0.020, -5., 5., "S");
   meTPullvsEta_ = ibook.bookProfile("BtlTPullvsEta",
                                     "BTL time pull vs #eta;|#eta_{RECO}|;(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
                                     30,
@@ -512,33 +512,33 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
   // --- BaseratedRecHits histograms
 
   if (optionalPlots_) {
-    meUncEneLVsX_ = ibook.bookProfile("BTLUncEneLVsX",
-                                      "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{L}) [MeV]",
+    meUncEneMinusVsX_ = ibook.bookProfile("BTLUncEneMinusVsX",
+                                      "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{minus}) [GeV]",
                                       20,
-                                      -5.,
-                                      5.,
+                                      -0.005,
+                                      0.005,
                                       -20.,
                                       20.,
                                       "S");
-    meUncEneRVsX_ = ibook.bookProfile("BTLUncEneRVsX",
-                                      "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{R}) [MeV]",
+    meUncEnePlusVsX_ = ibook.bookProfile("BTLUncEnePlusVsX",
+                                      "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{plus}) [GeV]",
                                       20,
-                                      -5.,
-                                      5.,
+                                      -0.005,
+                                      0.005,
                                       -20.,
                                       20.,
                                       "S");
 
-    meUncTimeLVsX_ = ibook.bookProfile("BTLUncTimeLVsX",
-                                       "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{L}) [ns]",
+    meUncTimeMinusVsX_ = ibook.bookProfile("BTLUncTimeMinusVsX",
+                                       "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{plus}) [ns]",
                                        20,
                                        -5.,
                                        5.,
                                        -25.,
                                        25.,
                                        "S");
-    meUncTimeRVsX_ = ibook.bookProfile("BTLUncTimeRVsX",
-                                       "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{R}) [ns]",
+    meUncTimePlusVsX_ = ibook.bookProfile("BTLUncTimePlusVsX",
+                                       "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{minus}) [ns]",
                                        20,
                                        -5.,
                                        5.,
@@ -587,10 +587,10 @@ void BtlLocalRecoSoAValidation::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<edm::InputTag>("recHitsSoATag", edm::InputTag("btlRecHitsSoA"));
   desc.add<edm::InputTag>("uncalibRecHitsSoATag", edm::InputTag("btlBaseRecHitsSoA"));
   desc.add<edm::InputTag>("simHitsTag", edm::InputTag("mix", "g4SimHitsFastTimerHitsBarrel"));
-  desc.add<double>("HitMinimumEnergy", 1.);  // [MeV]
+  desc.add<double>("HitMinimumEnergy", 0.001);  // [GeV]
   desc.add<bool>("optionalPlots", false);
   desc.add<bool>("BaseRecHitsPlots", false);
-  desc.add<double>("HitMinimumAmplitude", 1.);  // [MeV]
+  desc.add<double>("HitMinimumAmplitude", 0.001);  // [GeV]
 
   descriptions.add("btlLocalRecoSoAValid", desc);
 }

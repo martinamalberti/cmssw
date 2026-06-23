@@ -16,14 +16,14 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
-  ALPAKA_FN_ACC float timeResolutionInNs(float amp) { return 0.0593858 * pow(amp, -1.02826) + 0.0156719; }
+  ALPAKA_FN_ACC float timeResolutionInNs(std::array<double,3> tResParams, float amp) {
+    return tResParams[0] * pow(amp, tResParams[1]) + tResParams[2];
+  }
 
-  ALPAKA_FN_ACC float getTimeCalib() { return 0.25; }
-
-  ALPAKA_FN_ACC float timeWalkCorr(float amp) {
-    float tdcLSB_ns = 0.020;
-    float corr = 1.9e6 / 0.020 * pow(9.389e5 / 0.0348 * (amp + 22.5), -0.663) - 7.5e-4 * amp - 3.5e-3;
-    return tdcLSB_ns * corr;
+  ALPAKA_FN_ACC float timeWalkCorr(std::array<double,3> twcParams, float amp) {
+    // taken from SLHCUpgradeSimulations/Configuration/python/aging.py
+    // for 1000 fb-1 scenario
+    return twcParams[0] * pow(amp, twcParams[1]) + twcParams[2];
   }
 
   class BTLBaseToRecoKernel {
@@ -34,36 +34,43 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                   const double c_LYSO_,
                                   const double thresholdToKeep_,
                                   const double calibration_,
-                                  const double npeSaturationCorr0_,
-                                  const double npeSaturationCorr1_,
-                                  const double npePerGeV_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
+                                  const std::array<double,2> npeSaturationCorr_,
+                                  const std::array<double,2> npeToADC_,
+                                  const double npePerGeV_,
+                                  const double timeCalibration_,
+                                  const std::array<double,3> tResParams_,
+                                  const std::array<double,3> twcParams_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
       // make a strided loop over the kernel grid, covering up to "size" elements
 
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
-        float time1R = entry.time1R();
-        float time1L = entry.time1L();
-        float time2R = entry.time2R();
-        float time2L = entry.time2L();
-        float ampR = entry.ampR();
-        float ampL = entry.ampL();
+        float time1Plus = entry.time1Plus();
+        float time1Minus = entry.time1Minus();
+        float time2Plus = entry.time2Plus();
+        float time2Minus = entry.time2Minus();
+        float ampPlus = entry.ampPlus();
+        float ampMinus = entry.ampMinus();
+
+        // converting the energy from ADC to energy
+        ampPlus = float((float(ampPlus) - npeToADC_[0]) / npeToADC_[1]);
+        ampMinus = float((float(ampMinus) - npeToADC_[0]) / npeToADC_[1]);
+
+        //   correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
+        float dR = npeSaturationCorr_[1] * npeSaturationCorr_[1] + 4. * npeSaturationCorr_[0] * ampPlus;
+        ampPlus = (-npeSaturationCorr_[1] + sqrt(dR)) / (2. * (npeSaturationCorr_[0]));
+        ampPlus /= npePerGeV_;
+        float dL = npeSaturationCorr_[1] * npeSaturationCorr_[1] + 4. * npeSaturationCorr_[0] * ampMinus;
+        ampMinus = (-npeSaturationCorr_[1] + sqrt(dL)) / (2. * (npeSaturationCorr_[0]));
+        ampMinus /= npePerGeV_;
 
         // Apply time and energy corrections
         //   apply amp walk corrections
-        auto corrR = timeWalkCorr(ampR);
-        auto corrL = timeWalkCorr(ampL);
-        time1R = time1R - corrR;
-        time1L = time1L - corrL;
-        time2R = time2R - corrR;
-        time2L = time2L - corrL;
-
-        //   correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
-        float dR = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampR;
-        ampR = (-npeSaturationCorr1_ + sqrt(dR)) / (2. * (npeSaturationCorr0_));
-        ampR /= npePerGeV_;
-        float dL = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampL;
-        ampL = (-npeSaturationCorr1_ + sqrt(dL)) / (2. * (npeSaturationCorr0_));
-        ampL /= npePerGeV_;
+        auto corrR = timeWalkCorr(twcParams_, ampPlus);
+        auto corrL = timeWalkCorr(twcParams_, ampMinus);
+        time1Plus = time1Plus - corrR;
+        time1Minus = time1Minus - corrL;
+        time2Plus = time2Plus - corrR;
+        time2Minus = time2Minus - corrL;
 
         float time1 = 0;
         float time2 = 0;
@@ -77,27 +84,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         //!!!!!!! position error calculation to be added
 
         // -- if you have both sipm info and they are not saturated
-        if (entry.flagsR() == 0x1 && entry.flagsL() == 0x1) {
-          time1 = 0.5f * (time1L + time1R);
-          time2 = 0.5f * (time2L + time2R);  // to be discussed
-          position = 0.5f * c_LYSO_ * (time1L - time1R);
+        if (entry.flagsPlus() == 0x1 && entry.flagsMinus() == 0x1) {
+          time1 = 0.5f * (time1Minus + time1Plus);
+          time2 = 0.5f * (time2Minus + time2Plus);  // to be discussed
+          position = 0.5f * c_LYSO_ * (time1Plus - time1Minus);
           position_error = 0.6;  // as in the std btl uncalibrated hit producer
-          energy = (ampR + ampL) / 2.;
+          energy = (ampPlus + ampMinus) / 2.;
           flag |= 0x3;
 
         }
         // --- If only one SiPM has good not saturated signal
-        else if (entry.flagsL() == 0x1 && (time1R == 0x3 || time1R == 0)) {
-          time1 = time1L;
-          time2 = time2L;
-          energy = ampL;
+        else if (entry.flagsMinus() == 0x1 && (time1Plus == 0x3 || time1Plus == 0)) {
+          time1 = time1Minus;
+          time2 = time2Minus;
+          energy = ampMinus;
           flag |= (0x1 << 1);
         }
 
-        else if (entry.flagsR() == 0x1 && (entry.flagsL() == 0x3 || entry.flagsR() == 0)) {
-          time1 = time1R;
-          time2 = time2R;
-          energy = ampR;
+        else if (entry.flagsPlus() == 0x1 && (entry.flagsMinus() == 0x3 || entry.flagsPlus() == 0)) {
+          time1 = time1Plus;
+          time2 = time2Plus;
+          energy = ampPlus;
           flag |= 0x1;
         }
 
@@ -105,9 +112,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         energy *= calibration_;
 
         // --- Time calibration: for the time being just removes a time offset in BTL
-        time1 -= getTimeCalib();
+        time1 -= timeCalibration_;
 
-        time_error = timeResolutionInNs(energy);
+        time_error = timeResolutionInNs(tResParams_, energy);
 
         // Now fill flags
         // good is 1--> 2 channels && over threshold, bad is 0
@@ -118,12 +125,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         }
 
 #ifdef EDM_ML_DEBUG
-
         printf("RecHit SoA with raw id %i \n", entry.detId().rawId());
-        printf(
-            "Time 1  L,R (%f, %f) and average, error (%f, %f) \n", time1L, time1R, time1, time_error);
-        printf("Time 2  L,R (%f, %f) and average %f \n", time2L, time2R, time2);
-        printf("Energy  L,R (%f, %f) and average %f \n", ampL, ampR, energy);
+        printf("Calibrations: timeCal = %f \n", timeCalibration_);
+        printf("              energyCal = %f \n", calibration_);
+        printf("Time 1  -,+ (%f, %f). Time 1 = %f +/- %f \n", time1Minus, time1Plus, time1, time_error);
+        printf("Time 2  -,+ (%f, %f). Time 2 = %f \n", time2Minus, time2Plus, time2);
+        printf("Energy  -,+ (%f, %f). Energy = %f \n", ampMinus, ampPlus, energy);
         printf("Position and error (%f, %f) \n", position, position_error);
 
 #endif
@@ -148,9 +155,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                 const double c_LYSO_,
                                                 const double thresholdToKeep_,
                                                 const double calibration_,
-                                                const double npeSaturationCorr0_,
-                                                const double npeSaturationCorr1_,
-                                                const double npePerGeV_) {
+                                                const std::array<double,2> npeSaturationCorr_,
+                                                const std::array<double,2> npeToADC_,
+                                                const double npePerGeV_,
+                                                const double timeCalibration_,
+                                                const std::array<double,3> tResParams_,
+                                                const std::array<double,3> twcParams_) {
     // Use 64 items per group.
     // This value is arbitrary, but it's a reasonable starting point.
     uint32_t items = 64;
@@ -168,9 +178,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                         c_LYSO_,
                         thresholdToKeep_,
                         calibration_,
-                        npeSaturationCorr0_,
-                        npeSaturationCorr1_,
-                        npePerGeV_);
+                        npeSaturationCorr_,
+                        npeToADC_,
+                        npePerGeV_,
+                        timeCalibration_,
+                        tResParams_,
+                        twcParams_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

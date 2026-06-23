@@ -32,15 +32,19 @@ btlRecHitsSoA = cms.EDProducer('btlrechit::BTLRecHitSoAProducer@alpaka',
     invLightSpeedLYSO = mtdDigitizer.barrelDigitizer.DeviceSimulation.LightCollectionSlope, # [ns/cm]
     thresholdToKeep = cms.double(0.001), # [GeV]
     calibrationConstant = cms.double(1.), # [GeV / GeV]
-    npeSaturationCorr0 = cms.double(-8.54e-06),
-    npeSaturationCorr1 = cms.double(1.034),
-    npePerGeV = mtdDigitizer.barrelDigitizer.DeviceSimulation.LightOutput / 1000. # [Npe/GeV]
+    npeSaturationCorr = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.SiPMSaturationParam,
+    npeToADC = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.PulseQParam,
+    npePerGeV = cms.double(1000.*mtdDigitizer.barrelDigitizer.DeviceSimulation.LightOutput.value()), # [Npe/GeV]
+    timeCalibrationConstant = cms.double(0.259825), # time offset for bar time is L/2v
+    tResParams = cms.vdouble(0.0593858, -1.02826, 0.0156719),
+    twcParams = cms.vdouble(0.011348, -0.671018, 0.0443454),
 )
 
 etlRecHitsSoA = cms.EDProducer('etlrechit::ETLRecHitSoAProducer@alpaka',
     baserh = cms.InputTag("etlBaseRecHitsSoA"),
     thresholdToKeep = cms.double(4.25e-5), # [GeV]
     calibrationConstant = cms.double(8.5e-5), # [GeV / ns]
+    timeResInNs = cms.double(0.037), # [ns]
     timeCorr_p0 = cms.double(0.967683), # 0.974683 - 0.007, ad hoc correction for bias from global delay removal
     timeCorr_p1 = cms.double(-0.237274),
     timeCorr_p2 = cms.double(0.021455),

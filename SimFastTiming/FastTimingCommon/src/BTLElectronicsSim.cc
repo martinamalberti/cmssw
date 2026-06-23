@@ -249,9 +249,9 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
       edm::LogError("BTLElectronicsSim") << "Hit before trivial Shaper with rawId    : " << it->first.detid_
                                          << ", row: " << static_cast<int>(it->first.row_)
                                          << ", column: " << static_cast<int>(it->first.column_)
-                                         << ", time1L: " << toa1[0] << ", time2L: " << toa2[0]
-                                         << ", chargeL: " << charge_adc[0] << ", time1R: " << toa1[1]
-                                         << ", time2R: " << toa2[1] << ", chargeR: " << charge_adc[1] << std::endl;
+                                         << ", time1Minus: " << toa1[0] << ", time2Minus: " << toa2[0]
+                                         << ", chargeMinus: " << charge_adc[0] << ", time1Plus: " << toa1[1]
+                                         << ", time2Plus: " << toa2[1] << ", chargePlus: " << charge_adc[1] << std::endl;
     }
 
     // --- skip if both sides are empty
@@ -277,52 +277,52 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
 
     auto const& elecIds = btlReadoutMap.getElectronicsId(rawId);
 
-    uint8_t chIDR = static_cast<uint8_t>(elecIds.minus.channelId());
-    uint16_t T1coarseR = timetoTcoarse(toa1[1], T1coarseMask);
-    uint16_t T2coarseR = timetoTcoarse(toa2[1], T2coarseMask);
-    uint16_t EOIcoarseR = T1coarseR + static_cast<uint16_t>(integrationTimeFixed_);
-    uint16_t ChargeR = chargetoQfine(charge_adc[1], toa1[1], EOIcoarseR);
-    uint16_t T1fineR = timetoTfine(toa1[1], T1coarseR);
-    uint16_t T2fineR = timetoTfine(toa2[1], T2coarseR);
-    uint16_t IdleTimeR = 0;  // IdleTimeR is not used in this implementation
-    uint8_t PrevTrigFR = 0;  // Previous trigger flag is not used in this implementation
-    uint8_t TACIDR = 0;      // TACIDR is not used in this implementation
+    uint8_t chIDPlus = static_cast<uint8_t>(elecIds.plus.channelId());
+    uint16_t T1coarsePlus = timetoTcoarse(toa1[1], T1coarseMask);
+    uint16_t T2coarsePlus = timetoTcoarse(toa2[1], T2coarseMask);
+    uint16_t EOIcoarsePlus = T1coarsePlus + static_cast<uint16_t>(integrationTimeFixed_);
+    uint16_t ChargePlus = chargetoQfine(charge_adc[1], toa1[1], EOIcoarsePlus);
+    uint16_t T1finePlus = timetoTfine(toa1[1], T1coarsePlus);
+    uint16_t T2finePlus = timetoTfine(toa2[1], T2coarsePlus);
+    uint16_t IdleTimePlus = 0;  // IdleTimePlus is not used in this implementation
+    uint8_t PrevTrigFPlus = 0;  // Previous trigger flag is not used in this implementation
+    uint8_t TACIDPlus = 0;      // TACIDPlus is not used in this implementation
 
-    uint8_t chIDL = static_cast<uint8_t>(elecIds.plus.channelId());
-    uint16_t T1coarseL = timetoTcoarse(toa1[0], T1coarseMask);
-    uint16_t T2coarseL = timetoTcoarse(toa2[0], T2coarseMask);
-    uint16_t EOIcoarseL = T1coarseL + static_cast<uint16_t>(integrationTimeFixed_);
-    uint16_t ChargeL = chargetoQfine(charge_adc[0], toa1[0], EOIcoarseL);
-    uint16_t T1fineL = timetoTfine(toa1[0], T1coarseL);
-    uint16_t T2fineL = timetoTfine(toa2[0], T2coarseL);
-    uint16_t IdleTimeL = 0;  // IdleTimeL is not used in this implementation
-    uint8_t PrevTrigFL = 0;  // Previous trigger flag is not used in this implementation
-    uint8_t TACIDL = 0;      // TACIDL is not used in this implementation
+    uint8_t chIDMinus = static_cast<uint8_t>(elecIds.minus.channelId());
+    uint16_t T1coarseMinus = timetoTcoarse(toa1[0], T1coarseMask);
+    uint16_t T2coarseMinus = timetoTcoarse(toa2[0], T2coarseMask);
+    uint16_t EOIcoarseMinus = T1coarseMinus + static_cast<uint16_t>(integrationTimeFixed_);
+    uint16_t ChargeMinus = chargetoQfine(charge_adc[0], toa1[0], EOIcoarseMinus);
+    uint16_t T1fineMinus = timetoTfine(toa1[0], T1coarseMinus);
+    uint16_t T2fineMinus = timetoTfine(toa2[0], T2coarseMinus);
+    uint16_t IdleTimeMinus = 0;  // IdleTimeMinus is not used in this implementation
+    uint8_t PrevTrigFMinus = 0;  // Previous trigger flag is not used in this implementation
+    uint8_t TACIDMinus = 0;      // TACIDMinus is not used in this implementation
 
     btldigi::BTLDigi newDigi(rawId,
                              BC0count,
                              status,
                              BCcount,
-                             chIDR,
-                             T1coarseR,
-                             T2coarseR,
-                             EOIcoarseR,
-                             ChargeR,
-                             T1fineR,
-                             T2fineR,
-                             IdleTimeR,
-                             PrevTrigFR,
-                             TACIDR,
-                             chIDL,
-                             T1coarseL,
-                             T2coarseL,
-                             EOIcoarseL,
-                             ChargeL,
-                             T1fineL,
-                             T2fineL,
-                             IdleTimeL,
-                             PrevTrigFL,
-                             TACIDL);
+                             chIDPlus,
+                             T1coarsePlus,
+                             T2coarsePlus,
+                             EOIcoarsePlus,
+                             ChargePlus,
+                             T1finePlus,
+                             T2finePlus,
+                             IdleTimePlus,
+                             PrevTrigFPlus,
+                             TACIDPlus,
+                             chIDMinus,
+                             T1coarseMinus,
+                             T2coarseMinus,
+                             EOIcoarseMinus,
+                             ChargeMinus,
+                             T1fineMinus,
+                             T2fineMinus,
+                             IdleTimeMinus,
+                             PrevTrigFMinus,
+                             TACIDMinus);
     btloutput.emplace_back(newDigi);
   }  // MTDSimHitDataAccumulator loop
 }

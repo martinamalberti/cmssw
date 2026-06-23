@@ -19,6 +19,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                ETLRecHitSoA::View& output,
                                double thresholdToKeep_,
                                double calibration_,
+                               double timeResInNs_,
                                const double timeCorr_p0_,
                                const double timeCorr_p2_,
                                const double timeCorr_p1_,

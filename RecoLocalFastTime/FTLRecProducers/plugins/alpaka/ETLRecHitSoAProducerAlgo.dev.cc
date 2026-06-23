@@ -16,7 +16,6 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
   using namespace ::etlrechit;
-  ALPAKA_FN_ACC float timeResolutionInNs() { return 0.0370; }
 
   class ETLBaseToRecoKernel {
   public:
@@ -25,6 +24,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                   ETLRecHitSoA::View output,
                                   const double thresholdToKeep_,
                                   const double calibration_,
+                                  const double timeResInNs_,
                                   const double timeCorr_p0_,
                                   const double timeCorr_p2_,
                                   const double timeCorr_p1_,
@@ -53,7 +53,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
         energy = tot;  //for ETL, it is the time_over_threshold
         energy *= calibration_; // in GeV
 
-        time_error = timeResolutionInNs();
+        time_error = timeResInNs_;
 
         if (energy > thresholdToKeep_) {
           flag = 1;
@@ -83,6 +83,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                                 ETLRecHitSoA::View& output,
                                                 const double thresholdToKeep_,
                                                 const double calibration_,
+                                                const double timeResInNs_,
                                                 const double timeCorr_p0_,
                                                 const double timeCorr_p2_,
                                                 const double timeCorr_p1_,
@@ -102,6 +103,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                         output, 
                         thresholdToKeep_, 
                         calibration_,
+                        timeResInNs_,
                         timeCorr_p0_,
                         timeCorr_p2_,
                         timeCorr_p1_,
