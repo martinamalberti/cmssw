@@ -14,16 +14,6 @@ BTLElectronicsId::BTLElectronicsId(uint16_t fed, uint8_t hsLink, uint8_t eLink, 
            (static_cast<uint32_t>(eLink) << kELinkShift) | (static_cast<uint32_t>(channel) << kChannelShift);
 }
 
-int BTLElectronicsId::fedId() const { return (rawid_ >> kFEDShift) & kFEDMask; }
-
-int BTLElectronicsId::hsLinkId() const { return (rawid_ >> kHSLinkShift) & kHSLinkMask; }
-
-int BTLElectronicsId::eLinkId() const { return (rawid_ >> kELinkShift) & kELinkMask; }
-
-int BTLElectronicsId::channelId() const { return (rawid_ >> kChannelShift) & kChannelMask; }
-
-uint32_t BTLElectronicsId::rawId() const { return rawid_; }
-
 // ------------------------------------------------------------
 // Comparison operators
 // ------------------------------------------------------------

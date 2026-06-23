@@ -6,6 +6,17 @@
 
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "CondFormats/MTDObjects/interface/BTLElectronicsId.h"
+#include "CondFormats/Serialization/interface/Serializable.h"
+
+//------------------------------------------------------------
+// Electronics IDs corresponding to the two sides of one crystal
+//------------------------------------------------------------
+struct BTLElectronicsIdPair {
+  BTLElectronicsId minus;
+  BTLElectronicsId plus;
+
+  COND_SERIALIZABLE;
+};
 
 // ------------------------------------------------------------
 // Readout map: BTLDetId <-> BTLElectronicsId
@@ -18,12 +29,12 @@ public:
   // ----------------------------
   // Fill interface - inserts a new record in the readout map
   // ----------------------------
-  void add(const BTLDetId& detId, const std::array<BTLElectronicsId, 2>& elecId);
+  void add(const BTLDetId& detId, const BTLElectronicsIdPair& elecIds);
 
   // ----------------------------
   // Forward lookup: DetId -> electronics
   // ----------------------------
-  std::array<BTLElectronicsId, 2> getElectronicsId(const BTLDetId& detId) const;
+  BTLElectronicsIdPair getElectronicsId(const BTLDetId& detId) const;
 
   // ----------------------------
   // Reverse lookup: electronics -> DetId
@@ -33,16 +44,20 @@ public:
   // ----------------------------
   // Utilities
   // ----------------------------
+  void initialize();
+
   void clear();
 
   int size() const { return detToElec_.size(); };
 
 private:
   // forward mapping
-  std::unordered_map<uint32_t, std::array<BTLElectronicsId, 2>> detToElec_;
+  std::unordered_map<uint32_t, BTLElectronicsIdPair> detToElec_;
 
   // reverse mapping (packed electronics key -> detid)
-  std::unordered_map<uint32_t, uint32_t> elecToDet_;
+  std::unordered_map<uint32_t, uint32_t> elecToDet_ COND_TRANSIENT;
+
+  COND_SERIALIZABLE;
 };
 
 #endif

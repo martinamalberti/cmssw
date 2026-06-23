@@ -5,15 +5,9 @@
 
 #include <stdexcept>
 
-BTLElectronicsMapping::BTLElectronicsMapping(const BTLDetId::CrysLayout lay) {
-  if (static_cast<int>(lay) < 7) {
-    throw cms::Exception("BTLElectronicsMapping")
-        << "MTD Topology mode with layout " << static_cast<int>(lay) << " is not supported\n"
-        << "use layout : 7 (v4) or later!" << std::endl;
-  }
-}
+BTLElectronicsMapping::BTLElectronicsMapping() {}
 
-int BTLElectronicsMapping::SiPMCh(uint32_t smodCopy, uint32_t crystal, uint32_t SiPMSide) {
+int BTLElectronicsMapping::SiPMCh(uint32_t smodCopy, uint32_t crystal, uint32_t SiPMSide) const {
   if (0 > int(crystal) || crystal > BTLDetId::kCrystalsPerModuleV2) {
     edm::LogWarning("BTLElectronicsMapping") << "BTLElectronicsMapping::SiPMCh "
                                              << "****************** Bad crystal number = " << int(crystal);
@@ -32,30 +26,30 @@ int BTLElectronicsMapping::SiPMCh(uint32_t smodCopy, uint32_t crystal, uint32_t 
     return BTLElectronicsSpecs::SiPMChannelMapBW[crystal + SiPMSide * BTLDetId::kCrystalsPerModuleV2];
 }
 
-int BTLElectronicsMapping::SiPMCh(BTLDetId det, uint32_t SiPMSide) {
+int BTLElectronicsMapping::SiPMCh(BTLDetId det, uint32_t SiPMSide) const {
   uint32_t smodCopy = det.smodule();
   uint32_t crystal = det.crystal();
   return SiPMCh(smodCopy, crystal, SiPMSide);
 }
 
-int BTLElectronicsMapping::SiPMCh(uint32_t rawId, uint32_t SiPMSide) {
+int BTLElectronicsMapping::SiPMCh(uint32_t rawId, uint32_t SiPMSide) const {
   BTLDetId theId(rawId);
   return SiPMCh(theId, SiPMSide);
 }
 
 // -- Get TOFHIR Channel Id from crystal Id
-int BTLElectronicsMapping::TOFHIRCh(uint32_t smodCopy, uint32_t crystal, uint32_t SiPMSide) {
+int BTLElectronicsMapping::TOFHIRCh(uint32_t smodCopy, uint32_t crystal, uint32_t SiPMSide) const {
   int SiPMCh_ = BTLElectronicsMapping::SiPMCh(smodCopy, crystal, SiPMSide);
   return BTLElectronicsSpecs::THChannelMap[SiPMCh_];
 }
 
-int BTLElectronicsMapping::TOFHIRCh(BTLDetId det, uint32_t SiPMSide) {
+int BTLElectronicsMapping::TOFHIRCh(BTLDetId det, uint32_t SiPMSide) const {
   uint32_t smodCopy = det.smodule();
   uint32_t crystal = det.crystal();
   return BTLElectronicsMapping::TOFHIRCh(smodCopy, crystal, SiPMSide);
 }
 
-int BTLElectronicsMapping::TOFHIRCh(uint32_t rawId, uint32_t SiPMSide) {
+int BTLElectronicsMapping::TOFHIRCh(uint32_t rawId, uint32_t SiPMSide) const {
   BTLDetId theId(rawId);
   return BTLElectronicsMapping::TOFHIRCh(theId, SiPMSide);
 }
@@ -67,26 +61,26 @@ int BTLElectronicsMapping::TOFHIRCh(uint32_t rawId, uint32_t SiPMSide) {
 // else if dmodule is even number the order is inverted
 //    SM1 --> TOFHIR A1 (simply 1)
 //    SM2 --> TOFHIR A0 (simply 0)
-int BTLElectronicsMapping::TOFHIRASIC(uint32_t dmodule, uint32_t smodCopy) {
+int BTLElectronicsMapping::TOFHIRASIC(uint32_t dmodule, uint32_t smodCopy) const {
   if (dmodule % BTLDetId::kSModulesInDM == 0)
     return smodCopy;
   else
     return BTLDetId::kSModulesInDM - smodCopy - 1;
 }
 
-int BTLElectronicsMapping::TOFHIRASIC(BTLDetId det) {
+int BTLElectronicsMapping::TOFHIRASIC(BTLDetId det) const {
   uint32_t dmodule = det.dmodule();
   uint32_t smodCopy = det.smodule();
   return BTLElectronicsMapping::TOFHIRASIC(dmodule, smodCopy);
 }
 
-int BTLElectronicsMapping::TOFHIRASIC(uint32_t rawID) {
+int BTLElectronicsMapping::TOFHIRASIC(uint32_t rawID) const {
   BTLDetId theId(rawID);
   return BTLElectronicsMapping::TOFHIRASIC(theId);
 }
 
 // -- Get e-link from a given DM,SM (TOFHIR)
-int BTLElectronicsMapping::elinkFromSM(uint32_t dmodule, uint32_t smodCopy, int lpgbt_id) {
+int BTLElectronicsMapping::elinkFromSM(uint32_t dmodule, uint32_t smodCopy, int lpgbt_id) const {
   if (int(dmodule) < 0 || dmodule > BTLDetId::kDModulesPerRU) {
     edm::LogWarning("BTLElectronicsMapping") << "BTLElectronicsMapping::elinkFromSM: "
                                              << "****************** dmodule = " << dmodule << "  not valid!";
@@ -110,13 +104,13 @@ int BTLElectronicsMapping::elinkFromSM(uint32_t dmodule, uint32_t smodCopy, int 
                          : BTLElectronicsSpecs::FE_to_ELINK_mapping_L1[dmodule][chipId];
 }
 
-int BTLElectronicsMapping::elink(BTLDetId det, int lpgbt_id) {
+int BTLElectronicsMapping::elink(BTLDetId det, int lpgbt_id) const {
   uint32_t dmodule = det.dmodule();
   uint32_t smodCopy = det.smodule();
   return BTLElectronicsMapping::elinkFromSM(dmodule, smodCopy, lpgbt_id);
 }
 
-int BTLElectronicsMapping::elink(uint32_t rawID, int lpgbt_id) {
+int BTLElectronicsMapping::elink(uint32_t rawID, int lpgbt_id) const {
   BTLDetId theId(rawID);
   return BTLElectronicsMapping::elink(theId, lpgbt_id);
 }
@@ -124,13 +118,13 @@ int BTLElectronicsMapping::elink(uint32_t rawID, int lpgbt_id) {
 // -- Get HS-link Id from RU and Tray
 // TEMPORARY MAPPING: within a group of 6 trays ( = supertray): tray 0 --> first block of 12 links, tray 1--> second block of 12 links, etc.
 
-int BTLElectronicsMapping::opticalTxPosition(uint32_t tray, int optTxCh) {
+int BTLElectronicsMapping::opticalTxPosition(uint32_t tray, int optTxCh) const {
   const bool useN5Mapping = (BTLElectronicsSpecs::kHSLinksOffset == 4) && (tray % 6 == 0);
 
   return useN5Mapping ? BTLElectronicsSpecs::tx_inv_n5[optTxCh] : BTLElectronicsSpecs::tx_inv_common[optTxCh];
 }
 
-int BTLElectronicsMapping::hslinkFromRU(uint32_t runit, uint32_t tray, int lpgbt_id) {
+int BTLElectronicsMapping::hslinkFromRU(uint32_t runit, uint32_t tray, int lpgbt_id) const {
   if (int(runit) < 0 || runit > BTLDetId::kRUPerRod) {
     edm::LogWarning("BTLElectronicsMapping") << "BTLElectronicsMapping::hslinkFromRU "
                                              << "****************** runit = " << runit << "  not valid!";
@@ -151,18 +145,18 @@ int BTLElectronicsMapping::hslinkFromRU(uint32_t runit, uint32_t tray, int lpgbt
   return (BTLElectronicsSpecs::kHSLinksOffset + 12 * (tray % 6) + pos);
 }
 
-int BTLElectronicsMapping::hslink(BTLDetId det, int lpgbt_id) {
+int BTLElectronicsMapping::hslink(BTLDetId det, int lpgbt_id) const {
   uint32_t ru = det.runit();
   uint32_t tray = det.mtdRR();
   return BTLElectronicsMapping::hslinkFromRU(ru, tray, lpgbt_id);
 }
 
-int BTLElectronicsMapping::hslink(uint32_t rawID, int lpgbt_id) {
+int BTLElectronicsMapping::hslink(uint32_t rawID, int lpgbt_id) const {
   BTLDetId theId(rawID);
   return hslink(theId, lpgbt_id);
 }
 
-int BTLElectronicsMapping::slinkFromTray(uint32_t tray, uint32_t zside) {
+int BTLElectronicsMapping::slinkFromTray(uint32_t tray, uint32_t zside) const {
   if (int(tray) < 0 || tray >= BTLDetId::HALF_ROD) {
     edm::LogWarning("BTLElectronicsMapping") << "BTLElectronicsMapping::SlinkFromTray: "
                                              << "****************** tray = " << tray << "  not valid!";
@@ -181,13 +175,13 @@ int BTLElectronicsMapping::slinkFromTray(uint32_t tray, uint32_t zside) {
   return (BTLElectronicsSpecs::kFirstFEDId + tray / 6 + 6 * zside);
 }
 
-int BTLElectronicsMapping::slink(BTLDetId det) {
+int BTLElectronicsMapping::slink(BTLDetId det) const {
   uint32_t tray = det.mtdRR();
   uint32_t zside = det.mtdSide();
   return BTLElectronicsMapping::slinkFromTray(tray, zside);
 }
 
-int BTLElectronicsMapping::slink(uint32_t rawID) {
+int BTLElectronicsMapping::slink(uint32_t rawID) const {
   BTLDetId theId(rawID);
   return BTLElectronicsMapping::slink(theId);
 }

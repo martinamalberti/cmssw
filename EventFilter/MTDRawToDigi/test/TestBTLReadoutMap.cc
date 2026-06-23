@@ -91,6 +91,9 @@ void TestBTLReadoutMap::analyze(const edm::Event& iEvent, const edm::EventSetup&
   auto btlCrysLayout = MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode());
 
   auto const& btlReadoutMap = iSetup.getData(readoutMapToken_);
+  if (btlReadoutMap.size() == 0) {
+    edm::LogError("TestBTLReadoutMap") << "BTL readout map is empty !";
+  }
 
   if (ddTopNodeName_ != "BarrelTimingLayer") {
     edm::LogWarning("TestBTLReadoutMap") << ddTopNodeName_ << "Not valid top BarrelTimingLayer volume";
@@ -99,7 +102,6 @@ void TestBTLReadoutMap::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
   DDFilteredView fv(pDD.product(), pDD.product()->description()->worldVolume());
   fv.next(0);
-  //edm::LogInfo("TestBTLReadoutMap") << fv.name();
 
   DDSpecParRefs specs;
   pSP.product()->filter(specs, "ReadOutName", "FastTimerHitsBarrel");
@@ -150,7 +152,7 @@ void TestBTLReadoutMap::analyze(const edm::Event& iEvent, const edm::EventSetup&
       sunitt << theId.rawId();
       snum << theId;
 
-      // Compute the crystal ends positions
+      // --- Compute the crystal ends positions
       dd4hep::Box mySens(fv.solid());
       DD3Vector x, y, z;
       fv.rotation().GetComponents(x, y, z);
@@ -175,15 +177,16 @@ void TestBTLReadoutMap::analyze(const edm::Event& iEvent, const edm::EventSetup&
              << fround(plusGlobal.Z() / dd4hep::mm) << " r = " << fround(plusGlobal.Rho() / dd4hep::mm)
              << " phi = " << fround(convertRadToDeg(plusGlobal.Phi())) << "\n";
 
+        // --- Check electronics ids
         auto const& elecIds = btlReadoutMap.getElectronicsId(theId);
 
         snum << "\n";
-        snum << "BTLElectronicsId (minus) : " << elecIds[0] << "\n"
-             << "BTLElectronicsId (plus)  : " << elecIds[1] << "\n"
+        snum << "BTLElectronicsId (minus) : " << elecIds.minus << "\n"
+             << "BTLElectronicsId (plus)  : " << elecIds.plus << "\n"
              << "\n";
 
-        auto const& detMinus = btlReadoutMap.getDetId(elecIds[0]);
-        auto const& detPlus = btlReadoutMap.getDetId(elecIds[1]);
+        auto const& detMinus = btlReadoutMap.getDetId(elecIds.minus);
+        auto const& detPlus = btlReadoutMap.getDetId(elecIds.plus);
 
         if (detMinus.rawId() != theId.rawId()) {
           edm::LogError("TestBTLReadoutMap") << "Reverse mapping mismatch for minus side!";
@@ -192,7 +195,7 @@ void TestBTLReadoutMap::analyze(const edm::Event& iEvent, const edm::EventSetup&
           edm::LogError("TestBTLReadoutMap") << "Reverse mapping mismatch for plus side!";
         }
 
-        BTLElectronicsMapping btlElMapping = BTLElectronicsMapping(btlCrysLayout);
+        BTLElectronicsMapping btlElMapping = BTLElectronicsMapping();
         snum << " TOFHIRASIC: " << btlElMapping.TOFHIRASIC(theId)
              << "\n SiPMCh minus: " << btlElMapping.SiPMCh(theId, 0) << " plus: " << btlElMapping.SiPMCh(theId, 1)
              << "\n TOFHIRCh minus: " << btlElMapping.TOFHIRCh(theId, 0) << " plus: " << btlElMapping.TOFHIRCh(theId, 1)
@@ -201,17 +204,17 @@ void TestBTLReadoutMap::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
         snum << "----------------------------------------------------------------------------" << std::endl;
         snum << " DM, SM, chipId: " << theId.dmodule() << ", " << theId.smodule() << ", "
-             << btlElMapping.TOFHIRASIC(theId) << "  --> e-link: " << elecIds[0].eLinkId() << " ("
-             << elecIds[1].eLinkId() << ")\n"
+             << btlElMapping.TOFHIRASIC(theId) << "  --> e-link: " << elecIds.minus.eLinkId() << " ("
+             << elecIds.plus.eLinkId() << ")\n"
              << " Side, Tray, RU: " << theId.mtdSide() << ", " << theId.mtdRR() << ", " << theId.runit()
-             << "  --> HS-link : " << elecIds[0].hsLinkId() << " (" << elecIds[1].hsLinkId()
-             << ")   FED ID / S-link : " << elecIds[0].fedId() << " (" << elecIds[1].fedId() << ")\n"
+             << "  --> HS-link : " << elecIds.minus.hsLinkId() << " (" << elecIds.plus.hsLinkId()
+             << ")   FED ID / S-link : " << elecIds.minus.fedId() << " (" << elecIds.plus.fedId() << ")\n"
 
-             << " BTLElectronicsId (minus) rawId : " << elecIds[0].rawId()
+             << " BTLElectronicsId (minus) rawId : " << elecIds.minus.rawId()
              << " --> Side, Tray, RU, DM, SM: " << detMinus.mtdSide() << ", " << detMinus.mtdRR() << ", "
              << detMinus.runit() << ", " << detMinus.dmodule() << ", " << detMinus.smodule() << "\n"
 
-             << " BTLElectronicsId (plus)  rawId : " << elecIds[1].rawId()
+             << " BTLElectronicsId (plus)  rawId : " << elecIds.plus.rawId()
              << " --> Side, Tray, RU, DM, SM: " << detPlus.mtdSide() << ", " << detPlus.mtdRR() << ", "
              << detPlus.runit() << ", " << detPlus.dmodule() << ", " << detPlus.smodule() << "\n";
         snum << "----------------------------------------------------------------------------" << std::endl;

@@ -1,6 +1,8 @@
 #ifndef CondFormats_MTDObjects_BTLElectronicsId_h
 #define CondFormats_MTDObjects_BTLElectronicsId_h
 
+#include "CondFormats/Serialization/interface/Serializable.h"
+
 #include <cstdint>
 #include <iosfwd>
 
@@ -37,12 +39,12 @@ public:
                    uint8_t channelId);
 
   /// Accessors
-  int fedId() const;
-  int hsLinkId() const;
-  int eLinkId() const;
-  int channelId() const;
+  int fedId() const { return (rawid_ >> kFEDShift) & kFEDMask; };
+  int hsLinkId() const { return (rawid_ >> kHSLinkShift) & kHSLinkMask; };
+  int eLinkId() const { return (rawid_ >> kELinkShift) & kELinkMask; };
+  int channelId() const { return (rawid_ >> kChannelShift) & kChannelMask; }
 
-  uint32_t rawId() const;
+  uint32_t rawId() const { return rawid_; };
 
   bool operator==(const BTLElectronicsId&) const;
   bool operator!=(const BTLElectronicsId&) const;
@@ -50,7 +52,7 @@ public:
 private:
   uint32_t rawid_ = 0;
 
-  //COND_SERIALIZABLE;
+  COND_SERIALIZABLE;
 };
 
 std::ostream& operator<<(std::ostream&, const BTLElectronicsId&);

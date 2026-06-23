@@ -1,3 +1,4 @@
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "EventFilter/MTDRawToDigi/plugins/BTLReadoutMapESProducer.h"
 #include "EventFilter/MTDRawToDigi/interface/BTLElectronicsMapping.h"
 
@@ -17,14 +18,21 @@ BTLReadoutMapESProducer::~BTLReadoutMapESProducer() {}
 // ------------------------------------------------------------
 //
 std::unique_ptr<BTLReadoutMap> BTLReadoutMapESProducer::produce(const BTLReadoutMapRcd& iRecord) {
-  std::cout << "BTLReadoutMapESProducer running" << std::endl;
-
   const auto& geom = iRecord.get(geomToken_);
   const auto& topo = iRecord.get(topoToken_);
   auto btlCrysLayout = MTDTopologyMode::crysLayoutFromTopoMode(topo.getMTDTopologyMode());
 
+  // -- Readout map defined only for CrysLayout::v4 - If not v4, returns empty map
+  if (static_cast<int>(btlCrysLayout) < static_cast<int>(BTLDetId::CrysLayout::v4)) {
+    edm::LogError("BTLReadoutMapESProducer")
+        << "BTL electronics mapping not available for BTL crystal layout " << static_cast<int>(btlCrysLayout)
+        << ", use layout 7 (v4) or later!" << std::endl;
+    return std::make_unique<BTLReadoutMap>();
+    ;
+  }
+
   // -- Initialize mapping helper
-  BTLElectronicsMapping btlElMapping = BTLElectronicsMapping(btlCrysLayout);
+  BTLElectronicsMapping btlElMapping = BTLElectronicsMapping();
 
   auto readoutMap = std::make_unique<BTLReadoutMap>();
 
@@ -44,22 +52,25 @@ std::unique_ptr<BTLReadoutMap> BTLReadoutMapESProducer::produce(const BTLReadout
       int hs = btlElMapping.hslink(btlId);
       int el = btlElMapping.elink(btlId);
 
-      std::array<BTLElectronicsId, 2> elecIds;
+      BTLElectronicsIdPair elecIds;
+      int ch[2];
 
       // -- Loop over two sides of one crystal
       for (int side = 0; side < 2; ++side) {
-        int ch = btlElMapping.TOFHIRCh(btlId, side);
+        ch[side] = btlElMapping.TOFHIRCh(btlId, side);
 
         // Safety checks
-        if (sl < 0 || hs < 0 || (el < 0 || el > 23) || (ch < 0 || ch > 31)) {
+        if (sl < 0 || hs < 0 || (el < 0 || el > 23) || (ch[side] < 0 || ch[side] > 31)) {
           throw cms::Exception("BTLReadoutMapESProducer")
               << "Invalid electronics mapping for DetId " << btlId.rawId() << " (slink=" << sl << ", hs=" << hs
               << ", elink=" << el << ", channel=" << ch << ")";
         }
-
-        elecIds[side] = BTLElectronicsId(
-            static_cast<uint16_t>(sl), static_cast<uint8_t>(hs), static_cast<uint8_t>(el), static_cast<uint8_t>(ch));
       }
+
+      elecIds.minus = BTLElectronicsId(
+          static_cast<uint16_t>(sl), static_cast<uint8_t>(hs), static_cast<uint8_t>(el), static_cast<uint8_t>(ch[0]));
+      elecIds.plus = BTLElectronicsId(
+          static_cast<uint16_t>(sl), static_cast<uint8_t>(hs), static_cast<uint8_t>(el), static_cast<uint8_t>(ch[1]));
 
       readoutMap->add(btlId, elecIds);
     }
