@@ -34,7 +34,7 @@ btlRecHitsSoA = cms.EDProducer('btlrechit::BTLRecHitSoAProducer@alpaka',
     calibrationConstant = cms.double(1.), # [GeV / GeV]
     npeSaturationCorr0 = cms.double(-8.54e-06),
     npeSaturationCorr1 = cms.double(1.034),
-    npePerGeV = mtdDigitizer.barrelDigitizer.DeviceSimulation.LightOutput / 1000. # [Npe/GeV]
+    npePerGeV = cms.double(2.285e6) # [Npe/GeV]
 )
 
 etlRecHitsSoA = cms.EDProducer('etlrechit::ETLRecHitSoAProducer@alpaka',

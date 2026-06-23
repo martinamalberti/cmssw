@@ -21,9 +21,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   ALPAKA_FN_ACC float getTimeCalib() { return 0.25; }
 
   ALPAKA_FN_ACC float timeWalkCorr(float amp) {
-    float tdcLSB_ns = 0.020;
-    float corr = 1.9e6 / 0.020 * pow(9.389e5 / 0.0348 * (amp + 22.5), -0.663) - 7.5e-4 * amp - 3.5e-3;
-    return tdcLSB_ns * corr;
+    // taken from SLHCUpgradeSimulations/Configuration/python/aging.py
+    // for 1000 fb-1 scenario
+    return 2.40863 * pow(amp,-0.583148) + 0.0545682;
   }
 
   class BTLBaseToRecoKernel {
