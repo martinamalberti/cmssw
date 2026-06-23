@@ -277,7 +277,7 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
 
     auto const& elecIds = btlReadoutMap.getElectronicsId(rawId);
 
-    uint8_t chIDR = static_cast<uint8_t>(elecIds[1].channelId());
+    uint8_t chIDR = static_cast<uint8_t>(elecIds.minus.channelId());
     uint16_t T1coarseR = timetoTcoarse(toa1[1], T1coarseMask);
     uint16_t T2coarseR = timetoTcoarse(toa2[1], T2coarseMask);
     uint16_t EOIcoarseR = T1coarseR + static_cast<uint16_t>(integrationTimeFixed_);
@@ -288,7 +288,7 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     uint8_t PrevTrigFR = 0;  // Previous trigger flag is not used in this implementation
     uint8_t TACIDR = 0;      // TACIDR is not used in this implementation
 
-    uint8_t chIDL = static_cast<uint8_t>(elecIds[0].channelId());
+    uint8_t chIDL = static_cast<uint8_t>(elecIds.plus.channelId());
     uint16_t T1coarseL = timetoTcoarse(toa1[0], T1coarseMask);
     uint16_t T2coarseL = timetoTcoarse(toa2[0], T2coarseMask);
     uint16_t EOIcoarseL = T1coarseL + static_cast<uint16_t>(integrationTimeFixed_);
