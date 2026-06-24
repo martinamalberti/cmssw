@@ -12,16 +12,16 @@ namespace btlrechit {
   GENERATE_SOA_LAYOUT(BTLBaseRecHitSoALayout,
                       SOA_COLUMN(DetId, detId),
                       SOA_COLUMN(uint8_t, row),
-                      SOA_COLUMN(float, time1R),
-                      SOA_COLUMN(float, time2R),
-                      SOA_COLUMN(float, ampR),
-                      SOA_COLUMN(uint16_t, idleTimeR),
-                      SOA_COLUMN(uint8_t, flagsR),
-                      SOA_COLUMN(float, time1L),
-                      SOA_COLUMN(float, time2L),
-                      SOA_COLUMN(float, ampL),
-                      SOA_COLUMN(uint16_t, idleTimeL),
-                      SOA_COLUMN(uint8_t, flagsL))
+                      SOA_COLUMN(float, time1Plus),
+                      SOA_COLUMN(float, time2Plus),
+                      SOA_COLUMN(float, ampPlus),
+                      SOA_COLUMN(uint16_t, idleTimePlus),
+                      SOA_COLUMN(uint8_t, flagsPlus),
+                      SOA_COLUMN(float, time1Minus),
+                      SOA_COLUMN(float, time2Minus),
+                      SOA_COLUMN(float, ampMinus),
+                      SOA_COLUMN(uint16_t, idleTimeMinus),
+                      SOA_COLUMN(uint8_t, flagsMinus))
 
   using BTLBaseRecHitSoA = BTLBaseRecHitSoALayout<>;
   using BTLBaseRecHitSoAView = BTLBaseRecHitSoA::View;

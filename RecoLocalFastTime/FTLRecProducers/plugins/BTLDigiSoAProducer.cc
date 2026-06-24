@@ -57,26 +57,26 @@ void BTLDigiSoAProducer::produce(edm::Event& event, edm::EventSetup const&) {
     view.BC0count()[i] = aos[i].kBC0count();
     view.status()[i] = aos[i].kstatus();
     view.BCcount()[i] = aos[i].kBCcount();
-    view.chIDR()[i] = aos[i].kchIDR();
-    view.T1coarseR()[i] = aos[i].kT1coarseR();
-    view.T2coarseR()[i] = aos[i].kT2coarseR();
-    view.EOIcoarseR()[i] = aos[i].kEOIcoarseR();
-    view.ChargeR()[i] = aos[i].kChargeR();
-    view.T1fineR()[i] = aos[i].kT1fineR();
-    view.T2fineR()[i] = aos[i].kT2fineR();
-    view.IdleTimeR()[i] = aos[i].kIdleTimeR();
-    view.PrevTrigFR()[i] = aos[i].kPrevTrigFR();
-    view.TACIDR()[i] = aos[i].kTACIDR();
-    view.chIDL()[i] = aos[i].kchIDL();
-    view.T1coarseL()[i] = aos[i].kT1coarseL();
-    view.T2coarseL()[i] = aos[i].kT2coarseL();
-    view.EOIcoarseL()[i] = aos[i].kEOIcoarseL();
-    view.ChargeL()[i] = aos[i].kChargeL();
-    view.T1fineL()[i] = aos[i].kT1fineL();
-    view.T2fineL()[i] = aos[i].kT2fineL();
-    view.IdleTimeL()[i] = aos[i].kIdleTimeL();
-    view.PrevTrigFL()[i] = aos[i].kPrevTrigFL();
-    view.TACIDL()[i] = aos[i].kTACIDL();
+    view.chIDPlus()[i] = aos[i].kchIDPlus();
+    view.T1coarsePlus()[i] = aos[i].kT1coarsePlus();
+    view.T2coarsePlus()[i] = aos[i].kT2coarsePlus();
+    view.EOIcoarsePlus()[i] = aos[i].kEOIcoarsePlus();
+    view.ChargePlus()[i] = aos[i].kChargePlus();
+    view.T1finePlus()[i] = aos[i].kT1finePlus();
+    view.T2finePlus()[i] = aos[i].kT2finePlus();
+    view.IdleTimePlus()[i] = aos[i].kIdleTimePlus();
+    view.PrevTrigFPlus()[i] = aos[i].kPrevTrigFPlus();
+    view.TACIDPlus()[i] = aos[i].kTACIDPlus();
+    view.chIDMinus()[i] = aos[i].kchIDMinus();
+    view.T1coarseMinus()[i] = aos[i].kT1coarseMinus();
+    view.T2coarseMinus()[i] = aos[i].kT2coarseMinus();
+    view.EOIcoarseMinus()[i] = aos[i].kEOIcoarseMinus();
+    view.ChargeMinus()[i] = aos[i].kChargeMinus();
+    view.T1fineMinus()[i] = aos[i].kT1fineMinus();
+    view.T2fineMinus()[i] = aos[i].kT2fineMinus();
+    view.IdleTimeMinus()[i] = aos[i].kIdleTimeMinus();
+    view.PrevTrigFMinus()[i] = aos[i].kPrevTrigFMinus();
+    view.TACIDMinus()[i] = aos[i].kTACIDMinus();
   }
 
 #ifdef EDM_ML_DEBUG

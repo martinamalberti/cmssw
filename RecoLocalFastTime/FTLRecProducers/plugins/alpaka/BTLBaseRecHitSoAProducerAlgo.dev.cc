@@ -80,76 +80,76 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
         // for the times at first and second th, still in clock units
         // atm tdc and qdc calibs are fixed to dummy values for each channel, hence rawId, ch, and the bool to select branch 1 or 2 are not used.
-        auto time1R =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.T1coarseR(), entry.T1fineR(), true);
-        auto time1L =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.T1coarseL(), entry.T1fineL(), true);
+        auto time1Plus =
+            TcoarseTfineToTime(entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.T1coarsePlus(), entry.T1finePlus(), true);
+        auto time1Minus =
+            TcoarseTfineToTime(entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.T1coarseMinus(), entry.T1fineMinus(), true);
 
-        auto time2R =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.T2coarseR(), entry.T2fineR(), false);
-        auto time2L =
-            TcoarseTfineToTime(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.T2coarseL(), entry.T2fineL(), false);
+        auto time2Plus =
+            TcoarseTfineToTime(entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.T2coarsePlus(), entry.T2finePlus(), false);
+        auto time2Minus =
+            TcoarseTfineToTime(entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.T2coarseMinus(), entry.T2fineMinus(), false);
 
         // from qfine to energy in adc, NB you need to pass calibrated time
-        auto ampL =
-            QfineToADC(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.ChargeL(), time1L, entry.EOIcoarseL());
-        auto ampR =
-            QfineToADC(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.ChargeR(), time1R, entry.EOIcoarseR());
+        auto ampMinus =
+            QfineToADC(entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.ChargeMinus(), time1Minus, entry.EOIcoarseMinus());
+        auto ampPlus =
+            QfineToADC(entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.ChargePlus(), time1Plus, entry.EOIcoarsePlus());
 
         uint8_t row = rowFromId(entry.rawId());
 
         // flags for the usability of the channel uint_8: atm 2 bit are used
         //  first bit is channel has signal (1) or not (0)
         //  second bit channel was saturated (1) or not (0)
-        uint8_t flagsL = 0;
-        uint8_t flagsR = 0;
+        uint8_t flagsMinus = 0;
+        uint8_t flagsPlus = 0;
 
-        if (ampL > 0)
-          flagsL |= 0x1;
-        if (ampL == adcBitSaturation_)
-          flagsL |= (0x1 << 1);
-        if (ampR > 0)
-          flagsR |= 0x1;
-        if (ampR == adcBitSaturation_)
-          flagsR |= (0x1 << 1);
+        if (ampMinus > 0)
+          flagsMinus |= 0x1;
+        if (ampMinus == adcBitSaturation_)
+          flagsMinus |= (0x1 << 1);
+        if (ampPlus > 0)
+          flagsPlus |= 0x1;
+        if (ampPlus == adcBitSaturation_)
+          flagsPlus |= (0x1 << 1);
 
         // detId from rawId
         DetId detId(entry.rawId());
 
         // convert from clock units to ps
-        time1R *= tclock;
-        time1L *= tclock;
-        time2R *= tclock;
-        time2L *= tclock;
+        time1Plus *= tclock;
+        time1Minus *= tclock;
+        time2Plus *= tclock;
+        time2Minus *= tclock;
 
         // converting the energy from ADC to energy
-        auto energyR = float((float(ampR) - npeToADC0_) / npeToADC1_);
-        auto energyL = float((float(ampL) - npeToADC0_) / npeToADC1_);
+        auto energyPlus = float((float(ampPlus) - npeToADC0_) / npeToADC1_);
+        auto energyMinus = float((float(ampMinus) - npeToADC0_) / npeToADC1_);
 
 #ifdef EDM_ML_DEBUG
         printf("Base recHit SoA with raw id %i \n", entry.rawId());
-        printf("Time 1 before corrections L,R (%f, %f) - ", time1L, time1R);
-        printf("Time 2 before corrections L,R (%f, %f) - ", time2L, time2R);
+        printf("Time 1 before corrections -,+ (%f, %f) - ", time1Minus, time1Plus);
+        printf("Time 2 before corrections -,+ (%f, %f) - ", time2Minus, time2Plus);
 
-        printf("Amplidute in ADC L,R (%i, %i) - ", ampL, ampR);
-        printf("converting to energy L,R (%f, %f) --> ", npeToADC0_, invADCPerMeV_);
-        printf("Energy in MeV L,R (%f, %f) \n", energyL, energyR);
+        printf("Amplidute in ADC -,+ (%i, %i) - ", ampMinus, ampPlus);
+        printf("converting to energy -,+ (%f, %f) --> ", npeToADC0_, invADCPerMeV_);
+        printf("Energy in MeV -,+ (%f, %f) \n", energyMinus, energyPlus);
 #endif
 
         // fill the base rechit
         output[i] = {
             detId,
             row,
-            time1R,  // in ns
-            time2R,
-            energyR,  // energy
-            entry.IdleTimeR(),
-            flagsR,
-            time1L,  // in ns
-            time2L,
-            energyL,  // energy
-            entry.IdleTimeL(),
-            flagsL,
+            time1Plus,  // in ns
+            time2Plus,
+            energyPlus,  // energy
+            entry.IdleTimePlus(),
+            flagsPlus,
+            time1Minus,  // in ns
+            time2Minus,
+            energyMinus,  // energy
+            entry.IdleTimeMinus(),
+            flagsMinus,
 
         };
       }

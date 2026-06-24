@@ -127,10 +127,10 @@ private:
 
   // --- BaseratedRecHits histograms
 
-  MonitorElement* meUncEneLVsX_;
-  MonitorElement* meUncEneRVsX_;
-  MonitorElement* meUncTimeLVsX_;
-  MonitorElement* meUncTimeRVsX_;
+  MonitorElement* meUncEneMinusVsX_;
+  MonitorElement* meUncEnePlusVsX_;
+  MonitorElement* meUncTimeMinusVsX_;
+  MonitorElement* meUncTimePlusVsX_;
 
   static constexpr int nBinsQ_ = 30;
   static constexpr float binWidthQ_ = 0.0005;  // [GeV]
@@ -314,8 +314,8 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
       auto uRecHit = btlBaseRecHitsSoAHandle->view()[i];
       BTLDetId detId = uRecHit.detId();
 
-      LogTrace("BtlLocalRecoSoAValidation") << "@URH detid " << detId.rawId() << " A " << uRecHit.ampR() << " "
-                                            << uRecHit.ampL() << " T " << uRecHit.time1R() << " " << uRecHit.time1L();
+      LogTrace("BtlLocalRecoSoAValidation") << "@URH detid " << detId.rawId() << " A " << uRecHit.ampPlus() << " "
+                                            << uRecHit.ampMinus() << " T " << uRecHit.time1Plus() << " " << uRecHit.time1Minus();
 
       // --- Skip BaseratedRecHits not matched to SimHits
       if (m_btlSimHits.count(detId.rawId()) != 1)
@@ -328,15 +328,15 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
       float hit_time = 0.;
 
       // left side:
-      if (uRecHit.ampR() > 0.) {
-        hit_amplitude += uRecHit.ampR();
-        hit_time += uRecHit.time1R();
+      if (uRecHit.ampPlus() > 0.) {
+        hit_amplitude += uRecHit.ampPlus();
+        hit_time += uRecHit.time1Plus();
         nHits += 1.;
       }
       // right side:
-      if (uRecHit.ampL() > 0.) {
-        hit_amplitude += uRecHit.ampL();
-        hit_time += uRecHit.time1L();
+      if (uRecHit.ampMinus() > 0.) {
+        hit_amplitude += uRecHit.ampMinus();
+        hit_time += uRecHit.time1Minus();
         nHits += 1.;
       }
 
@@ -512,16 +512,16 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
   // --- BaseratedRecHits histograms
 
   if (optionalPlots_) {
-    meUncEneLVsX_ = ibook.bookProfile("BTLUncEneLVsX",
-                                      "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{L}) [GeV]",
+    meUncEneMinusVsX_ = ibook.bookProfile("BTLUncEneMinusVsX",
+                                      "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{minus}) [GeV]",
                                       20,
                                       -0.005,
                                       0.005,
                                       -20.,
                                       20.,
                                       "S");
-    meUncEneRVsX_ = ibook.bookProfile("BTLUncEneRVsX",
-                                      "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{R}) [GeV]",
+    meUncEnePlusVsX_ = ibook.bookProfile("BTLUncEnePlusVsX",
+                                      "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{plus}) [GeV]",
                                       20,
                                       -0.005,
                                       0.005,
@@ -529,16 +529,16 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
                                       20.,
                                       "S");
 
-    meUncTimeLVsX_ = ibook.bookProfile("BTLUncTimeLVsX",
-                                       "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{L}) [ns]",
+    meUncTimeMinusVsX_ = ibook.bookProfile("BTLUncTimeMinusVsX",
+                                       "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{plus}) [ns]",
                                        20,
                                        -5.,
                                        5.,
                                        -25.,
                                        25.,
                                        "S");
-    meUncTimeRVsX_ = ibook.bookProfile("BTLUncTimeRVsX",
-                                       "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{R}) [ns]",
+    meUncTimePlusVsX_ = ibook.bookProfile("BTLUncTimePlusVsX",
+                                       "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{minus}) [ns]",
                                        20,
                                        -5.,
                                        5.,

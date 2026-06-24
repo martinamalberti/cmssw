@@ -266,10 +266,10 @@ private:
 
   // --- UncalibratedRecHits histograms
 
-  MonitorElement* meUncEneLVsX_;
-  MonitorElement* meUncEneRVsX_;
-  MonitorElement* meUncTimeLVsX_;
-  MonitorElement* meUncTimeRVsX_;
+  MonitorElement* meUncEneMinusVsX_;
+  MonitorElement* meUncEnePlusVsX_;
+  MonitorElement* meUncTimeMinusVsX_;
+  MonitorElement* meUncTimePlusVsX_;
 
   static constexpr int nBinsQ_ = 30;
   static constexpr float binWidthQ_ = 0.0005;  // [GeV]
@@ -896,11 +896,11 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
       // --- Fill the histograms
 
-      meUncEneRVsX_->Fill(uRecHit.position(), uRecHit.amplitude().first - hit_amplitude);
-      meUncEneLVsX_->Fill(uRecHit.position(), uRecHit.amplitude().second - hit_amplitude);
+      meUncEnePlusVsX_->Fill(uRecHit.position(), uRecHit.amplitude().first - hit_amplitude);
+      meUncEneMinusVsX_->Fill(uRecHit.position(), uRecHit.amplitude().second - hit_amplitude);
 
-      meUncTimeRVsX_->Fill(uRecHit.position(), uRecHit.time().first - hit_time);
-      meUncTimeLVsX_->Fill(uRecHit.position(), uRecHit.time().second - hit_time);
+      meUncTimePlusVsX_->Fill(uRecHit.position(), uRecHit.time().first - hit_time);
+      meUncTimeMinusVsX_->Fill(uRecHit.position(), uRecHit.time().second - hit_time);
 
       if (uncalibRecHitsPlots_) {
         DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
@@ -1671,16 +1671,16 @@ void BtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
   // --- UncalibratedRecHits histograms
 
   if (optionalPlots_) {
-    meUncEneLVsX_ = ibook.bookProfile("BTLUncEneLVsX",
-                                      "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{L}) [GeV]",
+    meUncEneMinusVsX_ = ibook.bookProfile("BTLUncEneMinusVsX",
+                                      "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{minus}) [GeV]",
                                       20,
                                       -5.,
                                       5.,
                                       -0.020,
                                       0.020,
                                       "S");
-    meUncEneRVsX_ = ibook.bookProfile("BTLUncEneRVsX",
-                                      "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{R}) [GeV]",
+    meUncEnePlusVsX_ = ibook.bookProfile("BTLUncEnePlusVsX",
+                                      "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{plus}) [GeV]",
                                       20,
                                       -5.,
                                       5.,
@@ -1688,16 +1688,16 @@ void BtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
                                       0.020,
                                       "S");
 
-    meUncTimeLVsX_ = ibook.bookProfile("BTLUncTimeLVsX",
-                                       "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{L}) [ns]",
+    meUncTimeMinusVsX_ = ibook.bookProfile("BTLUncTimeMinusVsX",
+                                       "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{minus}) [ns]",
                                        20,
                                        -5.,
                                        5.,
                                        -25.,
                                        25.,
                                        "S");
-    meUncTimeRVsX_ = ibook.bookProfile("BTLUncTimeRVsX",
-                                       "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{R}) [ns]",
+    meUncTimePlusVsX_ = ibook.bookProfile("BTLUncTimePlusVsX",
+                                       "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{plus}) [ns]",
                                        20,
                                        -5.,
                                        5.,

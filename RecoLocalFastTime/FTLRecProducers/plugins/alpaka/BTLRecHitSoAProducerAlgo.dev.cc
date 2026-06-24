@@ -41,29 +41,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
-        float time1R = entry.time1R();
-        float time1L = entry.time1L();
-        float time2R = entry.time2R();
-        float time2L = entry.time2L();
-        float ampR = entry.ampR();
-        float ampL = entry.ampL();
+        float time1Plus = entry.time1Plus();
+        float time1Minus = entry.time1Minus();
+        float time2Plus = entry.time2Plus();
+        float time2Minus = entry.time2Minus();
+        float ampPlus = entry.ampPlus();
+        float ampMinus = entry.ampMinus();
 
         // Apply time and energy corrections
         //   apply amp walk corrections
-        auto corrR = timeWalkCorr(ampR);
-        auto corrL = timeWalkCorr(ampL);
-        time1R = time1R - corrR;
-        time1L = time1L - corrL;
-        time2R = time2R - corrR;
-        time2L = time2L - corrL;
+        auto corrR = timeWalkCorr(ampPlus);
+        auto corrL = timeWalkCorr(ampMinus);
+        time1Plus = time1Plus - corrR;
+        time1Minus = time1Minus - corrL;
+        time2Plus = time2Plus - corrR;
+        time2Minus = time2Minus - corrL;
 
         //   correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
-        float dR = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampR;
-        ampR = (-npeSaturationCorr1_ + sqrt(dR)) / (2. * (npeSaturationCorr0_));
-        ampR /= npePerGeV_;
-        float dL = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampL;
-        ampL = (-npeSaturationCorr1_ + sqrt(dL)) / (2. * (npeSaturationCorr0_));
-        ampL /= npePerGeV_;
+        float dR = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampPlus;
+        ampPlus = (-npeSaturationCorr1_ + sqrt(dR)) / (2. * (npeSaturationCorr0_));
+        ampPlus /= npePerGeV_;
+        float dL = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * ampMinus;
+        ampMinus = (-npeSaturationCorr1_ + sqrt(dL)) / (2. * (npeSaturationCorr0_));
+        ampMinus /= npePerGeV_;
 
         float time1 = 0;
         float time2 = 0;
@@ -77,27 +77,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         //!!!!!!! position error calculation to be added
 
         // -- if you have both sipm info and they are not saturated
-        if (entry.flagsR() == 0x1 && entry.flagsL() == 0x1) {
-          time1 = 0.5f * (time1L + time1R);
-          time2 = 0.5f * (time2L + time2R);  // to be discussed
-          position = 0.5f * c_LYSO_ * (time1L - time1R);
+        if (entry.flagsPlus() == 0x1 && entry.flagsMinus() == 0x1) {
+          time1 = 0.5f * (time1Minus + time1Plus);
+          time2 = 0.5f * (time2Minus + time2Plus);  // to be discussed
+          position = 0.5f * c_LYSO_ * (time1Minus - time1Plus);
           position_error = 0.6;  // as in the std btl uncalibrated hit producer
-          energy = (ampR + ampL) / 2.;
+          energy = (ampPlus + ampMinus) / 2.;
           flag |= 0x3;
 
         }
         // --- If only one SiPM has good not saturated signal
-        else if (entry.flagsL() == 0x1 && (time1R == 0x3 || time1R == 0)) {
-          time1 = time1L;
-          time2 = time2L;
-          energy = ampL;
+        else if (entry.flagsMinus() == 0x1 && (time1Plus == 0x3 || time1Plus == 0)) {
+          time1 = time1Minus;
+          time2 = time2Minus;
+          energy = ampMinus;
           flag |= (0x1 << 1);
         }
 
-        else if (entry.flagsR() == 0x1 && (entry.flagsL() == 0x3 || entry.flagsR() == 0)) {
-          time1 = time1R;
-          time2 = time2R;
-          energy = ampR;
+        else if (entry.flagsPlus() == 0x1 && (entry.flagsMinus() == 0x3 || entry.flagsPlus() == 0)) {
+          time1 = time1Plus;
+          time2 = time2Plus;
+          energy = ampPlus;
           flag |= 0x1;
         }
 
@@ -121,9 +121,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
         printf("RecHit SoA with raw id %i \n", entry.detId().rawId());
         printf(
-            "Time 1  L,R (%f, %f) and average, error (%f, %f) \n", time1L, time1R, time1, time_error);
-        printf("Time 2  L,R (%f, %f) and average %f \n", time2L, time2R, time2);
-        printf("Energy  L,R (%f, %f) and average %f \n", ampL, ampR, energy);
+            "Time 1  -,+ (%f, %f) and average, error (%f, %f) \n", time1Minus, time1Plus, time1, time_error);
+        printf("Time 2  -,+ (%f, %f) and average %f \n", time2Minus, time2Plus, time2);
+        printf("Energy  -,+ (%f, %f) and average %f \n", ampMinus, ampPlus, energy);
         printf("Position and error (%f, %f) \n", position, position_error);
 
 #endif

@@ -12,26 +12,26 @@ namespace btldigi {
                       SOA_COLUMN(uint16_t, BC0count),  // BC0 count (reserved)
                       SOA_COLUMN(bool, status),        // status of the TOFHIR
                       SOA_COLUMN(uint32_t, BCcount),
-                      SOA_COLUMN(uint8_t, chIDR),       // TOFHIR channel ID, right side of crystal
-                      SOA_COLUMN(uint16_t, T1coarseR),  // data from crystal right side
-                      SOA_COLUMN(uint16_t, T2coarseR),
-                      SOA_COLUMN(uint16_t, EOIcoarseR),
-                      SOA_COLUMN(uint16_t, ChargeR),
-                      SOA_COLUMN(uint16_t, T1fineR),
-                      SOA_COLUMN(uint16_t, T2fineR),
-                      SOA_COLUMN(uint16_t, IdleTimeR),
-                      SOA_COLUMN(uint8_t, PrevTrigFR),
-                      SOA_COLUMN(uint8_t, TACIDR),
-                      SOA_COLUMN(uint8_t, chIDL),       // TOFHIR channel ID, left side of crystal
-                      SOA_COLUMN(uint16_t, T1coarseL),  // data from crystal left side
-                      SOA_COLUMN(uint16_t, T2coarseL),
-                      SOA_COLUMN(uint16_t, EOIcoarseL),
-                      SOA_COLUMN(uint16_t, ChargeL),
-                      SOA_COLUMN(uint16_t, T1fineL),
-                      SOA_COLUMN(uint16_t, T2fineL),
-                      SOA_COLUMN(uint16_t, IdleTimeL),
-                      SOA_COLUMN(uint8_t, PrevTrigFL),
-                      SOA_COLUMN(uint8_t, TACIDL))
+                      SOA_COLUMN(uint8_t, chIDPlus),       // TOFHIR channel ID, plus side of crystal
+                      SOA_COLUMN(uint16_t, T1coarsePlus),  // data from crystal plus side
+                      SOA_COLUMN(uint16_t, T2coarsePlus),
+                      SOA_COLUMN(uint16_t, EOIcoarsePlus),
+                      SOA_COLUMN(uint16_t, ChargePlus),
+                      SOA_COLUMN(uint16_t, T1finePlus),
+                      SOA_COLUMN(uint16_t, T2finePlus),
+                      SOA_COLUMN(uint16_t, IdleTimePlus),
+                      SOA_COLUMN(uint8_t, PrevTrigFPlus),
+                      SOA_COLUMN(uint8_t, TACIDPlus),
+                      SOA_COLUMN(uint8_t, chIDMinus),       // TOFHIR channel ID, minus side of crystal
+                      SOA_COLUMN(uint16_t, T1coarseMinus),  // data from crystal minus side
+                      SOA_COLUMN(uint16_t, T2coarseMinus),
+                      SOA_COLUMN(uint16_t, EOIcoarseMinus),
+                      SOA_COLUMN(uint16_t, ChargeMinus),
+                      SOA_COLUMN(uint16_t, T1fineMinus),
+                      SOA_COLUMN(uint16_t, T2fineMinus),
+                      SOA_COLUMN(uint16_t, IdleTimeMinus),
+                      SOA_COLUMN(uint8_t, PrevTrigFMinus),
+                      SOA_COLUMN(uint8_t, TACIDMinus))
 
   using BTLDigiSoA = BTLDigiSoALayout<>;
   using BTLDigiSoAView = BTLDigiSoA::View;
