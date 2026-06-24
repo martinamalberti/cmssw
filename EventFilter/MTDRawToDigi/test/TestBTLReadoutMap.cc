@@ -32,6 +32,8 @@
 
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 
+#include "CondFormats/MTDObjects/interface/BTLDBChannelId.h"
+
 #include "CondFormats/MTDObjects/interface/BTLReadoutMap.h"
 #include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
 #include "EventFilter/MTDRawToDigi/interface/BTLElectronicsMapping.h"
@@ -194,6 +196,13 @@ void TestBTLReadoutMap::analyze(const edm::Event& iEvent, const edm::EventSetup&
         if (detPlus.rawId() != theId.rawId()) {
           edm::LogError("TestBTLReadoutMap") << "Reverse mapping mismatch for plus side!";
         }
+
+        BTLDBChannelId dbidMinus(theId, elecIds.minus.channelId());
+        BTLDBChannelId dbidPlus(theId, elecIds.plus.channelId());
+        snum << "\n";
+        snum << "BTLDBChannelId (minus) : " << dbidMinus << "\n"
+             << "BTLDBChannelId (plus)  : " << dbidPlus << "\n"
+             << "\n";
 
         BTLElectronicsMapping btlElMapping = BTLElectronicsMapping();
         snum << " TOFHIRASIC: " << btlElMapping.TOFHIRASIC(theId)
