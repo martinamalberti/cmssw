@@ -33,7 +33,7 @@ public:
   explicit BTLDBChannelId(uint32_t rawid);
 
   /** Constructor from (BTLDetId, TOFHIR channel) **/
-  BTLDBChannelId(BTLDetId detid, uint8_t chId) {
+  BTLDBChannelId(BTLDetId detid, int chId) {
     rawid_ = (detid.rawId() & kBtlDetIdMask) | ((static_cast<uint32_t>(chId) & kChannelMask) << kChannelShift);
   }
 

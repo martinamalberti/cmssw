@@ -24,7 +24,7 @@ bool BTLDBChannelId::operator!=(const BTLDBChannelId& other) const { return rawi
 std::ostream& operator<<(std::ostream& os, const BTLDBChannelId& id) {
   os << "BTLDBChannelId: "
      << "rawId = " << static_cast<int>(id.rawId()) << ", BTLDetId = " << static_cast<int>(id.detId())
-     << ", TOFHIR channel Id = " << static_cast<int>(id.channelId());
+     << ", TOFHIR channel Id = " << id.channelId();
 
   return os;
 }
