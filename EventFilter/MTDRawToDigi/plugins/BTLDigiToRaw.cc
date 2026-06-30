@@ -120,12 +120,17 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
       currentChannelsStream.clear();
       currentFed = fedId;
     }
-    
+
     // Encode minus and plus side
     currentChannelsStream.push_back(encodeChannelPayload(fedId, hslinkId, elinkId, digi, false));
     currentChannelsStream.push_back(encodeChannelPayload(fedId, hslinkId, elinkId, digi, true));
   }
 
+  // -- Flush the last accumulated FED buffer
+  if (currentFed >= 0 && !currentChannelsStream.empty()) {
+    fillFEDBuffer(currentFed, currentChannelsStream, *rawDataBuffer);
+  }
+  
   iEvent.put(std::move(rawDataBuffer));
 }
 
@@ -156,7 +161,7 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(int fed, int hsli
 
   int slink = fed; 
   
-  stream.set_bits(127, 10, static_cast<uint64_t>(BC0count));
+  stream.set_bits(118, 10, static_cast<uint64_t>(BC0count));
   stream.set_bits(117,  1, static_cast<uint64_t>(status));
   stream.set_bits(110,  7, static_cast<uint64_t>(slink)); // will be removed?  0-12, but FEDId will have a offset....
   stream.set_bits(104,  6, static_cast<uint64_t>(hslink)); 
