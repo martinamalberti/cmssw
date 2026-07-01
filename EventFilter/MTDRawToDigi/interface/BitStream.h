@@ -32,8 +32,8 @@ public:
   uint64_t get_bits(std::size_t pos, std::size_t bitCount) const;
 
   // Direct access to underlying array (const and non-const)
-  const word_t* raw_data() const { return data; }
-  word_t* raw_data() { return data; }
+  const word_t* raw_data() const { return data.data(); }
+  word_t* raw_data() { return data.data(); }
 
   // For convenience: set a single bit
   void set_bit(std::size_t pos, bool value = true);

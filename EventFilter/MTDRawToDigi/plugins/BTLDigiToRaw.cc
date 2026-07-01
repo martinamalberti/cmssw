@@ -25,10 +25,21 @@
 #include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
 
 #include "EventFilter/MTDRawToDigi/interface/BitStream.h"
+#include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
 
 namespace btldigitoraw {
   using ChannelStream = BitStream<2>;
+
+  constexpr std::size_t kSlinkHeaderBits   = 128;
+  constexpr std::size_t kSlinkTrailerBits  = 128;
+
+  constexpr std::size_t kSlinkHeaderWords  = kSlinkHeaderBits / ChannelStream::WORD_BITS;
+  constexpr std::size_t kSlinkTrailerWords = kSlinkTrailerBits / ChannelStream::WORD_BITS;
+
+  constexpr std::size_t kWordsPerChannel = ChannelStream::BITS / ChannelStream::WORD_BITS;
+
 }
+ 
 
 class BTLDigiToRaw : public edm::one::EDProducer<> {
 public:
@@ -56,6 +67,8 @@ private:
                      const std::vector<btldigitoraw::ChannelStream>& words,
                      RawDataBuffer& rawData) const;
 
+  std::vector<btldigitoraw::ChannelStream> currentChannelsStream_;
+  
   // -- Input tokens
   const edm::EDGetTokenT<BTLDigiContentCollection> digiToken_;
   const edm::ESGetToken<BTLReadoutMap, BTLReadoutMapRcd> readoutMapToken_;
@@ -84,12 +97,10 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   // -- Output
   auto rawDataBuffer = std::make_unique<RawDataBuffer>();
 
-
   // -- Linear scan: the digi collection is sorted by BTLDetId, so crystals
   // belonging to the same FED are contiguous. We accumulate channel
   // streams into a single buffer and flush it as soon as the FED id
   // changes
-  std::vector<btldigitoraw::ChannelStream> currentChannelsStream;
   int currentFed = -1;
   
   for (const auto& digi : digis) {
@@ -99,14 +110,19 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     BTLElectronicsIdPair elecIds = readoutMap.getElectronicsId(detId);
     
     // -- Sanity check: both sides must belong to the same FED and must have same hs-link and e-link Ids
-    if (elecIds.minus.fedId() != elecIds.plus.fedId()) {
-      edm::LogError("BTLDigiToRaw") << "BTLDigiToRaw::produce(): "
-				    << "minus and plus sides of crystal " << std::hex << detId.rawId() << std::dec
-				    << " belong to different FEDs ("
-				    << elecIds.minus.fedId() << " vs " << elecIds.plus.fedId()
-				    << ") -- skipping crystal.";
-      continue;
-    }
+    if (elecIds.minus.fedId() != elecIds.plus.fedId() ||
+	elecIds.minus.hsLinkId() != elecIds.plus.hsLinkId() ||
+	elecIds.minus.eLinkId() != elecIds.plus.eLinkId() )
+      {
+	edm::LogError("BTLDigiToRaw") << "BTLDigiToRaw::produce(): "
+				      << "minus and plus sides of crystal " << std::hex << detId.rawId() << std::dec
+				      << " belong to different FEDs/HS-link/E-link: " << "\n"
+				      << " FED: " << elecIds.minus.fedId() << " vs " << elecIds.plus.fedId()
+				      << " HL-link: " << elecIds.minus.hsLinkId() << " vs " << elecIds.plus.hsLinkId()
+				      << " e-link: " << elecIds.minus.eLinkId() << " vs " << elecIds.plus.eLinkId()
+				      << ") -- skipping crystal.";
+	continue;
+      }
     
     const int fedId = elecIds.minus.fedId();
     const int hslinkId = elecIds.minus.hsLinkId();
@@ -115,20 +131,20 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // Check if FED id changed and flush the buffer accumulated so far and start a new one.
     if (fedId != currentFed) {
       if (currentFed >= 0) {
-        fillFEDBuffer(currentFed, currentChannelsStream, *rawDataBuffer); // TO-DO
+        fillFEDBuffer(currentFed, currentChannelsStream_, *rawDataBuffer); 
       }
-      currentChannelsStream.clear();
+      currentChannelsStream_.clear();
       currentFed = fedId;
     }
 
     // Encode minus and plus side
-    currentChannelsStream.push_back(encodeChannelPayload(fedId, hslinkId, elinkId, digi, false));
-    currentChannelsStream.push_back(encodeChannelPayload(fedId, hslinkId, elinkId, digi, true));
+    currentChannelsStream_.push_back(encodeChannelPayload(fedId, hslinkId, elinkId, digi, false));
+    currentChannelsStream_.push_back(encodeChannelPayload(fedId, hslinkId, elinkId, digi, true));
   }
 
   // -- Flush the last accumulated FED buffer
-  if (currentFed >= 0 && !currentChannelsStream.empty()) {
-    fillFEDBuffer(currentFed, currentChannelsStream, *rawDataBuffer);
+  if (currentFed >= 0 && !currentChannelsStream_.empty()) {
+    fillFEDBuffer(currentFed, currentChannelsStream_, *rawDataBuffer);
   }
   
   iEvent.put(std::move(rawDataBuffer));
@@ -159,7 +175,7 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(int fed, int hsli
   uint8_t PrevTrigF = isPlusSide ? digi.kPrevTrigFPlus() : digi.kPrevTrigFMinus();
   uint8_t TACID = isPlusSide ? digi.kTACIDPlus() : digi.kTACIDMinus();
 
-  int slink = fed; 
+  int slink = fed - BTLElectronicsSpecs::kFirstFEDId; 
   
   stream.set_bits(118, 10, static_cast<uint64_t>(BC0count));
   stream.set_bits(117,  1, static_cast<uint64_t>(status));
@@ -183,25 +199,65 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(int fed, int hsli
 
 // ------------------------------------------------------------
 // Fill FED buffer
-// Writes header (128 bit) + channel streams (128 bit each) + trailer
-// (128 bit) into the RawDataBuffer for the given source ID.
+// Writes:
+//   - S-Link header  (128 bit)
+//   - Channel payloads (128 bit each)
+//   - S-Link trailer (128 bit)
+// into the RawDataBuffer.
 // ------------------------------------------------------------
 void BTLDigiToRaw::fillFEDBuffer(int fedId,
 				 const std::vector<btldigitoraw::ChannelStream>& channelsStream,
 				 RawDataBuffer& rawDataBuffer) const {
   
 
-  // TODO TODO
+  using Word64Bits = btldigitoraw::ChannelStream::word_t;
+
+  std::vector<Word64Bits> fedWords;
+  fedWords.reserve(btldigitoraw::kSlinkHeaderWords +
+                   channelsStream.size() * btldigitoraw::kWordsPerChannel +
+                   btldigitoraw::kSlinkTrailerWords);
+
+  // --------------------------------------------------------
+  // S-Link header (128 bit)
+  // --------------------------------------------------------
+  btldigitoraw::ChannelStream slinkHeader;
+  slinkHeader.clear();
+
+  // !!!!!!!!!! TODO: fill S-Link header fields
+
+  for (std::size_t i = 0; i < btldigitoraw::kSlinkHeaderWords; ++i) {
+    fedWords.push_back(slinkHeader.raw_data()[i]);
+  }
+
+
+  // --------------------------------------------------------
+  // Channel payload
+  // --------------------------------------------------------
+  for (const auto& channel : channelsStream) {
+    for (std::size_t i = 0; i < btldigitoraw::kWordsPerChannel; ++i) {
+      fedWords.push_back(channel.raw_data()[i]);
+    }
+  }
+
+
+  // --------------------------------------------------------
+  // S-Link trailer (128 bit)
+  // --------------------------------------------------------
+  btldigitoraw::ChannelStream slinkTrailer;
+  slinkTrailer.clear();
+
+  // !!!!!!!!!! TODO: fill S-Link trailer fields
   
-  // -- Fill header
+  for (std::size_t i = 0; i < btldigitoraw::kSlinkTrailerWords; ++i) {
+    fedWords.push_back(slinkTrailer.raw_data()[i]);
+  }
 
-  // -- payload
-
-  // -- Fill trailer
-
-
-  ///  rawDataBuffer->addSource(.....) ???
-  
+  // --------------------------------------------------------
+  // Store FED fragment
+  // --------------------------------------------------------
+  rawDataBuffer.addSource(static_cast<uint32_t>(fedId),
+			  reinterpret_cast<const unsigned char*>(fedWords.data()),
+			  static_cast<uint32_t>(fedWords.size() * sizeof(Word64Bits)));
 }
 
 
