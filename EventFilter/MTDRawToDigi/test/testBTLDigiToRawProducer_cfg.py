@@ -1,0 +1,41 @@
+import FWCore.ParameterSet.Config as cms
+
+import Configuration.Geometry.defaultPhase2ConditionsEra_cff as _settings
+import Geometry.MTDCommonData.defaultMTDConditionsEra_cff as _mtdgeo
+_mtdgeo.check_mtdgeo()
+_PH2_GLOBAL_TAG, _PH2_ERA = _settings.get_era_and_conditions(_mtdgeo.MTD_DEFAULT_VERSION)
+from Configuration.ProcessModifiers.dd4hep_cff import dd4hep
+
+process = cms.Process("BTLPACKER",_PH2_ERA, dd4hep)
+
+process.load('Configuration.StandardSequences.Services_cff')
+process.load('Configuration.EventContent.EventContent_cff')
+process.load('Configuration.StandardSequences.MagneticField_cff')
+
+process.load('Geometry.MTDCommonData.GeometryDD4hepExtendedRun4MTDDefaultReco_cff')
+
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
+
+process.source = cms.Source("PoolSource",
+    fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_20_0_0_pre1/mywork/34434.0_TTbar_14TeV+Run4D121/step2.root")
+)
+
+process.load('EventFilter.MTDRawToDigi.BTLReadoutMapESProducer_cfi')
+
+# ESProducer
+process.btlDigiToRaw = cms.EDProducer(
+    "BTLDigiToRaw",
+    btlDigiCollection = cms.InputTag("mix","MTDBarrel")    
+)
+
+
+process.out = cms.OutputModule("PoolOutputModule",
+                               splitLevel = cms.untracked.int32(0),
+                               outputCommands = cms.untracked.vstring('drop *',
+                                                                      'keep RawDataBuffer_*_*_*',
+                               ),
+                        fileName = cms.untracked.string('BtlDigiToRaw.root')
+)
+
+process.path1 = cms.Path(process.btlDigiToRaw)
+process.output = cms.EndPath(process.out)

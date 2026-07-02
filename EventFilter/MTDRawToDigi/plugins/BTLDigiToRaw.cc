@@ -1,5 +1,4 @@
 #include <vector>
-#include <map>
 #include <cstdint>
 #include <cstring>
 
@@ -17,6 +16,7 @@
 
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/FEDRawData/interface/RawDataBuffer.h"
+#include "DataFormats/FEDRawData/interface/SLinkRocketHeaders.h"
 #include "DataFormats/FTLDigi/interface/BTLDigi.h"
 #include "DataFormats/FTLDigi/interface/MTDDigiCollections.h"
 
@@ -28,16 +28,14 @@
 #include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
 
 namespace btldigitoraw {
+
   using ChannelStream = BitStream<2>;
+  using Word = ChannelStream::word_t;
+  
+  const int kWordsPerChannel = ChannelStream::BITS / ChannelStream::WORD_BITS;
 
-  constexpr std::size_t kSlinkHeaderBits   = 128;
-  constexpr std::size_t kSlinkTrailerBits  = 128;
-
-  constexpr std::size_t kSlinkHeaderWords  = kSlinkHeaderBits / ChannelStream::WORD_BITS;
-  constexpr std::size_t kSlinkTrailerWords = kSlinkTrailerBits / ChannelStream::WORD_BITS;
-
-  constexpr std::size_t kWordsPerChannel = ChannelStream::BITS / ChannelStream::WORD_BITS;
-
+  const std::size_t maxTotalSize = sizeof(Word) * (72 * 6 * 24 * 32) + (16 + 16) * 12;   /// numeor di canali di BTL * 128 bit  + numero di FED * size di header + trailer
+  
 }
  
 
@@ -63,10 +61,10 @@ private:
   // Write the accumulated raw words for one FED/source ID
   // into the RawDataBuffer, adding header and trailer (128 bit each)
   // -------------------------------------------------------------------
-  void fillFEDBuffer(int fedId,
-                     const std::vector<btldigitoraw::ChannelStream>& words,
-                     RawDataBuffer& rawData) const;
-
+  void fillFEDBuffer(int fedId, const std::vector<btldigitoraw::ChannelStream>& channelsStream,
+		     uint64_t eventId, uint32_t orbitId, uint16_t bxId,
+		     RawDataBuffer& rawDataBuffer) const;
+  
   std::vector<btldigitoraw::ChannelStream> currentChannelsStream_;
   
   // -- Input tokens
@@ -76,10 +74,11 @@ private:
 
 
 BTLDigiToRaw::BTLDigiToRaw(const edm::ParameterSet& iConfig)
-    : digiToken_(consumes<BTLDigiContentCollection>(iConfig.getParameter<edm::InputTag>("btlDigiLabel"))),
+    : digiToken_(consumes<BTLDigiContentCollection>(iConfig.getParameter<edm::InputTag>("btlDigiCollection"))),
       readoutMapToken_(esConsumes<BTLReadoutMap, BTLReadoutMapRcd>()) {
   produces<RawDataBuffer>();
 }
+
 
 BTLDigiToRaw::~BTLDigiToRaw() {}
 
@@ -91,11 +90,15 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   // -- Retrieve readout map from EventSetup
   const BTLReadoutMap& readoutMap = iSetup.getData(readoutMapToken_);
 
-  // -- Get EventID and RunID
-  unsigned int eventId_ = iEvent.id().event();
-  
+  // -- Vars needed to fill SLinkRocket header and trailer
+  uint64_t eventId = iEvent.id().event();
+  uint32_t orbitId = iEvent.orbitNumber();
+  uint16_t bxId    = iEvent.bunchCrossing();
+
+  std::cout << "eventId = " << int(eventId) << " orbitId = " << int(orbitId) << "  bxId = " << int(bxId) << std::endl;
+
   // -- Output
-  auto rawDataBuffer = std::make_unique<RawDataBuffer>();
+  auto rawDataBuffer = std::make_unique<RawDataBuffer>(btldigitoraw::maxTotalSize);  /// !!!!!! AAAAA !!!!!  non ho capito cosa ci si deve mettere come maxTotalSize. Se < del totale, Exception! Per ora ci ho messo la massima possibile
 
   // -- Linear scan: the digi collection is sorted by BTLDetId, so crystals
   // belonging to the same FED are contiguous. We accumulate channel
@@ -131,7 +134,7 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // Check if FED id changed and flush the buffer accumulated so far and start a new one.
     if (fedId != currentFed) {
       if (currentFed >= 0) {
-        fillFEDBuffer(currentFed, currentChannelsStream_, *rawDataBuffer); 
+        fillFEDBuffer(currentFed, currentChannelsStream_, eventId, orbitId, bxId, *rawDataBuffer); 
       }
       currentChannelsStream_.clear();
       currentFed = fedId;
@@ -144,7 +147,7 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   // -- Flush the last accumulated FED buffer
   if (currentFed >= 0 && !currentChannelsStream_.empty()) {
-    fillFEDBuffer(currentFed, currentChannelsStream_, *rawDataBuffer);
+    fillFEDBuffer(currentFed, currentChannelsStream_, eventId, orbitId, bxId, *rawDataBuffer);
   }
   
   iEvent.put(std::move(rawDataBuffer));
@@ -175,7 +178,7 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(int fed, int hsli
   uint8_t PrevTrigF = isPlusSide ? digi.kPrevTrigFPlus() : digi.kPrevTrigFMinus();
   uint8_t TACID = isPlusSide ? digi.kTACIDPlus() : digi.kTACIDMinus();
 
-  int slink = fed - BTLElectronicsSpecs::kFirstFEDId; 
+  int slink = fed - BTLElectronicsSpecs::kFirstFEDId;
   
   stream.set_bits(118, 10, static_cast<uint64_t>(BC0count));
   stream.set_bits(117,  1, static_cast<uint64_t>(status));
@@ -205,60 +208,74 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(int fed, int hsli
 //   - S-Link trailer (128 bit)
 // into the RawDataBuffer.
 // ------------------------------------------------------------
-void BTLDigiToRaw::fillFEDBuffer(int fedId,
-				 const std::vector<btldigitoraw::ChannelStream>& channelsStream,
-				 RawDataBuffer& rawDataBuffer) const {
+void BTLDigiToRaw::fillFEDBuffer(int fedId, const std::vector<btldigitoraw::ChannelStream>& channelsStream,
+				 uint64_t eventId, uint32_t orbitId, uint16_t bxId,
+                                 RawDataBuffer& rawDataBuffer) const {
+
+  std::cout << "Filling buffer for FED Id = " << fedId << std::endl;
   
+  using Word = btldigitoraw::ChannelStream::word_t;
 
-  using Word64Bits = btldigitoraw::ChannelStream::word_t;
+  constexpr std::size_t kSlinkHeaderSize  = sizeof(SLinkRocketHeader_v3);
+  constexpr std::size_t kSlinkTrailerSize = sizeof(SLinkRocketTrailer_v3);
 
-  std::vector<Word64Bits> fedWords;
-  fedWords.reserve(btldigitoraw::kSlinkHeaderWords +
-                   channelsStream.size() * btldigitoraw::kWordsPerChannel +
-                   btldigitoraw::kSlinkTrailerWords);
+  //const std::size_t payloadBytes  = channelsStream.size() * btldigitoraw::ChannelStream::BITS;
+  const std::size_t payloadBytes  = channelsStream.size() * sizeof(Word) * btldigitoraw::kWordsPerChannel;
+  const std::size_t fragmentBytes = kSlinkHeaderSize + payloadBytes + kSlinkTrailerSize;
+
+  std::cout << " kSlinkHeaderSize = " << kSlinkHeaderSize << "  kSlinkTrailerSize = " << kSlinkTrailerSize
+	    << " payloadBytes = " << payloadBytes
+	    << " fragmentBytes = " << fragmentBytes <<std::endl;
+  
+  std::vector<unsigned char> buffer(fragmentBytes, 0);
 
   // --------------------------------------------------------
   // S-Link header (128 bit)
   // --------------------------------------------------------
-  btldigitoraw::ChannelStream slinkHeader;
-  slinkHeader.clear();
-
-  // !!!!!!!!!! TODO: fill S-Link header fields
-
-  for (std::size_t i = 0; i < btldigitoraw::kSlinkHeaderWords; ++i) {
-    fedWords.push_back(slinkHeader.raw_data()[i]);
-  }
-
+  // -- provisional values for emu_status, l1a_types, l1a_phys taken as in https://github.com/cms-sw/cmssw/blob/master/DataFormats/FEDRawData/test/TestWriteRawDataBuffer.cc
+  uint8_t emu_status = 2;  //set 2 indicating fragment generated by DTH (emulator)
+  uint16_t l1a_types = 1;  //set provisionally to 1, to be revised later
+  uint8_t l1a_phys = 0;
+  auto* slinkHeader = new ((void*)buffer.data()) SLinkRocketHeader_v3(static_cast<uint32_t>(fedId), l1a_types, l1a_phys, emu_status, eventId);
+  assert(slinkHeader->verifyMarker());
 
   // --------------------------------------------------------
   // Channel payload
   // --------------------------------------------------------
+  std::vector<Word> payloadWords;
+  payloadWords.reserve(channelsStream.size() * btldigitoraw::kWordsPerChannel);
+
   for (const auto& channel : channelsStream) {
     for (std::size_t i = 0; i < btldigitoraw::kWordsPerChannel; ++i) {
-      fedWords.push_back(channel.raw_data()[i]);
+      payloadWords.push_back(channel.raw_data()[i]);
     }
   }
-
-
+  std::memcpy(buffer.data() + kSlinkHeaderSize,
+	      payloadWords.data(),
+	      payloadWords.size() * sizeof(Word));
+  
+  
   // --------------------------------------------------------
   // S-Link trailer (128 bit)
   // --------------------------------------------------------
-  btldigitoraw::ChannelStream slinkTrailer;
-  slinkTrailer.clear();
+  uint16_t slt_status = 0;  
+  uint16_t crc = 0;
+  auto* slinkTrailer =
+    new ((void*)(buffer.data() + fragmentBytes - kSlinkTrailerSize)) SLinkRocketTrailer_v3(slt_status,
+											   crc,
+											   orbitId,
+											   bxId,
+											   static_cast<uint32_t>(fragmentBytes >> SLR_WORD_NUM_BYTES_SHIFT),
+											   0); // daq_crc
+  assert(slinkTrailer->verifyMarker());
 
-  // !!!!!!!!!! TODO: fill S-Link trailer fields
   
-  for (std::size_t i = 0; i < btldigitoraw::kSlinkTrailerWords; ++i) {
-    fedWords.push_back(slinkTrailer.raw_data()[i]);
-  }
-
   // --------------------------------------------------------
   // Store FED fragment
   // --------------------------------------------------------
-  rawDataBuffer.addSource(static_cast<uint32_t>(fedId),
-			  reinterpret_cast<const unsigned char*>(fedWords.data()),
-			  static_cast<uint32_t>(fedWords.size() * sizeof(Word64Bits)));
+  rawDataBuffer.addSource(static_cast<uint32_t>(fedId), buffer.data(), static_cast<uint32_t>(fragmentBytes));
 }
+
 
 
 // ------------------------------------------------------------
@@ -266,7 +283,8 @@ void BTLDigiToRaw::fillFEDBuffer(int fedId,
 // ------------------------------------------------------------
 void BTLDigiToRaw::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("btlDigiLabel", edm::InputTag("btlDigiLabel", "BTLDigi"));
+  desc.add<edm::InputTag>("btlDigiCollection", edm::InputTag("mix", "MTDBarrel"));
   descriptions.addWithDefaultLabel(desc);
 }
 
+DEFINE_FWK_MODULE(BTLDigiToRaw);
