@@ -15,10 +15,9 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1))
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = cms.untracked.string('INFO')
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
-    #limit = cms.untracked.int32(0)
-    limit = cms.untracked.int32(-1)
+    limit = cms.untracked.int32(0)
 )
-process.MessageLogger.cerr.TestBTLElectronicsMapping = cms.untracked.PSet(
+process.MessageLogger.cerr.TestBTLReadoutMap = cms.untracked.PSet(
     #limit = cms.untracked.int32(0)
     limit = cms.untracked.int32(-1)
 )

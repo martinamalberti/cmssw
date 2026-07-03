@@ -10,6 +10,14 @@
   <flags EDM_PLUGIN="1"/>
 </library>
 
+<library name="DumpBTLRawDataBuffer" file="DumpBTLRawDataBuffer.cc">
+  <use name="FWCore/Framework"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/Utilities"/>
+  <use name="DataFormats/FEDRawData"/>
+  <flags EDM_PLUGIN="1"/>
+</library>
+
 <bin file="test_bitstream.cc">
   <use name="FWCore/Utilities"/>
   <use name="EventFilter/MTDRawToDigi"/>
