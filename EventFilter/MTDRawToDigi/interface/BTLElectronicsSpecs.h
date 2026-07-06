@@ -92,7 +92,8 @@ namespace BTLElectronicsSpecs {
   static constexpr uint32_t kHSLinksNum = 72;    // number of HS links: in each Serenity 6 trays x 12 links
   static constexpr uint32_t kHSLinksOffset = 4;  // offset (HS link Ids start from 4 (0-3 reserved)
   static constexpr uint32_t kFirstFEDId = 0;     // arbitrary for now
-
+  static constexpr uint32_t kNumberOfFEDs = 12;     // number of SLinks/FED IDs
+  
   static constexpr auto OptTx_map = []() {
     std::array<int, kHSLinksNum + kHSLinksOffset> tmp;
     tmp.fill(-1);

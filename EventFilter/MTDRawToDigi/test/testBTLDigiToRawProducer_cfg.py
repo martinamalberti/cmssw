@@ -14,13 +14,19 @@ process.load('Configuration.StandardSequences.MagneticField_cff')
 
 process.load('Geometry.MTDCommonData.GeometryDD4hepExtendedRun4MTDDefaultReco_cff')
 
-process.load("FWCore.MessageLogger.MessageLogger_cfi")
+process.load('FWCore.MessageLogger.MessageLogger_cfi')
 process.MessageLogger.cerr.threshold = cms.untracked.string('INFO')
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
     limit = cms.untracked.int32(0)
 )
 process.MessageLogger.cerr.BTLDigiToRaw = cms.untracked.PSet(
     #limit = cms.untracked.int32(0)
+    limit = cms.untracked.int32(-1)
+)
+
+process.MessageLogger.cerr.threshold = "DEBUG"
+process.MessageLogger.debugModules = cms.untracked.vstring("btlDigiToRaw")
+process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
     limit = cms.untracked.int32(-1)
 )
 
