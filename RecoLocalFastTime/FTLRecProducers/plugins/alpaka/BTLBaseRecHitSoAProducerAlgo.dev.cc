@@ -22,8 +22,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     return row;
   }
 
-  ALPAKA_FN_ACC float TcoarseTfineToTime(
-      std::array<double,4> tdcCalParams, uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t tcoarse, uint16_t tfine, bool isT1) {
+  ALPAKA_FN_ACC float TcoarseTfineToTime(std::array<double, 4> tdcCalParams,
+                                         uint32_t rawId,
+                                         uint8_t chID,
+                                         uint8_t TACID,
+                                         uint16_t tcoarse,
+                                         uint16_t tfine,
+                                         bool isT1) {
     // tdc calibration parameters
     // (to be modified: these parameters are evaluated by channel and stored in parquet files)
     double a0 = tdcCalParams[0];
@@ -36,8 +41,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     return time;
   }
 
-  ALPAKA_FN_ACC uint32_t
-  QfineToADC(std::array<double,10> qdcCalParams, uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t qfine, float time1, uint16_t timeEndQ) {
+  ALPAKA_FN_ACC uint32_t QfineToADC(std::array<double, 10> qdcCalParams,
+                                    uint32_t rawId,
+                                    uint8_t chID,
+                                    uint8_t TACID,
+                                    uint16_t qfine,
+                                    float time1,
+                                    uint16_t timeEndQ) {
     // qdc calibration parameters
     // (to be modified: these parameters are evaluated by channel and stored in parquet files)
     double p0 = qdcCalParams[0];
@@ -64,15 +74,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   class BTLdigiToBaseKernel {
   public:
-    ALPAKA_FN_ACC void operator()(
-        Acc1D const& acc,
-        ::btldigi::BTLDigiSoA::ConstView input,
-        BTLBaseRecHitSoA::View output,
-        const uint32_t adcBitSaturation_,
-        const double tclock_,
-        const std::array<double,4> tdcCalParams_,
-        const std::array<double,10> qdcCalParams_) const {
-
+    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+                                  ::btldigi::BTLDigiSoA::ConstView input,
+                                  BTLBaseRecHitSoA::View output,
+                                  const uint32_t adcBitSaturation_,
+                                  const double tclock_,
+                                  const std::array<double, 4> tdcCalParams_,
+                                  const std::array<double, 10> qdcCalParams_) const {
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
@@ -80,21 +88,51 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
         // for the times at first and second th, still in clock units
         // atm tdc and qdc calibs are fixed to dummy values for each channel, hence rawId, ch, and the bool to select branch 1 or 2 are not used.
-        auto time1Plus =
-            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.T1coarsePlus(), entry.T1finePlus(), true);
-        auto time1Minus =
-            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.T1coarseMinus(), entry.T1fineMinus(), true);
+        auto time1Plus = TcoarseTfineToTime(tdcCalParams_,
+                                            entry.rawId(),
+                                            entry.chIDPlus(),
+                                            entry.TACIDPlus(),
+                                            entry.T1coarsePlus(),
+                                            entry.T1finePlus(),
+                                            true);
+        auto time1Minus = TcoarseTfineToTime(tdcCalParams_,
+                                             entry.rawId(),
+                                             entry.chIDMinus(),
+                                             entry.TACIDMinus(),
+                                             entry.T1coarseMinus(),
+                                             entry.T1fineMinus(),
+                                             true);
 
-        auto time2Plus =
-            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.T2coarsePlus(), entry.T2finePlus(), false);
-        auto time2Minus =
-            TcoarseTfineToTime(tdcCalParams_, entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.T2coarseMinus(), entry.T2fineMinus(), false);
+        auto time2Plus = TcoarseTfineToTime(tdcCalParams_,
+                                            entry.rawId(),
+                                            entry.chIDPlus(),
+                                            entry.TACIDPlus(),
+                                            entry.T2coarsePlus(),
+                                            entry.T2finePlus(),
+                                            false);
+        auto time2Minus = TcoarseTfineToTime(tdcCalParams_,
+                                             entry.rawId(),
+                                             entry.chIDMinus(),
+                                             entry.TACIDMinus(),
+                                             entry.T2coarseMinus(),
+                                             entry.T2fineMinus(),
+                                             false);
 
         // from qfine to energy in adc, NB you need to pass calibrated time
-        auto ampMinus =
-            QfineToADC(qdcCalParams_, entry.rawId(), entry.chIDMinus(), entry.TACIDMinus(), entry.ChargeMinus(), time1Minus, entry.EOIcoarseMinus());
-        auto ampPlus =
-            QfineToADC(qdcCalParams_, entry.rawId(), entry.chIDPlus(), entry.TACIDPlus(), entry.ChargePlus(), time1Plus, entry.EOIcoarsePlus());
+        auto ampMinus = QfineToADC(qdcCalParams_,
+                                   entry.rawId(),
+                                   entry.chIDMinus(),
+                                   entry.TACIDMinus(),
+                                   entry.ChargeMinus(),
+                                   time1Minus,
+                                   entry.EOIcoarseMinus());
+        auto ampPlus = QfineToADC(qdcCalParams_,
+                                  entry.rawId(),
+                                  entry.chIDPlus(),
+                                  entry.TACIDPlus(),
+                                  entry.ChargePlus(),
+                                  time1Plus,
+                                  entry.EOIcoarsePlus());
 
         uint8_t row = rowFromId(entry.rawId());
 
@@ -155,8 +193,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                     BTLBaseRecHitSoA::View& output,
                                                     const uint32_t adcBitSaturation_,
                                                     const double tclock_,
-                                                    const std::array<double,4> tdcCalParams_,
-                                                    const std::array<double,10> qdcCalParams_) {
+                                                    const std::array<double, 4> tdcCalParams_,
+                                                    const std::array<double, 10> qdcCalParams_) {
     //,
     //Table const& tdc,
     //Table const& qdc) {
@@ -169,15 +207,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue,
-                        grid,
-                        BTLdigiToBaseKernel{},
-                        input,
-                        output,
-                        adcBitSaturation_,
-                        tclock_,
-                        tdcCalParams_,
-                        qdcCalParams_);
+    alpaka::exec<Acc1D>(
+        queue, grid, BTLdigiToBaseKernel{}, input, output, adcBitSaturation_, tclock_, tdcCalParams_, qdcCalParams_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

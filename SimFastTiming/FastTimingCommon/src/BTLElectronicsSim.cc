@@ -83,7 +83,6 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
                             BTLDigiContentCollection& btloutput,
                             CLHEP::HepRandomEngine* hre,
                             const BTLReadoutMap& btlReadoutMap) const {
-
   // --- Fill the readout-unit clock jitter array
   for (unsigned int iRU = 0; iRU < numberOfRUs_; ++iRU) {
     (*smearingClockRU_)[iRU] = CLHEP::RandGaussQ::shoot(hre, 0., sigmaClockRU_);
@@ -251,7 +250,8 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
                                          << ", column: " << static_cast<int>(it->first.column_)
                                          << ", time1Minus: " << toa1[0] << ", time2Minus: " << toa2[0]
                                          << ", chargeMinus: " << charge_adc[0] << ", time1Plus: " << toa1[1]
-                                         << ", time2Plus: " << toa2[1] << ", chargePlus: " << charge_adc[1] << std::endl;
+                                         << ", time2Plus: " << toa2[1] << ", chargePlus: " << charge_adc[1]
+                                         << std::endl;
     }
 
     // --- skip if both sides are empty

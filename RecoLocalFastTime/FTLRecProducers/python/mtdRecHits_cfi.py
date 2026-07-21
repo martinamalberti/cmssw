@@ -35,8 +35,8 @@ btlRecHitsSoA = cms.EDProducer('btlrechit::BTLRecHitSoAProducer@alpaka',
     npeSaturationCorr = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.SiPMSaturationParam,
     npeToADC = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.PulseQParam,
     npePerGeV = cms.double(1000.*mtdDigitizer.barrelDigitizer.DeviceSimulation.LightOutput.value()), # [Npe/GeV]
-    timeCalibrationConstant = cms.double(0.259825), # time offset for bar time is L/2v
-    tResParams = cms.vdouble(0.0593858, -1.02826, 0.0156719),
+    timeCalibrationConstant = cms.double(0.250), # time offset for bar time is L/2v
+    tResParams = cms.vdouble(4.885427e-05, -1.02826, 0.0156719),
     twcParams = cms.vdouble(0.011348, -0.671018, 0.0443454),
 )
 

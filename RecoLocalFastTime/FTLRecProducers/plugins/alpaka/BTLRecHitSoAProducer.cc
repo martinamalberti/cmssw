@@ -69,10 +69,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       BTLRecHitDeviceCollection rh(event.queue(), N);
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      std::array<double,2> npeSaturationCorrArray_;
-      std::array<double,2> npeToADCArray_;
-      std::array<double,3> tResParamsArray_;
-      std::array<double,3> twcParamsArray_;
+      std::array<double, 2> npeSaturationCorrArray_;
+      std::array<double, 2> npeToADCArray_;
+      std::array<double, 3> tResParamsArray_;
+      std::array<double, 3> twcParamsArray_;
       std::copy_n(npeSaturationCorr_.begin(), 2, npeSaturationCorrArray_.begin());
       std::copy_n(npeToADC_.begin(), 2, npeToADCArray_.begin());
       std::copy_n(tResParams_.begin(), 3, tResParamsArray_.begin());

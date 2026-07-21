@@ -362,7 +362,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     auto simHitIt = m_btlSimHits.emplace(id.rawId(), MTDHit()).first;
 
     // --- Accumulate the energy (in GeV) of SIM hits in the same detector cell
-    (simHitIt->second).energy += simHit.energyLoss(); // [GeV]
+    (simHitIt->second).energy += simHit.energyLoss();  // [GeV]
 
     // --- Get the time of the first SIM hit in the cell
     if ((simHitIt->second).time == 0 || simHit.tof() < (simHitIt->second).time) {
@@ -384,7 +384,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   for (const auto& recHit : *btlRecHitsHandle) {
     LogTrace("BtlLocalRecoValidation") << "@RH detid " << recHit.id().rawId() << " r/c/X/dX " << recHit.row() << " "
                                        << recHit.column() << " " << recHit.position() << " " << recHit.positionError()
-                                       << " E,T,dT " << 0.001*recHit.energy() << " " << recHit.time() << " "
+                                       << " E,T,dT " << 0.001 * recHit.energy() << " " << recHit.time() << " "
                                        << recHit.timeError();
 
     BTLDetId detId = recHit.id();
@@ -400,10 +400,10 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     local_point = topo.pixelToModuleLocalPoint(local_point, detId.row(topo.nrows()), detId.column(topo.nrows()));
     const auto& global_point = thedet->toGlobal(local_point);
 
-    meHitEnergy_->Fill(0.001*recHit.energy());
+    meHitEnergy_->Fill(0.001 * recHit.energy());
     const int iRU = (detId.rawId() & BTLDetId::kBTLNewFormat ? detId.runit() : detId.runit() - 1);
-    meHitEnergyRUSlice_[iRU]->Fill(0.001*recHit.energy());
-    meHitLogEnergy_->Fill(log10(0.001*recHit.energy()));
+    meHitEnergyRUSlice_[iRU]->Fill(0.001 * recHit.energy());
+    meHitLogEnergy_->Fill(log10(0.001 * recHit.energy()));
     meHitTime_->Fill(recHit.time());
     meHitTimeError_->Fill(recHit.timeError());
     meHitLongPos_->Fill(recHit.position());
@@ -420,10 +420,10 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     meHitPhi_->Fill(global_point.phi());
     meHitEta_->Fill(global_point.eta());
 
-    meHitTvsE_->Fill(0.001*recHit.energy(), recHit.time());
-    meHitEvsPhi_->Fill(global_point.phi(), 0.001*recHit.energy());
-    meHitEvsEta_->Fill(global_point.eta(), 0.001*recHit.energy());
-    meHitEvsZ_->Fill(global_point.z(), 0.001*recHit.energy());
+    meHitTvsE_->Fill(0.001 * recHit.energy(), recHit.time());
+    meHitEvsPhi_->Fill(global_point.phi(), 0.001 * recHit.energy());
+    meHitEvsEta_->Fill(global_point.eta(), 0.001 * recHit.energy());
+    meHitEvsZ_->Fill(global_point.z(), 0.001 * recHit.energy());
     meHitTvsPhi_->Fill(global_point.phi(), recHit.time());
     meHitTvsEta_->Fill(global_point.eta(), recHit.time());
     meHitTvsZ_->Fill(global_point.z(), recHit.time());
@@ -434,7 +434,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     if (m_btlSimHits.count(detId.rawId()) == 1 && m_btlSimHits[detId.rawId()].energy > hitMinEnergy_) {
       float longpos_res = recHit.position() - convertMmToCm(m_btlSimHits[detId.rawId()].x);
       float time_res = recHit.time() - m_btlSimHits[detId.rawId()].time;
-      float energy_res = 0.001*recHit.energy() - m_btlSimHits[detId.rawId()].energy;
+      float energy_res = 0.001 * recHit.energy() - m_btlSimHits[detId.rawId()].energy;
 
       Local3DPoint local_point_sim(convertMmToCm(m_btlSimHits[detId.rawId()].x),
                                    convertMmToCm(m_btlSimHits[detId.rawId()].y),
@@ -444,9 +444,9 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       const auto& global_point_sim = thedet->toGlobal(local_point_sim);
 
       meTimeRes_->Fill(time_res);
-      meTimeResVsE_->Fill(0.001*recHit.energy(), time_res);
+      meTimeResVsE_->Fill(0.001 * recHit.energy(), time_res);
       meEnergyRes_->Fill(energy_res);
-      meEnergyRelResVsE_->Fill(0.001*recHit.energy(), 0.001 * (energy_res / recHit.energy()));
+      meEnergyRelResVsE_->Fill(0.001 * recHit.energy(), 0.001 * (energy_res / recHit.energy()));
 
       meLongPosPull_->Fill(longpos_res / recHit.positionError());
       meLongPosPullvsEta_->Fill(std::abs(global_point_sim.eta()), longpos_res / recHit.positionError());
@@ -478,7 +478,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   unsigned int n_clus_btl(0);
   for (const auto& DetSetClu : *btlRecCluHandle) {
     for (const auto& cluster : DetSetClu) {
-      if (0.001*cluster.energy() < hitMinEnergy_)
+      if (0.001 * cluster.energy() < hitMinEnergy_)
         continue;
       BTLDetId cluId = cluster.id();
       DetId detIdObject(cluId);
@@ -501,7 +501,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       LocalPoint local_point(std::get<0>(tuple));
       const auto& global_point = genericDet->toGlobal(local_point);
 
-      meCluEnergy_->Fill(0.001*cluster.energy());
+      meCluEnergy_->Fill(0.001 * cluster.energy());
       meCluTime_->Fill(cluster.time());
       meCluTimeError_->Fill(cluster.timeError());
       meCluPhi_->Fill(global_point.phi());
@@ -602,7 +602,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
           const auto& cluGlobalPosSIM = genericDet->toGlobal(cluLocalPosSIM);
 
           float time_res = cluster.time() - cluTimeSIM;
-          float energy_res = 0.001*cluster.energy() - cluEneSIM;
+          float energy_res = 0.001 * cluster.energy() - cluEneSIM;
           meCluTimeRes_->Fill(time_res);
           meCluEnergyRes_->Fill(energy_res);
 
@@ -676,7 +676,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
             meCluYLocalErr_->Fill(std::sqrt(comp->localPositionError().yy()));
           }
 
-          meCluEnergyvsEta_->Fill(std::abs(cluGlobalPosSIM.eta()), 0.001*cluster.energy());
+          meCluEnergyvsEta_->Fill(std::abs(cluGlobalPosSIM.eta()), 0.001 * cluster.energy());
           meCluHitsvsEta_->Fill(std::abs(cluGlobalPosSIM.eta()), cluster.size());
 
           meCluTResvsEta_->Fill(std::abs(cluGlobalPosSIM.eta()), time_res);
@@ -687,7 +687,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
         }  // if ( cluTimeSIM > 0. &&  cluEneSIM > 0. )
         else {
-          meUnmatchedCluEnergy_->Fill(std::log10(0.001*cluster.energy()));
+          meUnmatchedCluEnergy_->Fill(std::log10(0.001 * cluster.energy()));
         }
       }
 
@@ -700,14 +700,14 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         for (unsigned int i = 0; i < simClustersRefs.size(); i++) {
           const auto& simClusterRef = simClustersRefs[i];
 
-          float simClusEnergy = (*simClusterRef).simLCEnergy(); // [GeV]
+          float simClusEnergy = (*simClusterRef).simLCEnergy();  // [GeV]
           float simClusTime = (*simClusterRef).simLCTime();
           LocalPoint simClusLocalPos = (*simClusterRef).simLCPos();
           const auto& simClusGlobalPos = genericDet->toGlobal(simClusLocalPos);
           unsigned int idOffset = (*simClusterRef).hitProdType();
 
           float time_res = cluster.time() - simClusTime;
-          float energy_res = 0.001*cluster.energy() - simClusEnergy;
+          float energy_res = 0.001 * cluster.energy() - simClusEnergy;
           float rho_res = global_point.perp() - simClusGlobalPos.perp();
           float phi_res = global_point.phi() - simClusGlobalPos.phi();
           float z_res = global_point.z() - simClusGlobalPos.z();
@@ -1032,7 +1032,8 @@ void BtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
                                     -0.5,
                                     0.5,
                                     "S");
-  meEnergyRes_ = ibook.book1D("BtlEnergyRes", "BTL RECO hits energy resolution;E_{RECO}-E_{SIM} [GeV]", 100, -0.0005, 0.0005);
+  meEnergyRes_ =
+      ibook.book1D("BtlEnergyRes", "BTL RECO hits energy resolution;E_{RECO}-E_{SIM} [GeV]", 100, -0.0005, 0.0005);
   meEnergyRelResVsE_ =
       ibook.bookProfile("BtlEnergyRelResvsE",
                         "BTL relative energy resolution vs hit energy;E_{RECO} [GeV];E_{RECO}-E_{SIM} [GeV]",
@@ -1062,8 +1063,14 @@ void BtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
                         -5.,
                         5.,
                         "S");
-  meTPullvsE_ = ibook.bookProfile(
-      "BtlTPullvsE", "BTL time pull vs E;E_{SIM} [GeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}", 20, 0., 0.020, -5., 5., "S");
+  meTPullvsE_ = ibook.bookProfile("BtlTPullvsE",
+                                  "BTL time pull vs E;E_{SIM} [GeV];(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
+                                  20,
+                                  0.,
+                                  0.020,
+                                  -5.,
+                                  5.,
+                                  "S");
   meTPullvsEta_ = ibook.bookProfile("BtlTPullvsEta",
                                     "BTL time pull vs #eta;|#eta_{RECO}|;(T_{RECO}-T_{SIM})/#sigma_{T_{RECO}}",
                                     30,
@@ -1689,39 +1696,42 @@ void BtlLocalRecoValidation::bookHistograms(DQMStore::IBooker& ibook,
   // --- UncalibratedRecHits histograms
 
   if (optionalPlots_) {
-    meUncEneMinusVsX_ = ibook.bookProfile("BTLUncEneMinusVsX",
-                                      "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{minus}) [GeV]",
-                                      20,
-                                      -5.,
-                                      5.,
-                                      -0.020,
-                                      0.020,
-                                      "S");
-    meUncEnePlusVsX_ = ibook.bookProfile("BTLUncEnePlusVsX",
-                                      "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{plus}) [GeV]",
-                                      20,
-                                      -5.,
-                                      5.,
-                                      -0.020,
-                                      0.020,
-                                      "S");
+    meUncEneMinusVsX_ =
+        ibook.bookProfile("BTLUncEneMinusVsX",
+                          "BTL uncalibrated left hit energy - average vs X;X [cm];#Delta(E_{minus}) [GeV]",
+                          20,
+                          -5.,
+                          5.,
+                          -0.020,
+                          0.020,
+                          "S");
+    meUncEnePlusVsX_ =
+        ibook.bookProfile("BTLUncEnePlusVsX",
+                          "BTL uncalibrated right hit energy - average vs X;X [cm];#Delta(E_{plus}) [GeV]",
+                          20,
+                          -5.,
+                          5.,
+                          -0.020,
+                          0.020,
+                          "S");
 
-    meUncTimeMinusVsX_ = ibook.bookProfile("BTLUncTimeMinusVsX",
-                                       "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{minus}) [ns]",
-                                       20,
-                                       -5.,
-                                       5.,
-                                       -25.,
-                                       25.,
-                                       "S");
+    meUncTimeMinusVsX_ =
+        ibook.bookProfile("BTLUncTimeMinusVsX",
+                          "BTL uncalibrated left hit time - average vs X;X [cm];#Delta(T_{minus}) [ns]",
+                          20,
+                          -5.,
+                          5.,
+                          -25.,
+                          25.,
+                          "S");
     meUncTimePlusVsX_ = ibook.bookProfile("BTLUncTimePlusVsX",
-                                       "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{plus}) [ns]",
-                                       20,
-                                       -5.,
-                                       5.,
-                                       -25.,
-                                       25.,
-                                       "S");
+                                          "BTL uncalibrated right hit time - average vs X;X [cm];#Delta(T_{plus}) [ns]",
+                                          20,
+                                          -5.,
+                                          5.,
+                                          -25.,
+                                          25.,
+                                          "S");
     if (uncalibRecHitsPlots_) {
       for (unsigned int ihistoQ = 0; ihistoQ < nBinsQ_; ++ihistoQ) {
         std::string hname = Form("TimeResQ_%d", ihistoQ);

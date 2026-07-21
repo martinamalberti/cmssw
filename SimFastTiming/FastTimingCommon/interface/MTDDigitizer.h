@@ -263,7 +263,7 @@ namespace mtd_digitizer {
       auto digiCollection = std::make_unique<DigiCollection>();
       typedef typename Traits::MTDDigiCollection MTDDigiCollection;
       auto digiMTDCollection = std::make_unique<MTDDigiCollection>();
-      
+
       auto const& btlReadoutMap = c.getData(btlReadoutMapToken_);
       electronicsSim_.run(simHitAccumulator_, *digiCollection, *digiMTDCollection, hre, btlReadoutMap);
 

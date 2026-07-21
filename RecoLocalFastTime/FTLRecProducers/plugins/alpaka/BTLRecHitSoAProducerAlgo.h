@@ -18,12 +18,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                double c_LYSO_,
                                double thresholdToKeep_,
                                double calibration_,
-                               const std::array<double,2> npeSaturationCorr_,
-                               const std::array<double,2> npeToADC_,
+                               const std::array<double, 2> npeSaturationCorr_,
+                               const std::array<double, 2> npeToADC_,
                                const double npePerGeV_,
                                const double timeCalibration_,
-                               const std::array<double,3> tResParams_,
-                               const std::array<double,3> twcParams_);
+                               const std::array<double, 3> tResParams_,
+                               const std::array<double, 3> twcParams_);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

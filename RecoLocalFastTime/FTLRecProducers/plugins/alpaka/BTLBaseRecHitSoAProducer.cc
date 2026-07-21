@@ -57,8 +57,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       BTLBaseRecHitDeviceCollection uncalibrh(event.queue(), N);
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      std::array<double,4> tdcCalParamsArray_;
-      std::array<double,10> qdcCalParamsArray_;
+      std::array<double, 4> tdcCalParamsArray_;
+      std::array<double, 10> qdcCalParamsArray_;
       std::copy_n(tdcCalParams_.begin(), 4, tdcCalParamsArray_.begin());
       std::copy_n(qdcCalParams_.begin(), 10, qdcCalParamsArray_.begin());
       BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(event.queue(),

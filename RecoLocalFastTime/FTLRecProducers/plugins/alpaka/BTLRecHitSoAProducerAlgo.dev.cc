@@ -16,11 +16,11 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
-  ALPAKA_FN_ACC float timeResolutionInNs(std::array<double,3> tResParams, float amp) {
+  ALPAKA_FN_ACC float timeResolutionInNs(std::array<double, 3> tResParams, float amp) {
     return tResParams[0] * pow(amp, tResParams[1]) + tResParams[2];
   }
 
-  ALPAKA_FN_ACC float timeWalkCorr(std::array<double,3> twcParams, float amp) {
+  ALPAKA_FN_ACC float timeWalkCorr(std::array<double, 3> twcParams, float amp) {
     // taken from SLHCUpgradeSimulations/Configuration/python/aging.py
     // for 1000 fb-1 scenario
     return twcParams[0] * pow(amp, twcParams[1]) + twcParams[2];
@@ -34,12 +34,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                   const double c_LYSO_,
                                   const double thresholdToKeep_,
                                   const double calibration_,
-                                  const std::array<double,2> npeSaturationCorr_,
-                                  const std::array<double,2> npeToADC_,
+                                  const std::array<double, 2> npeSaturationCorr_,
+                                  const std::array<double, 2> npeToADC_,
                                   const double npePerGeV_,
                                   const double timeCalibration_,
-                                  const std::array<double,3> tResParams_,
-                                  const std::array<double,3> twcParams_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
+                                  const std::array<double, 3> tResParams_,
+                                  const std::array<double, 3> twcParams_)
+        const {  // when condformat for calib ready, add also tdc and qdc in inputs
       // make a strided loop over the kernel grid, covering up to "size" elements
 
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
@@ -79,9 +80,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         float time_error = 0;
         float energy = 0;
         uint8_t flag = 0;
-
-        //!!!!!!! time error calculation to be added
-        //!!!!!!! position error calculation to be added
 
         // -- if you have both sipm info and they are not saturated
         if (entry.flagsPlus() == 0x1 && entry.flagsMinus() == 0x1) {
@@ -155,12 +153,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                 const double c_LYSO_,
                                                 const double thresholdToKeep_,
                                                 const double calibration_,
-                                                const std::array<double,2> npeSaturationCorr_,
-                                                const std::array<double,2> npeToADC_,
+                                                const std::array<double, 2> npeSaturationCorr_,
+                                                const std::array<double, 2> npeToADC_,
                                                 const double npePerGeV_,
                                                 const double timeCalibration_,
-                                                const std::array<double,3> tResParams_,
-                                                const std::array<double,3> twcParams_) {
+                                                const std::array<double, 3> tResParams_,
+                                                const std::array<double, 3> twcParams_) {
     // Use 64 items per group.
     // This value is arbitrary, but it's a reasonable starting point.
     uint32_t items = 64;

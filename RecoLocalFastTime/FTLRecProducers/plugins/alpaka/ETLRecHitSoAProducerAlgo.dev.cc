@@ -46,12 +46,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
         tot = entry.tot();
 
         // Time-walk correction for toa
-        float timeWalkCorr = timeCorr_p0_ + timeCorr_p1_ * tot + timeCorr_p2_ * tot * tot + timeCorr_p3_ * tot * tot * tot;
+        float timeWalkCorr =
+            timeCorr_p0_ + timeCorr_p1_ * tot + timeCorr_p2_ * tot * tot + timeCorr_p3_ * tot * tot * tot;
         toa -= timeWalkCorr;
 
         // --- Energy calibration
-        energy = tot;  //for ETL, it is the time_over_threshold
-        energy *= calibration_; // in GeV
+        energy = tot;            //for ETL, it is the time_over_threshold
+        energy *= calibration_;  // in GeV
 
         time_error = timeResInNs_;
 
@@ -72,8 +73,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 #endif
 
         // fill the rechit
-        output[i] = {
-            entry.detId(), entry.row(), entry.column(), toa, tot, time_error, flag};
+        output[i] = {entry.detId(), entry.row(), entry.column(), toa, tot, time_error, flag};
       }
     }
   };
@@ -97,11 +97,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, 
-                        ETLBaseToRecoKernel{}, 
-                        input, 
-                        output, 
-                        thresholdToKeep_, 
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        ETLBaseToRecoKernel{},
+                        input,
+                        output,
+                        thresholdToKeep_,
                         calibration_,
                         timeResInNs_,
                         timeCorr_p0_,

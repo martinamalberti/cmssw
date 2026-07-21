@@ -245,34 +245,3 @@ void ETLElectronicsSim::updateOutput(ETLDigiCollection& coll, const ETLDataFrame
     coll.push_back(dataFrame);
   }
 }
-
-/**void ETLElectronicsSim::updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& outputTemp,
-                                        etldigi::ETLDigiHostCollection& hostColl) const {
-  etldigi::ETLDigiSoAView& etlDigiView = hostColl.view();
-  size_t nDigis = outputTemp.size();
-  if (debug_) {
-    edm::LogError("ETLElectronicsSim") << "Updating output SoA with " << nDigis << " digis." << std::endl;
-  }
-  for (size_t hitIndex = 0; hitIndex < nDigis; ++hitIndex) {
-    const auto& digiTemp = outputTemp[hitIndex];
-    etlDigiView[hitIndex] = {digiTemp.rawId_,
-                             digiTemp.header_,
-                             digiTemp.status_,
-                             digiTemp.colID_,
-                             digiTemp.rowID_,
-                             digiTemp.ToAdata_,
-                             digiTemp.ToTdata_,
-                             digiTemp.CALdata_};
-
-    if (debug_) {
-      edm::LogError("ETLElectronicsSim") << "Processed hit with rawId: " << etlDigiView[hitIndex].rawId()
-                                         << ", header: " << etlDigiView[hitIndex].header()
-                                         << ", status: " << etlDigiView[hitIndex].status()
-                                         << ", col: " << etlDigiView[hitIndex].colID()
-                                         << ", row: " << etlDigiView[hitIndex].rowID()
-                                         << ", toa: " << etlDigiView[hitIndex].ToAdata()
-                                         << ", tot: " << etlDigiView[hitIndex].ToTdata()
-                                         << ", cal: " << etlDigiView[hitIndex].CALdata() << std::endl;
-    }
-  }
-}**/

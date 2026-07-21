@@ -186,8 +186,10 @@ void BtlDigiHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
   meNhits_[0] = ibook.book1D("BtlNhitsMinus", "Number of BTL DIGI hits (- side);log_{10}(N_{DIGI})", 100, 0., 5.25);
   meNhits_[1] = ibook.book1D("BtlNhitsPlus", "Number of BTL DIGI hits (+ side);log_{10}(N_{DIGI})", 100, 0., 5.25);
 
-  meHitCharge_[0] = ibook.book1D("BtlHitChargeMinus", "BTL DIGI hits charge (- side);Q_{DIGI} [ADC counts]", 100, 0., 1024.);
-  meHitCharge_[1] = ibook.book1D("BtlHitChargePlus", "BTL DIGI hits charge (+ side);Q_{DIGI} [ADC counts]", 100, 0., 1024.);
+  meHitCharge_[0] =
+      ibook.book1D("BtlHitChargeMinus", "BTL DIGI hits charge (- side);Q_{DIGI} [ADC counts]", 100, 0., 1024.);
+  meHitCharge_[1] =
+      ibook.book1D("BtlHitChargePlus", "BTL DIGI hits charge (+ side);Q_{DIGI} [ADC counts]", 100, 0., 1024.);
   meHitTime_[0] = ibook.book1D("BtlHitTimeMinus", "BTL DIGI hits ToA (- side);ToA_{DIGI} [TDC counts]", 100, 0., 1024.);
   meHitTime_[1] = ibook.book1D("BtlHitTimePlus", "BTL DIGI hits ToA (+ side);ToA_{DIGI} [TDC counts]", 100, 0., 1024.);
   meOccupancy_[0] = ibook.book2D("BtlOccupancyMinus",
@@ -215,9 +217,16 @@ void BtlDigiHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
                                         60,
                                         -3.,
                                         3.);
-    meLocalOccupancy_[1] = ibook.book2D(
-        "BtlLocalOccupancyPlus", "BTL DIGI hits occupancy (+ side);X_{DIGI} [cm]; Y_{DIGI} [cm]", 100, -10., 10., 60, -3., 3.);
-    meHitXlocal_[0] = ibook.book1D("BtlHitXlocalMinus", "BTL DIGI local X (- side);X_{DIGI}^{LOC} [cm]", 100, -10., 10.);
+    meLocalOccupancy_[1] = ibook.book2D("BtlLocalOccupancyPlus",
+                                        "BTL DIGI hits occupancy (+ side);X_{DIGI} [cm]; Y_{DIGI} [cm]",
+                                        100,
+                                        -10.,
+                                        10.,
+                                        60,
+                                        -3.,
+                                        3.);
+    meHitXlocal_[0] =
+        ibook.book1D("BtlHitXlocalMinus", "BTL DIGI local X (- side);X_{DIGI}^{LOC} [cm]", 100, -10., 10.);
     meHitXlocal_[1] = ibook.book1D("BtlHitXlocalPlus", "BTL DIGI local X (+ side);X_{DIGI}^{LOC} [cm]", 100, -10., 10.);
     meHitYlocal_[0] = ibook.book1D("BtlHitYlocalMinus", "BTL DIGI local Y (- side);Y_{DIGI}^{LOC} [cm]", 60, -3., 3.);
     meHitYlocal_[1] = ibook.book1D("BtlHitYlocalPlus", "BTL DIGI local Y (+ side);Y_{DIGI}^{LOC} [cm]", 60, -3., 3.);
@@ -264,22 +273,57 @@ void BtlDigiHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
                                       3.15,
                                       0.,
                                       1024.);
-  meHitQvsEta_[0] = ibook.bookProfile(
-      "BtlHitQvsEtaMinus", "BTL DIGI charge vs #eta (- side);#eta_{DIGI};Q_{DIGI} [ADC counts]", 50, -1.55, 1.55, 0., 1024.);
-  meHitQvsEta_[1] = ibook.bookProfile(
-      "BtlHitQvsEtaPlus", "BTL DIGI charge vs #eta (+ side);#eta_{DIGI};Q_{DIGI} [ADC counts]", 50, -1.55, 1.55, 0., 1024.);
-  meHitQvsZ_[0] = ibook.bookProfile(
-      "BtlHitQvsZMinus", "BTL DIGI charge vs Z (- side);Z_{DIGI} [cm];Q_{DIGI} [ADC counts]", 50, -260., 260., 0., 1024.);
+  meHitQvsEta_[0] = ibook.bookProfile("BtlHitQvsEtaMinus",
+                                      "BTL DIGI charge vs #eta (- side);#eta_{DIGI};Q_{DIGI} [ADC counts]",
+                                      50,
+                                      -1.55,
+                                      1.55,
+                                      0.,
+                                      1024.);
+  meHitQvsEta_[1] = ibook.bookProfile("BtlHitQvsEtaPlus",
+                                      "BTL DIGI charge vs #eta (+ side);#eta_{DIGI};Q_{DIGI} [ADC counts]",
+                                      50,
+                                      -1.55,
+                                      1.55,
+                                      0.,
+                                      1024.);
+  meHitQvsZ_[0] = ibook.bookProfile("BtlHitQvsZMinus",
+                                    "BTL DIGI charge vs Z (- side);Z_{DIGI} [cm];Q_{DIGI} [ADC counts]",
+                                    50,
+                                    -260.,
+                                    260.,
+                                    0.,
+                                    1024.);
   meHitQvsZ_[1] = ibook.bookProfile(
       "BtlHitQvsZPlus", "BTL DIGI charge vs Z (+ side);Z_{DIGI} [cm];Q_{DIGI} [ADC counts]", 50, -260., 260., 0., 1024.);
-  meHitTvsPhi_[0] = ibook.bookProfile(
-      "BtlHitTvsPhiMinus", "BTL DIGI ToA vs #phi (- side);#phi_{DIGI} [rad];ToA_{DIGI} [TDC counts]", 50, -3.15, 3.15, 0., 1024.);
-  meHitTvsPhi_[1] = ibook.bookProfile(
-      "BtlHitTvsPhiPlus", "BTL DIGI ToA vs #phi (+ side);#phi_{DIGI} [rad];ToA_{DIGI} [TDC counts]", 50, -3.15, 3.15, 0., 1024.);
-  meHitTvsEta_[0] = ibook.bookProfile(
-      "BtlHitTvsEtaMinus", "BTL DIGI ToA vs #eta (- side);#eta_{DIGI};ToA_{DIGI} [TDC counts]", 50, -1.55, 1.55, 0., 1024.);
-  meHitTvsEta_[1] = ibook.bookProfile(
-      "BtlHitTvsEtaPlus", "BTL DIGI ToA vs #eta (+ side);#eta_{DIGI};ToA_{DIGI} [TDC counts]", 50, -1.55, 1.55, 0., 1024.);
+  meHitTvsPhi_[0] = ibook.bookProfile("BtlHitTvsPhiMinus",
+                                      "BTL DIGI ToA vs #phi (- side);#phi_{DIGI} [rad];ToA_{DIGI} [TDC counts]",
+                                      50,
+                                      -3.15,
+                                      3.15,
+                                      0.,
+                                      1024.);
+  meHitTvsPhi_[1] = ibook.bookProfile("BtlHitTvsPhiPlus",
+                                      "BTL DIGI ToA vs #phi (+ side);#phi_{DIGI} [rad];ToA_{DIGI} [TDC counts]",
+                                      50,
+                                      -3.15,
+                                      3.15,
+                                      0.,
+                                      1024.);
+  meHitTvsEta_[0] = ibook.bookProfile("BtlHitTvsEtaMinus",
+                                      "BTL DIGI ToA vs #eta (- side);#eta_{DIGI};ToA_{DIGI} [TDC counts]",
+                                      50,
+                                      -1.55,
+                                      1.55,
+                                      0.,
+                                      1024.);
+  meHitTvsEta_[1] = ibook.bookProfile("BtlHitTvsEtaPlus",
+                                      "BTL DIGI ToA vs #eta (+ side);#eta_{DIGI};ToA_{DIGI} [TDC counts]",
+                                      50,
+                                      -1.55,
+                                      1.55,
+                                      0.,
+                                      1024.);
   meHitTvsZ_[0] = ibook.bookProfile(
       "BtlHitTvsZMinus", "BTL DIGI ToA vs Z (- side);Z_{DIGI} [cm];ToA_{DIGI} [TDC counts]", 50, -260., 260., 0., 1024.);
   meHitTvsZ_[1] = ibook.bookProfile(

@@ -17,8 +17,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                BTLBaseRecHitSoA::View& output,
                                const uint32_t adcBitSaturation_,
                                const double tclock_,
-                               const std::array<double,4> tdcCalParams_,
-                               const std::array<double,10> qdcCalParams_);
+                               const std::array<double, 4> tdcCalParams_,
+                               const std::array<double, 10> qdcCalParams_);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit
