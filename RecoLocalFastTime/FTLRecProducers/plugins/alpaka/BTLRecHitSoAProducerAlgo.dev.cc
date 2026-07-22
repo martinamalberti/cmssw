@@ -16,11 +16,11 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
-  ALPAKA_FN_ACC float timeResolutionInNs(std::array<double, 3> tResParams, float amp) {
+  ALPAKA_FN_ACC float timeResolutionInNs(std::array<double,3> tResParams, float amp) {
     return tResParams[0] * pow(amp, tResParams[1]) + tResParams[2];
   }
 
-  ALPAKA_FN_ACC float timeWalkCorr(std::array<double, 3> twcParams, float amp) {
+  ALPAKA_FN_ACC float timeWalkCorr(std::array<double,3> twcParams, float amp) {
     // taken from SLHCUpgradeSimulations/Configuration/python/aging.py
     // for 1000 fb-1 scenario
     return twcParams[0] * pow(amp, twcParams[1]) + twcParams[2];
@@ -34,13 +34,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                   const double c_LYSO_,
                                   const double thresholdToKeep_,
                                   const double calibration_,
-                                  const std::array<double, 2> npeSaturationCorr_,
-                                  const std::array<double, 2> npeToADC_,
+                                  const std::array<double,2> npeSaturationCorr_,
+                                  const std::array<double,2> npeToADC_,
                                   const double npePerGeV_,
                                   const double timeCalibration_,
-                                  const std::array<double, 3> tResParams_,
-                                  const std::array<double, 3> twcParams_)
-        const {  // when condformat for calib ready, add also tdc and qdc in inputs
+                                  const std::array<double,3> tResParams_,
+                                  const std::array<double,3> twcParams_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
       // make a strided loop over the kernel grid, covering up to "size" elements
 
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
@@ -81,27 +80,39 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         float energy = 0;
         uint8_t flag = 0;
 
+        //!!!!!!! time error calculation to be added
+        //!!!!!!! position error calculation to be added
+
         // -- if you have both sipm info and they are not saturated
         if (entry.flagsPlus() == 0x1 && entry.flagsMinus() == 0x1) {
           time1 = 0.5f * (time1Minus + time1Plus);
           time2 = 0.5f * (time2Minus + time2Plus);  // to be discussed
           position = 0.5f * c_LYSO_ * (time1Plus - time1Minus);
-          position_error = 0.6;  // as in the std btl uncalibrated hit producer
-          energy = (ampPlus + ampMinus) / 2.;
+          //position_error = 0.6;  // as in the std btl uncalibrated hit producer
+	  float errPlus = sqrt(2)*timeResolutionInNs(tResParams_, ampPlus); // multiply by sqrt(2) as the time resolution parametrization is per bar, here we need par channel
+	  float errMinus = sqrt(2)*timeResolutionInNs(tResParams_, ampMinus); // multiply by sqrt(2) as the time resolution parametrization is per bar, here we need par channel
+	  position_error = 0.5f * c_LYSO_ * sqrt(errPlus*errPlus+errMinus*errMinus);  // time resolution dependent position error
+	  energy = (ampPlus + ampMinus) / 2.;
           flag |= 0x3;
 
         }
         // --- If only one SiPM has good not saturated signal
-        else if (entry.flagsMinus() == 0x1 && (time1Plus == 0x3 || time1Plus == 0)) {
-          time1 = time1Minus;
+        //else if (entry.flagsMinus() == 0x1 && (time1Plus == 0x3 || time1Plus == 0)) {
+        else if (entry.flagsMinus() == 0x1 && (entry.flagsPlus() == 0x3 || entry.flagsPlus() == 0)) {
+	  time1 = time1Minus;
           time2 = time2Minus;
-          energy = ampMinus;
+	  position = 0;
+	  position_error = 5.47/sqrt(12); // 
+	  energy = ampMinus;
           flag |= (0x1 << 1);
         }
 
-        else if (entry.flagsPlus() == 0x1 && (entry.flagsMinus() == 0x3 || entry.flagsPlus() == 0)) {
+        //else if (entry.flagsPlus() == 0x1 && (entry.flagsMinus() == 0x3 || entry.flagsPlus() == 0)) {
+	else if (entry.flagsPlus() == 0x1 && (entry.flagsMinus() == 0x3 || entry.flagsMinus() == 0)) {
           time1 = time1Plus;
           time2 = time2Plus;
+	  position = 0;
+	  position_error = 5.47/sqrt(12); 
           energy = ampPlus;
           flag |= 0x1;
         }
@@ -153,12 +164,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                 const double c_LYSO_,
                                                 const double thresholdToKeep_,
                                                 const double calibration_,
-                                                const std::array<double, 2> npeSaturationCorr_,
-                                                const std::array<double, 2> npeToADC_,
+                                                const std::array<double,2> npeSaturationCorr_,
+                                                const std::array<double,2> npeToADC_,
                                                 const double npePerGeV_,
                                                 const double timeCalibration_,
-                                                const std::array<double, 3> tResParams_,
-                                                const std::array<double, 3> twcParams_) {
+                                                const std::array<double,3> tResParams_,
+                                                const std::array<double,3> twcParams_) {
     // Use 64 items per group.
     // This value is arbitrary, but it's a reasonable starting point.
     uint32_t items = 64;

@@ -65,8 +65,22 @@ FTLUncalibratedRecHit BTLUncalibRecHitAlgo::makeRecHit(const BTLDataFrame& dataF
   // Distance from center of bar to hit
 
   double position = 0.5f * (c_LYSO_ * (time.second - time.first));
-  double positionError = BTLRecHitsErrorEstimatorIM::positionError();
+  // position error
+  // double positionError = BTLRecHitsErrorEstimatorIM::positionError(); // old: fixed 0.6 cm position error
+  const std::array<double, 1> amplitudeV1 = {{amplitude.first}};
+  const std::array<double, 1> amplitudeV2 = {{amplitude.second}};
+  double timeError1 = ( amplitude.first > 0.  ? sqrt(2)*timeError_.evaluate(amplitudeV1, emptyV) : -1); // sqrt(2) as the time resolution parametrization is per bar,here we need per channel
+  double timeError2 = ( amplitude.second > 0. ? sqrt(2)*timeError_.evaluate(amplitudeV2, emptyV) : -1); // sqrt(2) as the time resolution parametrization is per bar,here we need per channel
+  double positionError = 0.5f * c_LYSO_ * std::sqrt(timeError1*timeError1 + timeError2*timeError2 ); // new: time dependent
+  if ( timeError1 < 0 || timeError2 < 0) {
+    position = 0.;
+    positionError = 5.47/sqrt(12); // to be updated using topo.pitch()
+  }
 
+  std::cout << "energy = " <<  amplitude.first << ", " << amplitude.second
+	    << " time resolution = " << timeError1 << ", " << timeError2 
+	    << "   old = " << BTLRecHitsErrorEstimatorIM::positionError() << "  NEW = " << positionError <<std::endl; 
+  
   LogDebug("BTLUncalibRecHit") << "DetId: " << dataFrame.id().rawId() << " x position = " << position << " +/- "
                                << positionError;
   LogDebug("BTLUncalibRecHit") << "ADC+: set the charge to: (" << amplitude.first << ", " << amplitude.second << ")  ("

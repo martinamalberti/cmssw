@@ -27,7 +27,32 @@ public:
           << "This is an object from Endcap. Only use it for the Barrel!" << std::endl;
     }
   }
+
+  // -- Old interface
   LocalError localError() const {
+    return localError(positionError());
+  }
+
+  // -- New interface: caller provides the position resolution
+  LocalError localError(float positionError) const {
+    const float positionError2 = positionError * positionError;
+
+    const ProxyMTDTopology& topoproxy =
+        static_cast<const ProxyMTDTopology&>(det_->topology());
+    const RectangularMTDTopology& topo =
+        static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+
+    MeasurementPoint mp = topo.measurementPosition(lp_);
+    MeasurementError simpleRect(1. / 12., 0, 1. / 12.);
+    LocalError error_before = topo.localError(mp, simpleRect);
+
+    return LocalError(positionError2,
+                      error_before.xy(),
+                      error_before.yy());
+  }
+
+  /*
+    LocalError localError() const {
     /// position error, refer to:
     /// https://indico.cern.ch/event/825902/contributions/3455359/attachments/1858923/3054344/residual_calculation_0607.pdf
     const float positionError2 = std::pow(positionError(), 2);
@@ -39,6 +64,9 @@ public:
     LocalError error_modified(positionError2, error_before.xy(), error_before.yy());
     return error_modified;
   }
+  */
+  
+  // old: fxed position resolution
   static float positionError() {
     constexpr float positionError = 0.6f;
     return positionError;

@@ -200,6 +200,7 @@ void MTDThresholdClusterizer::copy_to_buffer(RecHitIterator itr, const MTDGeomet
   float time = itr->time();
   float timeError = itr->timeError();
   float position = itr->position();
+  float position_error = itr->positionError();
   float xpos = 0.f;
   // position is the longitudinal offset that should be added into local x for bars in phi geometry
   LocalPoint local_point(0, 0, 0);
@@ -215,7 +216,8 @@ void MTDThresholdClusterizer::copy_to_buffer(RecHitIterator itr, const MTDGeomet
     LocalPoint lp_pixel(position, 0, 0);
     local_point = topol.pixelToModuleLocalPoint(lp_pixel, row, col);
     BTLRecHitsErrorEstimatorIM btlError(det, local_point);
-    local_error = btlError.localError();
+    //local_error = btlError.localError(); // old default: 0.6 cm hit position error
+    local_error = btlError.localError(position_error); // old default: 0.6 cm hit position error
     xpos = local_point.x();
   } else if (mtdId.mtdSubDetector() == MTDDetId::ETL) {
     subDet = GeomDetEnumerators::endcap;
