@@ -133,7 +133,7 @@ private:
   MonitorElement* meUncTimePlusVsX_;
 
   static constexpr int nBinsQ_ = 30;
-  static constexpr float binWidthQ_ = 0.0005;  // [GeV]
+  static constexpr float binWidthQ_ = 1142.5;  // [npe]
   static constexpr int nBinsQEta_ = 3;
   static constexpr float binsQEta_[nBinsQEta_ + 1] = {0., 0.65, 1.15, 1.55};
 
@@ -601,7 +601,7 @@ void BtlLocalRecoSoAValidation::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<double>("HitMinimumEnergy", 0.001);  // [GeV]
   desc.add<bool>("optionalPlots", false);
   desc.add<bool>("BaseRecHitsPlots", false);
-  desc.add<double>("HitMinimumAmplitude", 0.001);  // [GeV]
+  desc.add<double>("HitMinimumAmplitude", 2285.);  // [npe]
 
   descriptions.add("btlLocalRecoSoAValid", desc);
 }
