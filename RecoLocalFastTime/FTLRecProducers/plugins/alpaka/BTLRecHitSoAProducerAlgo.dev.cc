@@ -92,18 +92,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
         }
         // --- If only one SiPM has good not saturated signal
-        else if (entry.flagsMinus() == 0x1 && (time1Plus == 0x3 || time1Plus == 0)) {
+        else if (entry.flagsMinus() == 0x1 && (entry.flagsPlus() == 0x3 || entry.flagsPlus() == 0)) {
           time1 = time1Minus;
           time2 = time2Minus;
           energy = ampMinus;
           flag |= (0x1 << 1);
         }
 
-        else if (entry.flagsPlus() == 0x1 && (entry.flagsMinus() == 0x3 || entry.flagsPlus() == 0)) {
+        else if (entry.flagsPlus() == 0x1 && (entry.flagsMinus() == 0x3 || entry.flagsMinus() == 0)) {
           time1 = time1Plus;
           time2 = time2Plus;
           energy = ampPlus;
-          flag |= 0x1;
+          flag |= (0x1 << 1);
         }
 
         // energy calibration
