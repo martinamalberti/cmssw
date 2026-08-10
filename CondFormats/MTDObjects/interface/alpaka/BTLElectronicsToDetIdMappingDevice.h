@@ -3,12 +3,14 @@
 
 #include "CondFormats/MTDObjects/interface/BTLElectronicsToDetIdMappingHost.h"
 #include "CondFormats/MTDObjects/interface/BTLElectronicsToDetIdMappingSoA.h"
-#include "DataFormats/Portable/interface/PortableCollection.h"
+#include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  using BTLElectronicsToDetIdDeviceCollection = PortableCollection<BTLElectronicsToDetIdSoA>;
+  using ::BTLElectronicsToDetIdMappingHost;
+  using BTLElectronicsToDetIdMappingDevice = PortableCollection<BTLElectronicsToDetIdMappingSoA>;
 }
 
+// check that the btl device collection is the same as the host collection
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(BTLElectronicsToDetIdMappingDevice, BTLElectronicsToDetIdMappingHost);
 #endif

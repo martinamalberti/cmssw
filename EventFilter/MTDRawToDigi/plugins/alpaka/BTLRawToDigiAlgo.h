@@ -8,7 +8,7 @@
 #include "DataFormats/FEDRawData/interface/RawDataBuffer.h"
 
 #include "DataFormats/FTLDigiSoA/interface/BTLDigiSoA.h"
-#include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiSoACollection.h"
+#include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "CondFormats/MTDObjects/interface/alpaka/BTLElectronicsToDetIdMappingDevice.h"
 
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
@@ -38,9 +38,9 @@ GENERATE_SOA_LAYOUT(BTLChannelPayloadSoALayout,
 		    SOA_COLUMN(uint8_t, prevTrigF),
 		    SOA_COLUMN(uint8_t, tacId),
 		    
-		    SOA_COLUMN(int32_t, fedId),
-		    SOA_COLUMN(int16_t, hsLinkId),
-		    SOA_COLUMN(int16_t, eLinkId),
+		    SOA_COLUMN(uint32_t, fedId),
+		    SOA_COLUMN(uint8_t, hsLinkId),
+		    SOA_COLUMN(uint8_t, eLinkId),
 		    
 		    // Dense key encoding (fedId, hsLinkId, eLinkId).
 		    // Used to group channels belonging to the same ASIC before pairing.
@@ -53,7 +53,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using BTLChannelPayloadDeviceCollection = PortableCollection<BTLChannelPayloadSoA>;
 }
 
-ASSERT_DEVICE_MATCHES_HOST_COLLECTION(btlraw::BTLChannelPayloadDeviceCollection, btlraw::BTLChannelPayloadHostCollection);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(BTLChannelPayloadDeviceCollection, BTLChannelPayloadHostCollection);
 // ---
 
 
@@ -63,13 +63,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class BTLRawToDigiAlgo {
   public:
 
-    BTLChannelPayloadDeviceCollection decodeChannel(Queue& queue,
+    BTLChannelPayloadDeviceCollection decodeOnly(Queue& queue,
 						    const uint64_t* rawWords_h,
 						    const int32_t* channelFedId_h,
 						    int32_t nChannels,
 						    BTLElectronicsIndexer const& indexer) const;
     
-    BTLDigiDeviceCollection process(Queue& queue,
+    btldigi::BTLDigiDeviceCollection process(Queue& queue,
 				    const uint64_t* rawWords_h,
 				    const int32_t* channelFedId_h,
 				    int32_t nChannels,

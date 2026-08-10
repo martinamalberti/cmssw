@@ -6,13 +6,16 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESProducer.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/ModuleFactory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/host.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
 #include "CondFormats/MTDObjects/interface/BTLReadoutMap.h"
 #include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
-#include "CondFormats/MTDObjects/interface/BTLElectronicsToDetIdSoA.h"
-#include "CondFormats/MTDObjects/interface/BTLChannelMaps.h"
+#include "CondFormats/MTDObjects/interface/alpaka/BTLElectronicsToDetIdMappingDevice.h"
 #include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -44,8 +47,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // -- defaults
       for (int32_t i = 0; i < indexer.size(); ++i) {
-        host.view()[i].valid() = false;
-        host.view()[i].rawId() = 0;
+        product->view()[i].valid() = false;
+        product->view()[i].rawId() = 0;
       }
 
       // -- Fill from the crystals actually present in the readout map.
@@ -58,15 +61,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                      elecIds.minus.hsLinkId() == elecIds.plus.hsLinkId() &&
         	                     elecIds.minus.eLinkId() == elecIds.plus.eLinkId();
 
-
-	// pairIdx must agree too: this is what STEP2's btlPairIdx()/
-        // btlPartnerChId() are assuming holds for every installed crystal.
-        const uint8_t chIdMinus = static_cast<uint8_t>(elecIds.minus.channelId());
-        const uint8_t chIdPlus = static_cast<uint8_t>(elecIds.plus.channelId());
-        const bool consistentPair = btlPairIdx(chIdMinus) == btlPairIdx(chIdPlus) && !btlIsPlusSide(chIdMinus) &&
-                                     btlIsPlusSide(chIdPlus) && btlPartnerChId(chIdMinus) == chIdPlus;
-
-        if (!consistentLinks || !consistentPair) {
+        if (!consistentLinks) {
           ++nSkippedInconsistent;
           edm::LogWarning("BTLElectronicsToDetIdMappingESProducer")
               << "crystal " << std::hex << detId.rawId() << std::dec << ": electronics mapping inconsistent"
@@ -74,9 +69,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           continue;
         }
 
-        const int32_t flat = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), btlPairIdx(chIdMinus));
-        host.view()[flat].rawId() = detId.rawId();
-        host.view()[flat].valid() = true;
+        //const int32_t flat = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), btlPairIdx(chIdMinus));
+	const int32_t idx = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
+	product->view()[idx].rawId() = detId.rawId();
+	product->view()[idx].valid() = true;
         ++nFilled;
       }
 
@@ -84,7 +80,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           << "filled " << nFilled << " / " << indexer.size() << " table entries, skipped " << nSkippedInconsistent
           << " inconsistent crystals.";
 
-      return host;
+      return product;
     }
 
   private:
@@ -93,4 +89,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-DEFINE_FWK_ALPAKA_EVENTSETUP_MODULE(BTLElectronicsToDetIdMappingESProducer);
+DEFINE_FWK_EVENTSETUP_ALPAKA_MODULE(BTLElectronicsToDetIdMappingESProducer);

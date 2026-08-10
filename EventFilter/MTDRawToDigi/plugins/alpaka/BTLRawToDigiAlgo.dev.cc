@@ -51,8 +51,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	//***********
 	out[i].bc0count() = static_cast<uint16_t>(extractBits(lo, hi, 118, 10));
 	out[i].status() = extractBits(lo, hi, 117, 1) != 0;
-	const int16_t hslink = static_cast<int16_t>(extractBits(lo, hi, 104, 6));
-	const int16_t elink = static_cast<int16_t>(extractBits(lo, hi, 99, 5));
+	const uint8_t hslink = static_cast<uint8_t>(extractBits(lo, hi, 104, 6));
+	const uint8_t elink = static_cast<uint8_t>(extractBits(lo, hi, 99, 5));
 	out[i].hsLinkId() = hslink;
 	out[i].eLinkId() = elink;
 	out[i].chId() = static_cast<uint8_t>(extractBits(lo, hi, 94, 5));
@@ -60,7 +60,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	out[i].t1Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 67, 15));
 	out[i].t2Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 57, 10));
 	out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(lo, hi, 47, 10));
-	out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
+out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
 	out[i].t1Fine() = static_cast<uint16_t>(extractBits(lo, hi, 27, 10));
 	out[i].t2Fine() = static_cast<uint16_t>(extractBits(lo, hi, 17, 10));
 	out[i].idleTime() = static_cast<uint16_t>(extractBits(lo, hi, 7, 10));
@@ -69,7 +69,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	
 	const int32_t fed = channelFedId[i];
 	out[i].fedId() = fed;
-	out[i].chipKey() = static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nPairs); // flatIndex DA IMPLEMENTARE
+	out[i].chipKey() = static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nPairs); // flatIndex DA CONTROLLARE
       }
     }
   };
@@ -91,7 +91,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   // chId within the (<=32-element) shared block and emits one digi.
   //---------------------------------------------------------------------
   
-  class BTLPairChannelsKernel {
+  /*
+    class BTLPairChannelsKernel {
   public:
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
 				  BTLChannelPayloadSoA::ConstView channels,
@@ -104,7 +105,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // ...
     };
   };
-
+  */
 
   //---------------------------------------------------------------------
   // BTLRawToDigiAlgo
@@ -133,7 +134,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
 
-  BTLDigiDeviceCollection BTLRawToDigiAlgo::process(Queue& queue,
+  btldigi::BTLDigiDeviceCollection BTLRawToDigiAlgo::process(Queue& queue,
 						    const uint64_t* rawWords_h,
 						    const int32_t* channelFedId_h,
 						    int32_t nChannels,

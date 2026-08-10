@@ -1,8 +1,9 @@
 #ifndef CondFormats_MTDObjects_BTLElectronicsToDetIdMappingSoA_h
 #define CondFormats_MTDObjects_BTLElectronicsToDetIdMappingSoA_h
 
-#include <cstdint>
+//#include <cstdint>
 #include <alpaka/alpaka.hpp>
+#include "DataFormats/SoATemplate/interface/SoACommon.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
 
 // -----------------------------------------------------------------------

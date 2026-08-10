@@ -1,9 +1,6 @@
-<use name="FWCore/Framework"/>
-<use name="FWCore/MessageLogger"/>
 <use name="FWCore/PluginManager"/>
 <use name="DataFormats/ForwardDetId"/>
 <use name="Geometry/MTDGeometryBuilder"/>
-<use name="CondFormats/MTDObjects"/>
 <use name="CondFormats/DataRecord"/>
 <use name="EventFilter/MTDRawToDigi"/>
 <library name="EventFilterMTDRawToDigiPlugins" file="*.cc">
@@ -13,7 +10,7 @@
 <library name="EventFilterMTDRawToDigiPluginsPortable" file="alpaka/*.cc">
   <use name="alpaka"/>
   <use name="CondFormats/MTDObjects"/>
-  <use name="DataFormats/BTLDigiSoA"/>
+  <use name="DataFormats/FTLDigiSoA"/>
   <use name="DataFormats/Portable"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/ParameterSet"/>
