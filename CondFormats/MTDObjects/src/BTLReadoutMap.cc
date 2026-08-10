@@ -98,3 +98,19 @@ void BTLReadoutMap::clear() {
   detToElec_.clear();
   elecToDet_.clear();
 }
+
+
+
+// ------------------------------------------------------------
+// Return list of detIds
+// ------------------------------------------------------------
+std::vector<BTLDetId> BTLReadoutMap::getListOfDetIds() const {
+  std::vector<BTLDetId> detIds;
+  detIds.reserve(detToElec_.size());
+
+  for (const auto& [rawDetId, elecIds] : detToElec_) {
+    detIds.emplace_back(rawDetId);
+  }
+
+  return detIds;
+}

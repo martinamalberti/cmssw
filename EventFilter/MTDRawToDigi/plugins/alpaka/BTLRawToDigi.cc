@@ -10,10 +10,11 @@
 
 #include "DataFormats/FEDRawData/interface/RawDataBuffer.h"
 #include "DataFormats/FEDRawData/interface/SLinkRocketHeaders.h"
-#include "DataFormats/FTLDigi/interface/alpaka/BTLDigiSoACollection.h"
+#include "DataFormats/FTLDigiSoA/interface/BTLDigiSoA.h"
+#include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 
-#include "EventFilter/MTDRawToDigi/interface/alpaka/BTLRawToDigiAlgo.h"
 #include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
+#include "BTLRawToDigiAlgo.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -27,7 +28,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     edm::EDGetTokenT<RawDataBuffer> rawDataBufferToken_;
-    device::ESGetToken<BTLElectronicsToDetIdDeviceCollection> elecToDetIdToken_;
+    //device::ESGetToken<BTLElectronicsToDetIdDeviceCollection> elecToDetIdToken_;
     edm::EDPutTokenT<BTLDigiDeviceCollection> digiPutToken_;
 
     BTLRawToDigiAlgo algo_;

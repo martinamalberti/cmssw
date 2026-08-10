@@ -9,3 +9,18 @@
 <library name="EventFilterMTDRawToDigiPlugins" file="*.cc">
   <flags EDM_PLUGIN="1"/>
 </library>
+<!-- alpaka-based portable plugins -->
+<library name="EventFilterMTDRawToDigiPluginsPortable" file="alpaka/*.cc">
+  <use name="alpaka"/>
+  <use name="CondFormats/MTDObjects"/>
+  <use name="DataFormats/BTLDigiSoA"/>
+  <use name="DataFormats/Portable"/>
+  <use name="FWCore/Framework"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/MessageLogger"/>
+  <use name="FWCore/Utilities"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
+  <flags ALPAKA_BACKENDS="1"/>
+  <flags EDM_PLUGIN="1"/>
+</library>

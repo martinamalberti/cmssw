@@ -1,9 +1,11 @@
 #include <alpaka/alpaka.hpp>
 
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/OneToManyAssoc.h"
 
 #include "BTLRawToDigiAlgo.h"
+
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   
@@ -40,29 +42,35 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 				  int32_t nChannels,
 				  BTLElectronicsIndexer indexer,
 				  BTLChannelPayloadSoA::View out) const {
-      
-      // !!!!!!!!!!!!!!! FIXME: Update bit positions once the final BTL payload format is frozen. !!!!!!!!!!!!!!!!!!
-      out[i].bc0count() = static_cast<uint16_t>(extractBits(118, 10));
-      out[i].status() = extractBits(117, 1) != 0;
-      const int16_t hslink = static_cast<int16_t>(extractBits(104, 6));
-      const int16_t elink = static_cast<int16_t>(extractBits(99, 5));
-      out[i].hsLinkId() = hslink;
-      out[i].eLinkId() = elink;
-      out[i].chId() = static_cast<uint8_t>(extractBits(94, 5));
-      out[i].bcCount() = static_cast<uint32_t>(extractBits(82, 12));
-      out[i].t1Coarse() = static_cast<uint16_t>(extractBits(67, 15));
-      out[i].t2Coarse() = static_cast<uint16_t>(extractBits(57, 10));
-      out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(47, 10));
-      out[i].charge() = static_cast<uint16_t>(extractBits(37, 10));
-      out[i].t1Fine() = static_cast<uint16_t>(extractBits(27, 10));
-      out[i].t2Fine() = static_cast<uint16_t>(extractBits(17, 10));
-      out[i].idleTime() = static_cast<uint16_t>(extractBits(7, 10));
-      out[i].prevTrigF() = static_cast<uint8_t>(extractBits(3, 4));
-      out[i].tacId() = static_cast<uint8_t>(extractBits(0, 3));
-      
-      const int32_t fed = channelFedId[i];
-      out[i].fedId() = fed;
-      out[i].chipKey() = static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nPairs); // flatIndex DA IMPLEMENTARE
+
+      for (int32_t i : cms::alpakatools::uniform_elements(acc, nChannels)) {
+	const uint64_t lo = rawWords[2 * i];
+        const uint64_t hi = rawWords[2 * i + 1];	 
+	//***********
+	// !!!!!!!!!!!!!!! FIXME: Update bit positions once the final BTL payload format is frozen. !!!!!!!!!!!!!!!!!!
+	//***********
+	out[i].bc0count() = static_cast<uint16_t>(extractBits(lo, hi, 118, 10));
+	out[i].status() = extractBits(lo, hi, 117, 1) != 0;
+	const int16_t hslink = static_cast<int16_t>(extractBits(lo, hi, 104, 6));
+	const int16_t elink = static_cast<int16_t>(extractBits(lo, hi, 99, 5));
+	out[i].hsLinkId() = hslink;
+	out[i].eLinkId() = elink;
+	out[i].chId() = static_cast<uint8_t>(extractBits(lo, hi, 94, 5));
+	out[i].bcCount() = static_cast<uint32_t>(extractBits(lo, hi, 82, 12));
+	out[i].t1Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 67, 15));
+	out[i].t2Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 57, 10));
+	out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(lo, hi, 47, 10));
+	out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
+	out[i].t1Fine() = static_cast<uint16_t>(extractBits(lo, hi, 27, 10));
+	out[i].t2Fine() = static_cast<uint16_t>(extractBits(lo, hi, 17, 10));
+	out[i].idleTime() = static_cast<uint16_t>(extractBits(lo, hi, 7, 10));
+	out[i].prevTrigF() = static_cast<uint8_t>(extractBits(lo, hi, 3, 4));
+	out[i].tacId() = static_cast<uint8_t>(extractBits(lo, hi, 0, 3));
+	
+	const int32_t fed = channelFedId[i];
+	out[i].fedId() = fed;
+	out[i].chipKey() = static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nPairs); // flatIndex DA IMPLEMENTARE
+      }
     }
   };
     
@@ -96,30 +104,55 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // ...
     };
   };
-    
-    
+
+
+  //---------------------------------------------------------------------
+  // BTLRawToDigiAlgo
+  //---------------------------------------------------------------------
+  BTLChannelPayloadDeviceCollection BTLRawToDigiAlgo::decodeOnly(Queue& queue,
+								 const uint64_t* rawWords_h,
+								 const int32_t* channelFedId_h,
+								 int32_t nChannels,
+								 BTLElectronicsIndexer const& indexer) const {
+
+    // Copy host --> device
+    auto rawWords_d = cms::alpakatools::make_device_buffer<uint64_t[]>(queue, 2 * std::max(nChannels, 1)); // alloca memoria su gpu
+    auto channelFedId_d = cms::alpakatools::make_device_buffer<int32_t[]>(queue, std::max(nChannels, 1));
+    if (nChannels > 0) {
+      alpaka::memcpy(queue, rawWords_d, cms::alpakatools::make_host_view(rawWords_h, 2 * nChannels));
+      alpaka::memcpy(queue, channelFedId_d, cms::alpakatools::make_host_view(channelFedId_h, nChannels));
+    }
+
+    BTLChannelPayloadDeviceCollection channelsPayload_d(std::max(nChannels, 1), queue);
+    if (nChannels > 0) {
+      auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChannels), 256u), 256u);
+      alpaka::exec<Acc1D>(queue, workDiv, BTLDecodeChannelsKernel{}, rawWords_d.data(), channelFedId_d.data(),
+			  nChannels, indexer, channelsPayload_d.view());
+    }
+    return channelsPayload_d;
+  }
+
+
   BTLDigiDeviceCollection BTLRawToDigiAlgo::process(Queue& queue,
-                                    const uint64_t* rawWords_h,
-                                    const int32_t* channelFedId_h,
-                                    int32_t nChannels,
-                                    BTLElectronicsIndexer const& indexer,
-                                    BTLElectronicsToDetIdDeviceCollection const& elecToDetId) {
+						    const uint64_t* rawWords_h,
+						    const int32_t* channelFedId_h,
+						    int32_t nChannels,
+						    BTLElectronicsIndexer const& indexer,
+						    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const {
+  {
+      
+    // launch decode for each channel
+    auto channels_d = decodeOnly(queue, rawWords_h, channelFedId_h, nChannels, indexer);
     
-    // Move the data to the device
-    
-    // launch decode
-    alpaka::exec(..., BTLDecodeChannelsKernel{}, ...);
-    
-    // launch bucket
-    alpaka::exec(..., BTLBuildChipAssocKernel{}, ...);
+    // launch bucket by chip
+    //alpaka::exec(..., BTLBuildChipAssocKernel{}, ...);
     
     // launch pairing and fill digis
-    alpaka::exec(..., BTLPairChannelsKernel{}, ...);
+    //alpaka::exec(..., BTLPairChannelsKernel{}, ...);
     
-    return digis;
+    //return digis;
   }
   
   
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif
