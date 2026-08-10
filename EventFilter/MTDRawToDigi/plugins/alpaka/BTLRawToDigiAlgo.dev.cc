@@ -60,7 +60,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	out[i].t1Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 67, 15));
 	out[i].t2Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 57, 10));
 	out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(lo, hi, 47, 10));
-out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
+	out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
 	out[i].t1Fine() = static_cast<uint16_t>(extractBits(lo, hi, 27, 10));
 	out[i].t2Fine() = static_cast<uint16_t>(extractBits(lo, hi, 17, 10));
 	out[i].idleTime() = static_cast<uint16_t>(extractBits(lo, hi, 7, 10));
@@ -88,7 +88,7 @@ out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
   // KERNEL 2: one block per occupied chip bucket. Threads 0..count-1 load
   // their channel into shared memory, then each thread checks whether it
   // is the "minus" side of its pair and, if so, looks for the partner
-  // chId within the (<=32-element) shared block and emits one digi.
+  // chId within the (<=32-element) shared block and fills one digi.
   //---------------------------------------------------------------------
   
   /*
@@ -115,7 +115,7 @@ out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
 								 const int32_t* channelFedId_h,
 								 int32_t nChannels,
 								 BTLElectronicsIndexer const& indexer) const {
-
+    
     // Copy host --> device
     auto rawWords_d = cms::alpakatools::make_device_buffer<uint64_t[]>(queue, 2 * std::max(nChannels, 1)); // alloca memoria su gpu
     auto channelFedId_d = cms::alpakatools::make_device_buffer<int32_t[]>(queue, std::max(nChannels, 1));
@@ -123,8 +123,8 @@ out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
       alpaka::memcpy(queue, rawWords_d, cms::alpakatools::make_host_view(rawWords_h, 2 * nChannels));
       alpaka::memcpy(queue, channelFedId_d, cms::alpakatools::make_host_view(channelFedId_h, nChannels));
     }
-
-    BTLChannelPayloadDeviceCollection channelsPayload_d(std::max(nChannels, 1), queue);
+    
+    BTLChannelPayloadDeviceCollection channelsPayload_d(queue, std::max(nChannels, 1));
     if (nChannels > 0) {
       auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChannels), 256u), 256u);
       alpaka::exec<Acc1D>(queue, workDiv, BTLDecodeChannelsKernel{}, rawWords_d.data(), channelFedId_d.data(),
@@ -132,16 +132,15 @@ out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
     }
     return channelsPayload_d;
   }
+  
 
-
-  btldigi::BTLDigiDeviceCollection BTLRawToDigiAlgo::process(Queue& queue,
+  BTLDigiDeviceCollection BTLRawToDigiAlgo::process(Queue& queue,
 						    const uint64_t* rawWords_h,
 						    const int32_t* channelFedId_h,
 						    int32_t nChannels,
 						    BTLElectronicsIndexer const& indexer,
 						    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const {
-  {
-      
+    
     // launch decode for each channel
     auto channels_d = decodeOnly(queue, rawWords_h, channelFedId_h, nChannels, indexer);
     
@@ -150,8 +149,12 @@ out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
     
     // launch pairing and fill digis
     //alpaka::exec(..., BTLPairChannelsKernel{}, ...);
-    
-    //return digis;
+
+
+    // temporaneo 
+    return BTLDigiDeviceCollection(queue, 0);
+
+    //return digis_d;
   }
   
   

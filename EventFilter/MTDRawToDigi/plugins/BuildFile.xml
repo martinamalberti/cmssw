@@ -10,6 +10,7 @@
 <library name="EventFilterMTDRawToDigiPluginsPortable" file="alpaka/*.cc">
   <use name="alpaka"/>
   <use name="CondFormats/MTDObjects"/>
+  <use name="DataFormats/FEDRawData"/>
   <use name="DataFormats/FTLDigiSoA"/>
   <use name="DataFormats/Portable"/>
   <use name="FWCore/Framework"/>

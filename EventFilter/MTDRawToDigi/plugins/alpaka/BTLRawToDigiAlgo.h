@@ -59,23 +59,25 @@ ASSERT_DEVICE_MATCHES_HOST_COLLECTION(BTLChannelPayloadDeviceCollection, BTLChan
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
+  using btldigi::BTLDigiDeviceCollection;
+  
   // Device pipeline only: decode -> bucket by chip -> pair -> fill digis.
   class BTLRawToDigiAlgo {
   public:
 
     BTLChannelPayloadDeviceCollection decodeOnly(Queue& queue,
-						    const uint64_t* rawWords_h,
-						    const int32_t* channelFedId_h,
-						    int32_t nChannels,
-						    BTLElectronicsIndexer const& indexer) const;
+						 const uint64_t* rawWords_h,
+						 const int32_t* channelFedId_h,
+						 int32_t nChannels,
+						 BTLElectronicsIndexer const& indexer) const;
     
-    btldigi::BTLDigiDeviceCollection process(Queue& queue,
-				    const uint64_t* rawWords_h,
-				    const int32_t* channelFedId_h,
-				    int32_t nChannels,
-				    BTLElectronicsIndexer const& indexer,
-				    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
-     };
+    BTLDigiDeviceCollection process(Queue& queue,
+					     const uint64_t* rawWords_h,
+					     const int32_t* channelFedId_h,
+					     int32_t nChannels,
+					     BTLElectronicsIndexer const& indexer,
+					     BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
+  };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

@@ -6,8 +6,8 @@
 <use name="CondFormats/MTDObjects"/>
 <use name="Geometry/MTDCommonData"/>
 <use name="Geometry/MTDGeometryBuilder"/>
+<use name="DataFormats/FEDRawData"/>
 <!--  -->
-<use name="DataFormats/Portable"/>
 <use name="DataFormats/SoATemplate"/>
 <use name="HeterogeneousCore/AlpakaCore"/>
 <use name="HeterogeneousCore/AlpakaInterface"/>
