@@ -52,7 +52,7 @@ public:
   int size() const { return detToElec_.size(); };
 
   std::vector<BTLDetId> getListOfDetIds() const;
-  
+
 private:
   // forward mapping
   std::unordered_map<uint32_t, BTLElectronicsIdPair> detToElec_;

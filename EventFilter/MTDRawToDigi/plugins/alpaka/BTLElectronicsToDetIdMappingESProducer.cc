@@ -21,7 +21,7 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   // Builds the dense electronics(fedId,hsLinkId,eLinkId,pairIdx) -> rawId
-  // Table used by BTLPairChannelsKernel (STEP2). 
+  // Table used by BTLPairChannelsKernel (STEP2).
   class BTLElectronicsToDetIdMappingESProducer : public ESProducer {
   public:
     explicit BTLElectronicsToDetIdMappingESProducer(const edm::ParameterSet& iConfig) : ESProducer(iConfig) {
@@ -54,13 +54,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // -- Fill from the crystals actually present in the readout map.
       int32_t nFilled = 0, nSkippedInconsistent = 0;
-      for (const auto& detId : readoutMap.getListOfDetIds()) {  
+      for (const auto& detId : readoutMap.getListOfDetIds()) {
         BTLElectronicsIdPair elecIds = readoutMap.getElectronicsId(detId);
 
-	// -- check consistent links
+        // -- check consistent links
         const bool consistentLinks = elecIds.minus.fedId() == elecIds.plus.fedId() &&
                                      elecIds.minus.hsLinkId() == elecIds.plus.hsLinkId() &&
-        	                     elecIds.minus.eLinkId() == elecIds.plus.eLinkId();
+                                     elecIds.minus.eLinkId() == elecIds.plus.eLinkId();
 
         if (!consistentLinks) {
           ++nSkippedInconsistent;
@@ -70,14 +70,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           continue;
         }
 
-	//std::cout << elecIds.minus.fedId() << "  " << elecIds.minus.hsLinkId()
-	//		  << "  " << elecIds.minus.eLinkId() << "  " << detId.crystal()
-	//		  << std::endl;
-	
+        //std::cout << elecIds.minus.fedId() << "  " << elecIds.minus.hsLinkId()
+        //		  << "  " << elecIds.minus.eLinkId() << "  " << detId.crystal()
+        //		  << std::endl;
+
         //const int32_t flat = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), btlPairIdx(chIdMinus));
-	const int32_t idx = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
-	product->view()[idx].rawId() = detId.rawId();
-	product->view()[idx].valid() = true;
+        const int32_t idx = indexer.flatIndex(
+            elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
+        product->view()[idx].rawId() = detId.rawId();
+        product->view()[idx].valid() = true;
         ++nFilled;
       }
 

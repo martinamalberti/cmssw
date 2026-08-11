@@ -9,7 +9,7 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using ::BTLElectronicsToDetIdMappingHost;
   using BTLElectronicsToDetIdMappingDevice = PortableCollection<BTLElectronicsToDetIdMappingSoA>;
-}
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 // check that the btl device collection is the same as the host collection
 ASSERT_DEVICE_MATCHES_HOST_COLLECTION(BTLElectronicsToDetIdMappingDevice, BTLElectronicsToDetIdMappingHost);

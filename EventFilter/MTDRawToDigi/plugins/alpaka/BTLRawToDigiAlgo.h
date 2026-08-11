@@ -13,7 +13,6 @@
 
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
-
 // ---
 // Intermediate SoA produced by the decoding kernel.
 // Each row corresponds to one 128-bit electronics channel payload.
@@ -24,27 +23,27 @@
 // See also: https://github.com/cms-sw/cmssw/blob/master/RecoLocalTracker/SiStripClusterizer/plugins/alpaka/SiStripRawToClusterAlgo.h
 
 GENERATE_SOA_LAYOUT(BTLChannelPayloadSoALayout,
-		    SOA_COLUMN(uint16_t, bc0count),
-		    SOA_COLUMN(bool, status),
-		    SOA_COLUMN(uint32_t, bcCount),
-		    SOA_COLUMN(uint8_t, chId),      // 0..31, as read from the payload
-		    SOA_COLUMN(uint16_t, t1Coarse),
-		    SOA_COLUMN(uint16_t, t2Coarse),
-		    SOA_COLUMN(uint16_t, eoiCoarse),
-		    SOA_COLUMN(uint16_t, charge),
-		    SOA_COLUMN(uint16_t, t1Fine),
-		    SOA_COLUMN(uint16_t, t2Fine),
-		    SOA_COLUMN(uint16_t, idleTime),
-		    SOA_COLUMN(uint8_t, prevTrigF),
-		    SOA_COLUMN(uint8_t, tacId),
-		    
-		    SOA_COLUMN(uint32_t, fedId),
-		    SOA_COLUMN(uint8_t, hsLinkId),
-		    SOA_COLUMN(uint8_t, eLinkId),
-		    
-		    // Dense key encoding (fedId, hsLinkId, eLinkId).
-		    // Used to group channels belonging to the same ASIC before pairing.
-		    SOA_COLUMN(uint32_t, chipKey))
+                    SOA_COLUMN(uint16_t, bc0count),
+                    SOA_COLUMN(bool, status),
+                    SOA_COLUMN(uint32_t, bcCount),
+                    SOA_COLUMN(uint8_t, chId),  // 0..31, as read from the payload
+                    SOA_COLUMN(uint16_t, t1Coarse),
+                    SOA_COLUMN(uint16_t, t2Coarse),
+                    SOA_COLUMN(uint16_t, eoiCoarse),
+                    SOA_COLUMN(uint16_t, charge),
+                    SOA_COLUMN(uint16_t, t1Fine),
+                    SOA_COLUMN(uint16_t, t2Fine),
+                    SOA_COLUMN(uint16_t, idleTime),
+                    SOA_COLUMN(uint8_t, prevTrigF),
+                    SOA_COLUMN(uint8_t, tacId),
+
+                    SOA_COLUMN(uint32_t, fedId),
+                    SOA_COLUMN(uint8_t, hsLinkId),
+                    SOA_COLUMN(uint8_t, eLinkId),
+
+                    // Dense key encoding (fedId, hsLinkId, eLinkId).
+                    // Used to group channels belonging to the same ASIC before pairing.
+                    SOA_COLUMN(uint32_t, chipKey))
 
 using BTLChannelPayloadSoA = BTLChannelPayloadSoALayout<>;
 using BTLChannelPayloadHostCollection = PortableHostCollection<BTLChannelPayloadSoA>;
@@ -56,27 +55,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 ASSERT_DEVICE_MATCHES_HOST_COLLECTION(BTLChannelPayloadDeviceCollection, BTLChannelPayloadHostCollection);
 // ---
 
-
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using btldigi::BTLDigiDeviceCollection;
-  
+
   // Device pipeline only: decode -> bucket by chip -> pair -> fill digis.
   class BTLRawToDigiAlgo {
   public:
-
     BTLChannelPayloadDeviceCollection decodeOnly(Queue& queue,
-						 const uint64_t* rawWords_h,
-						 const int32_t* channelFedId_h,
-						 int32_t nChannels,
-						 BTLElectronicsIndexer const& indexer) const;
-    
+                                                 const uint64_t* rawWords_h,
+                                                 const int32_t* channelFedId_h,
+                                                 int32_t nChannels,
+                                                 BTLElectronicsIndexer const& indexer) const;
+
     BTLDigiDeviceCollection process(Queue& queue,
-				    const uint64_t* rawWords_h,
-				    const int32_t* channelFedId_h,
-				    int32_t nChannels,
-				    BTLElectronicsIndexer const& indexer,
-				    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
+                                    const uint64_t* rawWords_h,
+                                    const int32_t* channelFedId_h,
+                                    int32_t nChannels,
+                                    BTLElectronicsIndexer const& indexer,
+                                    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

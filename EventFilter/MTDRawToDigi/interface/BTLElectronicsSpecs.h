@@ -21,9 +21,8 @@ namespace BTLElectronicsSpecs {
   static constexpr uint32_t kFirstFEDId = 0;     // arbitrary for now
 
   static constexpr uint32_t kNumberOfFEDs = 12;
-  static constexpr uint32_t kNumberOfHsLinks = 72; ///????? DIVENTERANNO 36 !!!!!!!!!!!!!!
+  static constexpr uint32_t kNumberOfHsLinks = 72;  ///????? DIVENTERANNO 36 !!!!!!!!!!!!!!
   static constexpr uint32_t kNumberOfELinks = 24;
-
 
   // ============================================================
   // TOFHIR channel ID mapping

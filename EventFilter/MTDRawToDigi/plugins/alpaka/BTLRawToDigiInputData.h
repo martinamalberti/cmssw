@@ -6,16 +6,16 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-struct BTLRawToDigiInputData {
-  BTLRawToDigiInputData() = delete;
+  struct BTLRawToDigiInputData {
+    BTLRawToDigiInputData() = delete;
 
-  explicit BTLRawToDigiInputData(const Queue& queue, size_t channelCapacity)
-      : rawWords{cms::alpakatools::make_host_buffer<uint64_t[]>(queue, 2 * channelCapacity)},
-        channelFedId{cms::alpakatools::make_host_buffer<int32_t[]>(queue, channelCapacity)} {}
+    explicit BTLRawToDigiInputData(const Queue& queue, size_t channelCapacity)
+        : rawWords{cms::alpakatools::make_host_buffer<uint64_t[]>(queue, 2 * channelCapacity)},
+          channelFedId{cms::alpakatools::make_host_buffer<int32_t[]>(queue, channelCapacity)} {}
 
-  cms::alpakatools::host_buffer<uint64_t[]> rawWords;
-  cms::alpakatools::host_buffer<int32_t[]> channelFedId;
-};
+    cms::alpakatools::host_buffer<uint64_t[]> rawWords;
+    cms::alpakatools::host_buffer<int32_t[]> channelFedId;
+  };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
