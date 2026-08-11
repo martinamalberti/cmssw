@@ -13,6 +13,17 @@
  */
 
 namespace BTLElectronicsSpecs {
+  // ============================================================
+  // DAQ constants
+  // ============================================================
+  static constexpr uint32_t kHSLinksNum = 72;    // number of HS links: in each Serenity 6 trays x 12 links
+  static constexpr uint32_t kHSLinksOffset = 4;  // offset (HS link Ids start from 4 (0-3 reserved)
+  static constexpr uint32_t kFirstFEDId = 0;     // arbitrary for now
+
+  static constexpr uint32_t kNumberOfFEDs = 12;
+  static constexpr uint32_t kNumberOfHsLinks = 72; ///????? DIVENTERANNO 36 !!!!!!!!!!!!!!
+  static constexpr uint32_t kNumberOfELinks = 24;
+
 
   // ============================================================
   // TOFHIR channel ID mapping
@@ -85,17 +96,6 @@ namespace BTLElectronicsSpecs {
       1, 3, 5, 0, 2, 4, 6, 8, 10, 7, 9, 11};  // 12 = 6 RUs x 2 LPGBTs
   static constexpr std::array<int, 2 * BTLDetId::kRUPerRod> optTxCh_common = {
       11, 9, 7, 10, 8, 6, 4, 2, 0, 5, 3, 1};  // 12 = 6 RUs x 2 LPGBTs
-
-  // ============================================================
-  // DAQ constants
-  // ============================================================
-  static constexpr uint32_t kHSLinksNum = 72;    // number of HS links: in each Serenity 6 trays x 12 links
-  static constexpr uint32_t kHSLinksOffset = 4;  // offset (HS link Ids start from 4 (0-3 reserved)
-  static constexpr uint32_t kFirstFEDId = 0;     // arbitrary for now
-
-  static constexpr uint32_t kNumberOfFEDs = 12;
-  static constexpr uint32_t kNumberOfHsLinks = 36; ///????? TBC                                    
-  static constexpr uint32_t kNumberOfELinks = 24;
 
   static constexpr auto OptTx_map = []() {
     std::array<int, kHSLinksNum + kHSLinksOffset> tmp;

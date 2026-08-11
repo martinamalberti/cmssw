@@ -69,7 +69,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	
 	const int32_t fed = channelFedId[i];
 	out[i].fedId() = fed;
-	out[i].chipKey() = static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nPairs); // flatIndex DA CONTROLLARE
+	out[i].chipKey() = static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nPairs); 
+
+	// TEMPORARY PRINT JUST FOR DEBUGGING
+	/*
+	  printf("KERNEL i=%d fed=%u hs=%u elink=%u ch=%u chipKey=%u (0x%08x)\n",
+	       i,
+	       static_cast<unsigned>(out[i].fedId()),
+	       static_cast<unsigned>(out[i].hsLinkId()),
+	       static_cast<unsigned>(out[i].eLinkId()),
+	       static_cast<unsigned>(out[i].chId()),
+	       static_cast<unsigned>(out[i].chipKey()),
+	       static_cast<unsigned>(out[i].chipKey())
+	       );
+	*/
+
       }
     }
   };
@@ -142,15 +156,34 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const {
     
     // launch decode for each channel
-    auto channels_d = decodeOnly(queue, rawWords_h, channelFedId_h, nChannels, indexer);
+    auto channelsPayload_d = decodeOnly(queue, rawWords_h, channelFedId_h, nChannels, indexer);
     
+    // TEMPORARY PRINT JUST FOR DEBUGGING and compare to kernel1                                                                 
+    /*
+      BTLChannelPayloadHostCollection channelsPayload_h( std::max(nChannels, 1 ));
+      alpaka::memcpy(queue, channelsPayload_h.buffer(), channelsPayload_d.buffer());
+      alpaka::wait(queue);
+      auto soa = channelsPayload_h.view();   
+      
+      for (int i = 0; i < nChannels; ++i) {
+      std::cout << "i = " << i
+      << " fedId = " << soa.fedId()[i]
+      << " hsLinkId = " << static_cast<int>(soa.hsLinkId()[i])
+      << " eLinkId = " << static_cast<int>(soa.eLinkId()[i])
+      << " chId = " << static_cast<int>(soa.chId()[i])
+      << " chipKey = " << soa.chipKey()[i]
+      << std::endl;
+      }
+    */
+    
+ 
     // launch bucket by chip
     //alpaka::exec(..., BTLBuildChipAssocKernel{}, ...);
     
     // launch pairing and fill digis
     //alpaka::exec(..., BTLPairChannelsKernel{}, ...);
 
-
+    
     // temporaneo 
     return BTLDigiDeviceCollection(queue, 0);
 

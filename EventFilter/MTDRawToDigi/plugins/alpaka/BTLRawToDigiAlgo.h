@@ -72,11 +72,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						 BTLElectronicsIndexer const& indexer) const;
     
     BTLDigiDeviceCollection process(Queue& queue,
-					     const uint64_t* rawWords_h,
-					     const int32_t* channelFedId_h,
-					     int32_t nChannels,
-					     BTLElectronicsIndexer const& indexer,
-					     BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
+				    const uint64_t* rawWords_h,
+				    const int32_t* channelFedId_h,
+				    int32_t nChannels,
+				    BTLElectronicsIndexer const& indexer,
+				    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

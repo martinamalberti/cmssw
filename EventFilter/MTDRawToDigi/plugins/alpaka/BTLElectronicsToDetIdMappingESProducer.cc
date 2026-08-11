@@ -39,6 +39,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       BTLElectronicsIndexer indexer;
       indexer.firstFedId = BTLElectronicsSpecs::kFirstFEDId;
+      indexer.hsLinkOffset = BTLElectronicsSpecs::kHSLinksOffset;
       indexer.nFeds = BTLElectronicsSpecs::kNumberOfFEDs;
       indexer.nHsLinks = BTLElectronicsSpecs::kNumberOfHsLinks;  // check real name
       indexer.nELinks = BTLElectronicsSpecs::kNumberOfELinks;    // check real name
@@ -69,6 +70,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           continue;
         }
 
+	//std::cout << elecIds.minus.fedId() << "  " << elecIds.minus.hsLinkId()
+	//		  << "  " << elecIds.minus.eLinkId() << "  " << detId.crystal()
+	//		  << std::endl;
+	
         //const int32_t flat = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), btlPairIdx(chIdMinus));
 	const int32_t idx = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
 	product->view()[idx].rawId() = detId.rawId();

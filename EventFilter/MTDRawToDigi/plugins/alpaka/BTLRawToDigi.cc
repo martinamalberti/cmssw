@@ -11,7 +11,7 @@
 #include "DataFormats/FEDRawData/interface/RawDataBuffer.h"
 #include "DataFormats/FEDRawData/interface/SLinkRocketHeaders.h"
 
-#include "DataFormats/FTLDigiSoA/interface/BTLDigiSoA.h"
+#include "DataFormats/FTLDigiSoA/interface/BTLDigiHostCollection.h"
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
 #include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
@@ -21,9 +21,10 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
+  using ::btldigi::BTLDigiHostCollection;
   using btldigi::BTLDigiDeviceCollection;
-
-  class BTLRawToDigi : public stream::EDProducer<> {
+  
+  class BTLRawToDigi : public stream::EDProducer<> { // stream::EDProdicer vedi: https://twiki.cern.ch/twiki/bin/view/CMSPublic/FWMultithreadedFrameworkModuleTypes?utm_source=chatgpt.com#Comparing_Stream_and_Global_Modu
   public:
     explicit BTLRawToDigi(const edm::ParameterSet& iConfig);
     ~BTLRawToDigi() override = default;
@@ -33,17 +34,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     edm::EDGetTokenT<RawDataBuffer> rawDataBufferToken_;
+    //edm::EDPutTokenT<btldigi::BTLDigiDeviceCollection> digiPutToken_;
+    edm::EDPutTokenT<BTLDigiHostCollection> digiPutToken_; // BTLBaseRecHitSoAProducer consuma una BTLDigiHostCollection
     device::ESGetToken<BTLElectronicsToDetIdMappingDevice, BTLReadoutMapRcd> elecToDetIdToken_;
-    edm::EDPutTokenT<BTLDigiDeviceCollection> digiPutToken_;
     
     BTLRawToDigiAlgo algo_;
     BTLElectronicsIndexer indexer_;
     
     // reused across events - member state is fine in stream::EDProducer
     // (one instance per stream, not shared across streams)
-    int32_t channelCapacity_ = 0; ///??????????????????????
-    //cms::alpakatools::host_buffer<uint64_t[]> rawWords_h_;
-    //cms::alpakatools::host_buffer<int32_t[]> channelFedId_h_;
+    int32_t channelCapacity_ = 0;
     std::unique_ptr<BTLRawToDigiInputData> inputDataHost_;
     
     static constexpr int kWordsPerChannel = 2;
@@ -55,8 +55,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   BTLRawToDigi::BTLRawToDigi(const edm::ParameterSet& iConfig)
     : EDProducer(iConfig),
       rawDataBufferToken_(consumes<RawDataBuffer>(iConfig.getParameter<edm::InputTag>("rawDataBufferTag"))),
+      digiPutToken_(produces()),
       elecToDetIdToken_(esConsumes()) {
     indexer_.firstFedId = BTLElectronicsSpecs::kFirstFEDId;
+    indexer_.hsLinkOffset = BTLElectronicsSpecs::kHSLinksOffset;
     indexer_.nFeds = BTLElectronicsSpecs::kNumberOfFEDs;
     indexer_.nHsLinks = BTLElectronicsSpecs::kNumberOfHsLinks;
     indexer_.nELinks = BTLElectronicsSpecs::kNumberOfELinks;
@@ -86,8 +88,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     if (nChannels > channelCapacity_) {
       channelCapacity_ = nChannels + nChannels / 4;  // headroom, avoid re-growing every event (+25% arbitrary)
       inputDataHost_ = std::make_unique<BTLRawToDigiInputData>(queue, channelCapacity_);
-      //rawWords_h_ = cms::alpakatools::make_host_buffer<uint64_t[]>(queue, 2 * channelCapacity_);
-      //channelFedId_h_ = cms::alpakatools::make_host_buffer<int32_t[]>(queue, channelCapacity_);
     }
     
 
@@ -102,7 +102,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	continue;
       const auto payload = fedData.payload(kHeaderSize, kTrailerSize);
       const std::size_t payloadBytes = fedData.size() - kHeaderSize - kTrailerSize;
-      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset, payload.data() + kHeaderSize, payloadBytes); // copia payloadBytes da fedData (skippando l'header), dentro rawWords_h_, con un offset 2 * channelOffset che corrisponde a 2 x numero di canali gia' copiati: rawWords_h_.data() + 2 * channelOffset e' un puntatore alla posizione di destinazione in rawWords_h_. Il fattore 2 serve perche' ogni canale sono 128 bit, quindi occupa 2 unit64. 
+
+      if (payloadBytes % kChannelBytes != 0) {
+	throw cms::Exception("BTLRawToDigi")
+	  << "FED " << fed
+	  << ": payload size is not aligned to channel size. "
+	  << "payloadBytes = " << payloadBytes
+	  << ", kChannelBytes = " << kChannelBytes
+	  << ", remainder = " << payloadBytes % kChannelBytes;
+      }
+      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset, payload.data(), payloadBytes); // copia payloadBytes da fedData (dopo aver tolto header e trailer) in rawWords_h_, con un offset kWordsPerChannel * offset che corrisponde a 2 x numero di canali gia' copiati: rawWords_h_.data() + 2 * channelOffset e' un puntatore alla posizione di destinazione in rawWords_h_. Il fattore 2 serve perche' ogni canale sono 128 bit, quindi occupa 2 unit64. 
       const int32_t nChInFed = static_cast<int32_t>(payloadBytes / kChannelBytes);
       std::fill(inputDataHost_->channelFedId.data() + offset, inputDataHost_->channelFedId.data() + offset + nChInFed, fed);
       offset += nChInFed;
@@ -110,17 +119,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 
     // --- hand off to the device algo
-    //    auto digis = algo_.process(queue, rawWords_h_.data(), channelFedId_h_.data(), nChannels, indexer_, elecToDetId); // nCHannels serve per delimitare la parte valida del buffer.
-    auto digis = algo_.process(queue, inputDataHost_->rawWords.data(), inputDataHost_->channelFedId.data(), nChannels, indexer_, elecToDetId); // nCHannels serve per delimitare la parte valida del buffer.
+    auto digis_d = algo_.process(queue, inputDataHost_->rawWords.data(), inputDataHost_->channelFedId.data(), nChannels, indexer_, elecToDetId); // nCHannels serve per delimitare la parte valida del buffer.
+
+    // Device -> Host
+    BTLDigiHostCollection digis_h(digis_d.size());
+
+    alpaka::memcpy(queue, digis_h.buffer(), digis_d.buffer());
+
+    alpaka::wait(queue);    
     
-    iEvent.emplace(digiPutToken_, std::move(digis));
+    iEvent.emplace(digiPutToken_, std::move(digis_h));
     
   }
   
   void BTLRawToDigi::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
-    desc.add<edm::InputTag>("rawDataBufferTag", edm::InputTag("rawDataBufferTag")); // ???
+    desc.add<edm::InputTag>("rawDataBufferTag", edm::InputTag("btlRaw")); // ???
     descriptions.addWithDefaultLabel(desc);
+
   }
   
   
