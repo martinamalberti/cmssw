@@ -10,7 +10,11 @@
 // Dense electronics -> crystal rawId lookup
 // Flat array used by BTL unpacker on GPU to go from (fedId, hsLinkId, eLinkId, channel id) to the crystal's BTLDetId::rawId().
 // -----------------------------------------------------------------------
-GENERATE_SOA_LAYOUT(BTLElectronicsToDetIdMappingSoALayout, SOA_COLUMN(uint32_t, rawId), SOA_COLUMN(bool, valid))
+GENERATE_SOA_LAYOUT(BTLElectronicsToDetIdMappingSoALayout,
+		    SOA_COLUMN(uint32_t, rawId),
+		    SOA_COLUMN(bool, valid),
+		    SOA_COLUMN(uint8_t, minusChannelId),
+                    SOA_COLUMN(uint8_t, plusChannelId))
 
 using BTLElectronicsToDetIdMappingSoA = BTLElectronicsToDetIdMappingSoALayout<>;
 

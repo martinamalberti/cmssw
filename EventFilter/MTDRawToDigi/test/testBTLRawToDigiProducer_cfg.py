@@ -14,7 +14,7 @@ process.load('Configuration.StandardSequences.MagneticField_cff')
 
 process.load('Geometry.MTDCommonData.GeometryDD4hepExtendedRun4MTDDefaultReco_cff')
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(3))
 
 process.source = cms.Source("PoolSource",
                             #fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_20_0_0_pre1/mywork/34434.0_TTbar_14TeV+Run4D121/step2.root")

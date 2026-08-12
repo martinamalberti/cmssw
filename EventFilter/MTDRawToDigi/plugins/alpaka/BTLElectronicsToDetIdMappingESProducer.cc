@@ -50,6 +50,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       for (int32_t i = 0; i < indexer.size(); ++i) {
         product->view()[i].valid() = false;
         product->view()[i].rawId() = 0;
+	product->view()[i].minusChannelId() = 0;
+	product->view()[i].plusChannelId() = 0;
       }
 
       // -- Fill from the crystals actually present in the readout map.
@@ -65,20 +67,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (!consistentLinks) {
           ++nSkippedInconsistent;
           edm::LogWarning("BTLElectronicsToDetIdMappingESProducer")
-              << "crystal " << std::hex << detId.rawId() << std::dec << ": electronics mapping inconsistent"
-              << " (minus/plus fed/hs/e-link or pair index mismatch) - excluded from device lookup table.";
+	    << "crystal " << std::hex << detId.rawId() << std::dec << ": electronics mapping inconsistent"
+	    << " (minus/plus fed/hs/e-link or pair index mismatch) - excluded from device lookup table.";
           continue;
         }
 
-        //std::cout << elecIds.minus.fedId() << "  " << elecIds.minus.hsLinkId()
-        //		  << "  " << elecIds.minus.eLinkId() << "  " << detId.crystal()
-        //		  << std::endl;
-
-        //const int32_t flat = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), btlPairIdx(chIdMinus));
-        const int32_t idx = indexer.flatIndex(
-            elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
+        const int32_t idx = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
         product->view()[idx].rawId() = detId.rawId();
         product->view()[idx].valid() = true;
+        product->view()[idx].minusChannelId() =  static_cast<uint8_t>(elecIds.minus.channelId());
+        product->view()[idx].plusChannelId() =  static_cast<uint8_t>(elecIds.plus.channelId());
         ++nFilled;
       }
 

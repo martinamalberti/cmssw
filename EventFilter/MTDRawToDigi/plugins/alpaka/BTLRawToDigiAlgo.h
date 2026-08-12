@@ -7,13 +7,12 @@
 
 #include "DataFormats/FEDRawData/interface/RawDataBuffer.h"
 
-#include "DataFormats/FTLDigiSoA/interface/BTLDigiSoA.h"
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "CondFormats/MTDObjects/interface/alpaka/BTLElectronicsToDetIdMappingDevice.h"
 
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
-// ---
+// ----------------------------------------------------------------
 // Intermediate SoA produced by the decoding kernel.
 // Each row corresponds to one 128-bit electronics channel payload.
 // This is not yet a BTLDigi: two channel payloads belonging to the
@@ -53,13 +52,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 }
 
 ASSERT_DEVICE_MATCHES_HOST_COLLECTION(BTLChannelPayloadDeviceCollection, BTLChannelPayloadHostCollection);
-// ---
+// ----------------------------------------------------------------
 
+
+// ----------------------------------------------------------------
+// *** Device pipeline: decode -> bucket by chip -> pair -> fill digis.   
+//
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using btldigi::BTLDigiDeviceCollection;
 
-  // Device pipeline only: decode -> bucket by chip -> pair -> fill digis.
+  // Dense per-chip/per-channel lookup: channelIndexByChip[chip * kChannelsPerChip + chId] holds the row
+  // index (into BTLChannelPayloadSoA) of that channel, or -1 if that channel wasn't present in this event (sentinel).
+  static constexpr int32_t kChannelsPerChip = 32;
+
+  using BTLChannelIndexTable = cms::alpakatools::device_buffer<Device, int32_t[]>;
+
+  //struct BTLChannelIndexTable {
+  //  cms::alpakatools::device_buffer<Device, int32_t[]> channelIndexByChip;  // size nChips*kChannelsPerChip
+  //  int32_t nChips = 0;
+  //};
+  
+
   class BTLRawToDigiAlgo {
   public:
     BTLChannelPayloadDeviceCollection decodeOnly(Queue& queue,
@@ -68,12 +82,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                  int32_t nChannels,
                                                  BTLElectronicsIndexer const& indexer) const;
 
+    BTLChannelIndexTable buildChannelIndexTable(Queue& queue,
+						BTLChannelPayloadDeviceCollection const& channelPayload_d,
+						BTLElectronicsIndexer const& indexer) const;
+    
+    BTLDigiDeviceCollection pairChannels(Queue& queue,
+					 BTLChannelPayloadDeviceCollection const& channelsPayload_d,
+					 BTLChannelIndexTable const& table,
+					 BTLElectronicsIndexer const& indexer,
+					 BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
+    
     BTLDigiDeviceCollection process(Queue& queue,
                                     const uint64_t* rawWords_h,
                                     const int32_t* channelFedId_h,
                                     int32_t nChannels,
                                     BTLElectronicsIndexer const& indexer,
                                     BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
+												
+  private:
+    void debugChannelIndexTable(Queue& queue,
+				BTLChannelIndexTable const& table,
+				BTLChannelPayloadDeviceCollection const& channelsPayload_d,
+				BTLElectronicsIndexer const& indexer) const;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
