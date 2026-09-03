@@ -321,6 +321,7 @@ def ageMTD(process,lumi):
         if hasattr(process,'mtdUncalibratedRecHits') and hasattr(process.mtdUncalibratedRecHits,'barrel'):
             process.mtdUncalibratedRecHits.barrel.npePerMeV = cms.double(mtd_parameters[lumi]["light_output"])
             process.mtdUncalibratedRecHits.barrel.npeToADC = cms.vdouble(mtd_parameters[lumi]["pulse_q"])
+            process.mtdUncalibratedRecHits.barrel.npeSaturationCorrection = cms.vdouble(mtd_parameters[lumi]["sipm_saturation"])
             process.mtdUncalibratedRecHits.barrel.timeResolutionInNs = cms.string(mtd_parameters[lumi]["hit_time_res"])
             process.mtdUncalibratedRecHits.barrel.timeWalkCorrection = cms.string(mtd_parameters[lumi]["time_walk_corr"])
 
