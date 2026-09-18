@@ -9,8 +9,10 @@
 
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "CondFormats/MTDObjects/interface/alpaka/BTLElectronicsToDetIdMappingDevice.h"
-
+#include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+
+#include <optional>
 
 // ----------------------------------------------------------------
 // Intermediate SoA produced by the decoding kernel.
@@ -56,54 +58,51 @@ ASSERT_DEVICE_MATCHES_HOST_COLLECTION(BTLChannelPayloadDeviceCollection, BTLChan
 
 
 // ----------------------------------------------------------------
-// *** Device pipeline: decode -> bucket by chip -> pair -> fill digis.   
+// *** Device pipeline: decode per channel -> find segments corresponding to chip boundaries -> for each active chip: pairing and fill digis.   
 //
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using btldigi::BTLDigiDeviceCollection;
 
-  // Dense per-chip/per-channel lookup: channelIndexByChip[chip * kChannelsPerChip + chId] holds the row
-  // index (into BTLChannelPayloadSoA) of that channel, or -1 if that channel wasn't present in this event (sentinel).
   static constexpr int32_t kChannelsPerChip = 32;
-
-  using BTLChannelIndexTable = cms::alpakatools::device_buffer<Device, int32_t[]>;
-
-  //struct BTLChannelIndexTable {
-  //  cms::alpakatools::device_buffer<Device, int32_t[]> channelIndexByChip;  // size nChips*kChannelsPerChip
-  //  int32_t nChips = 0;
-  //};
   
-
+  struct BTLChipSegments {
+    int32_t* segmentStart = nullptr; // segmentStart[k]/[k+1] define the segment k 
+    int32_t* nSegments = nullptr; // numerber of segments found in the event
+  };
+  
   class BTLRawToDigiAlgo {
   public:
     BTLChannelPayloadDeviceCollection decodeOnly(Queue& queue,
                                                  const uint64_t* rawWords_h,
                                                  const int32_t* channelFedId_h,
                                                  int32_t nChannels,
-                                                 BTLElectronicsIndexer const& indexer) const;
-
-    BTLChannelIndexTable buildChannelIndexTable(Queue& queue,
-						BTLChannelPayloadDeviceCollection const& channelPayload_d,
-						BTLElectronicsIndexer const& indexer) const;
+                                                 BTLElectronicsIndexer const& indexer);
     
-    BTLDigiDeviceCollection pairChannels(Queue& queue,
-					 BTLChannelPayloadDeviceCollection const& channelsPayload_d,
-					 BTLChannelIndexTable const& table,
-					 BTLElectronicsIndexer const& indexer,
-					 BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
+    BTLChipSegments findChipSegments(Queue& queue,
+				     BTLChannelPayloadDeviceCollection const& channelPayload_d,
+				     BTLElectronicsIndexer const& indexer);
+
+
+    void countDigis(Queue& queue,
+		    BTLChannelPayloadDeviceCollection const& channelPayload_d,
+		    BTLChipSegments const& segments,
+		    int32_t nChips);
+
     
     BTLDigiDeviceCollection process(Queue& queue,
                                     const uint64_t* rawWords_h,
                                     const int32_t* channelFedId_h,
                                     int32_t nChannels,
                                     BTLElectronicsIndexer const& indexer,
-                                    BTLElectronicsToDetIdMappingDevice const& elecToDetId) const;
-												
+                                    BTLElectronicsToDetIdMappingDevice const& elecToDetId);
+    
   private:
-    void debugChannelIndexTable(Queue& queue,
-				BTLChannelIndexTable const& table,
-				BTLChannelPayloadDeviceCollection const& channelsPayload_d,
-				BTLElectronicsIndexer const& indexer) const;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_; // Not sure about usage of std::optional
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> nSegments_;
+
+    // Number of digis produced by each segment.
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> digiCount_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
