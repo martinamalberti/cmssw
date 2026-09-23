@@ -175,28 +175,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	  if (partnerRow >= 0) {
 	    // Complete pair: count it only from the plus side.
 	    if (m.side() == kPlusSide) {
-	      pairPlusLocalIndex[base + nDigis] = i; // i = local index of this channel
+	      pairPlusLocalIndex[base + nDigis] = i; // i = global index of this channel
 	      pairMinusLocalIndex[base + nDigis] = partnerRow;
 	      ++nDigis;
-	    } else {
-	      // Single-side digi.
-	      if (m.side() == kPlusSide) {
-		pairPlusLocalIndex[base + nDigis] = i;
-		pairMinusLocalIndex[base + nDigis] = -1;
-	      } else {
-		pairPlusLocalIndex[base + nDigis] = -1;
-		pairMinusLocalIndex[base + nDigis] = i;
-	      }
-	      ++nDigis;
 	    }
+	  } else {
+	    // Single-side digi.
+	    if (m.side() == kPlusSide) {
+	      pairPlusLocalIndex[base + nDigis] = i;
+	      pairMinusLocalIndex[base + nDigis] = -1;
+	    } else {
+	      pairPlusLocalIndex[base + nDigis] = -1;
+	      pairMinusLocalIndex[base + nDigis] = i;
+	    }
+	    ++nDigis;
 	  }
-
-	  digiCountPerSegment[segment] = nDigis;
 	}
+
+	digiCountPerSegment[segment] = nDigis;
       }
     }
   };
-    
+
+
   
   //---------------------------------------------------------------------
   // KERNEL 2b: fill digis (one thread per digi)    
@@ -293,7 +294,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips)); // nActiveChips from host
       pairPlusLocalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips * BTLElectronicsIndexer::nPairsPerChip));
       pairMinusLocalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips * BTLElectronicsIndexer::nPairsPerChip));
-      digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips));
       segmentDigiOffset_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips + 1));
       totalDigis_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, 1));
       digiCountCapacity_ = nActiveChips;
@@ -356,7 +356,32 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // -- STEP1.5: find segments corresponding to each active chip
     auto chipSegments_d = findChipSegments(queue, channelsPayload_d, indexer); 
 
+    // -- DEBUG findChipSegments
+    auto nSegments_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, 1);
+    alpaka::memcpy(queue, nSegments_h, *nSegments_d_);
+    alpaka::wait(queue);
+    const int32_t nActiveChips = nSegments_h[0];
 
+    std::cout << "Number of active chips = " << nActiveChips << std::endl;
+
+    const int32_t nChips = indexer.nFeds * indexer.nHsLinks * indexer.nELinks;
+    auto segmentStart_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nChips + 1);// alloco con lunghezza nChips
+    alpaka::memcpy(queue, segmentStart_h, *segmentStart_d_);
+    alpaka::wait(queue);
+
+    std::cout << "Debugging findChipSegments..." <<std::endl; 
+    
+    for (int32_t s = 0; s < nActiveChips; ++s) { // solo gli elementi corrispondenti al numero di segmenti (chip attivi)
+      std::cout << "segment " << s
+		<< " : [" << segmentStart_h[s]
+		<< ", " << segmentStart_h[s + 1]
+		<< ")"
+		<< " size=" << segmentStart_h[s + 1] - segmentStart_h[s]
+		<< '\n';
+    }
+
+    std::cout << "Number of active chips = " << nActiveChips << std::endl;
+    
  
     // STEP 2a: count digis
     //
@@ -371,35 +396,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     
     //const int32_t nChips = indexer.nFeds * indexer.nHsLinks * indexer.nELinks;
     //countDigis(queue, channelsPayload_d, chipSegments_d, nChips); // qui uso nChips. Another possibility is to copy chipSegments_d from device to host and use the host-side nSegments
-
-    auto nSegments_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, 1);
-    alpaka::memcpy(queue, nSegments_h, *nSegments_d_);
-
-    alpaka::wait(queue);
-    
-    const int32_t nActiveChips = nSegments_h[0];
-    
     countDigis(queue, channelsPayload_d, chipSegments_d, elecToDetIdMapping, indexer, nActiveChips);
 
-    std::cout << "Number of active chips = " << nActiveChips << std::endl;
     
-    // -- DEBUG STEP2a: copy to host and print
+    // -- DEBUG pair and count digis  
     auto digiCount_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nActiveChips);
-   
     alpaka::memcpy(queue, digiCount_h, *digiCountPerSegment_);
     alpaka::wait(queue);
-
-    int32_t nDigisTot = 0;
     
-    for (int32_t segment = 0; segment < nActiveChips; ++segment) {
-      if (digiCount_h[segment] == 0)
-	continue;
-
-      nDigisTot+= digiCount_h[segment];
-      std::cout << "segment " << segment
-		<< " digiCount=" << digiCount_h[segment]
-		<< '\n';
+    int32_t nDigisTot = 0;
+    for (int32_t s = 0; s < nActiveChips; ++s) {
+      std::cout << "segment " << s
+		<< "  number of digis in this segment : " << digiCount_h[s]
+		<<std::endl;
+      
+      nDigisTot+=digiCount_h[s];
     }
+
+
     
     
     // STEP2b: pair and fill digis
@@ -410,7 +424,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     //auto digis_d = pairChannels(queue, channelsPayload_d, table, indexer, elecToDetId);
     BTLDigiDeviceCollection digis_d{queue, nDigisTot}; /// temp
     return digis_d;
-
+    
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

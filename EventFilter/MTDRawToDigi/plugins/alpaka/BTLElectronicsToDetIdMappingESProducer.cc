@@ -41,8 +41,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       indexer.firstFedId = BTLElectronicsSpecs::kFirstFEDId;
       indexer.hsLinkOffset = BTLElectronicsSpecs::kHSLinksOffset;
       indexer.nFeds = BTLElectronicsSpecs::kNumberOfFEDs;
-      indexer.nHsLinks = BTLElectronicsSpecs::kNumberOfHsLinks;  // check real name
-      indexer.nELinks = BTLElectronicsSpecs::kNumberOfELinks;    // check real name
+      indexer.nHsLinks = BTLElectronicsSpecs::kNumberOfHsLinks;  //
+      indexer.nELinks = BTLElectronicsSpecs::kNumberOfELinks;    
 
       auto product = std::make_unique<BTLElectronicsToDetIdMappingHost>(cms::alpakatools::host(), indexer.size());
 
