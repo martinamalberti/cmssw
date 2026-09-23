@@ -13,8 +13,11 @@
 GENERATE_SOA_LAYOUT(BTLElectronicsToDetIdMappingSoALayout,
 		    SOA_COLUMN(uint32_t, rawId),
 		    SOA_COLUMN(bool, valid),
-		    SOA_COLUMN(uint8_t, minusChannelId),
-                    SOA_COLUMN(uint8_t, plusChannelId))
+		    SOA_COLUMN(uint8_t, partnerChannelId),
+		    SOA_COLUMN(int8_t, side),
+		    SOA_COLUMN(int8_t, pairId))
+		    //SOA_COLUMN(uint8_t, minusChannelId),
+                    //OA_COLUMN(uint8_t, plusxxsChannelId))
 
 using BTLElectronicsToDetIdMappingSoA = BTLElectronicsToDetIdMappingSoALayout<>;
 
@@ -26,14 +29,19 @@ struct BTLElectronicsIndexer {
   int32_t nFeds;
   int32_t nHsLinks;
   int32_t nELinks;
-  static constexpr int32_t nPairs = 16;  // canali o coppie ?????
-
-  ALPAKA_FN_ACC inline int32_t flatIndex(int32_t fedId, int32_t hs, int32_t el, int32_t pairIdx) const {
+  //  static constexpr int32_t nPairs = 16;  // canali o coppie ?????
+  static constexpr int32_t nChannelsPerChip = 32;  // number of channels in one chip 
+  static constexpr int32_t nPairsPerChip = 16;  // max number of pairs within one chip
+  
+  //ALPAKA_FN_ACC inline int32_t flatIndex(int32_t fedId, int32_t hs, int32_t el, int32_t pairIdx) const {
+  ALPAKA_FN_ACC inline int32_t flatIndex(int32_t fedId, int32_t hs, int32_t el, int32_t channel) const {
     int32_t f = fedId - firstFedId;
     int32_t h = hs - hsLinkOffset;
-    return ((f * nHsLinks + h) * nELinks + el) * nPairs + pairIdx;
+    return ((f * nHsLinks + h) * nELinks + el) * nChannelsPerChip + channel;
+    //return ((f * nHsLinks + h) * nELinks + el) * nPairs + pairIdx;
   }
-  inline int32_t size() const { return nFeds * nHsLinks * nELinks * nPairs; }
+  //inline int32_t size() const { return nFeds * nHsLinks * nELinks * nPairs; }
+  inline int32_t size() const { return nFeds * nHsLinks * nELinks * nChannelsPerChip; }
 };
 
 #endif

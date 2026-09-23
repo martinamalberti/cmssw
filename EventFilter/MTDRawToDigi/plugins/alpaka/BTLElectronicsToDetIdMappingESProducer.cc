@@ -50,8 +50,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       for (int32_t i = 0; i < indexer.size(); ++i) {
         product->view()[i].valid() = false;
         product->view()[i].rawId() = 0;
-	product->view()[i].minusChannelId() = 0;
-	product->view()[i].plusChannelId() = 0;
+	product->view()[i].partnerChannelId() = 0;
+	product->view()[i].side() = 0;
+	product->view()[i].pairId() = 0;
+	//product->view()[i].minusChannelId() = 0;
+	//product->view()[i].plusChannelId() = 0;
       }
 
       // -- Fill from the crystals actually present in the readout map.
@@ -72,12 +75,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           continue;
         }
 
-        const int32_t idx = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
-        product->view()[idx].rawId() = detId.rawId();
-        product->view()[idx].valid() = true;
-        product->view()[idx].minusChannelId() =  static_cast<uint8_t>(elecIds.minus.channelId());
-        product->view()[idx].plusChannelId() =  static_cast<uint8_t>(elecIds.plus.channelId());
-        ++nFilled;
+
+	//const int32_t idx = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), detId.crystal());
+        //product->view()[idx].rawId() = detId.rawId();
+        //product->view()[idx].valid() = true;
+        //product->view()[idx].minusChannelId() =  static_cast<uint8_t>(elecIds.minus.channelId());
+        //product->view()[idx].plusChannelId() =  static_cast<uint8_t>(elecIds.plus.channelId());
+	
+	const int32_t idxplus = indexer.flatIndex(elecIds.plus.fedId(), elecIds.plus.hsLinkId(), elecIds.plus.eLinkId(), elecIds.plus.channelId());
+	product->view()[idxplus].rawId() = detId.rawId();
+        product->view()[idxplus].valid() = true;
+	product->view()[idxplus].partnerChannelId() = BTLElectronicsSpecs::kTofhirChannelPartner[elecIds.plus.channelId()];
+	product->view()[idxplus].side() = 1; // plus side
+	product->view()[idxplus].pairId() = static_cast<uint8_t>(detId.crystal()); // pair = crystal
+	++nFilled;
+
+	const int32_t idxminus = indexer.flatIndex(elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), elecIds.minus.channelId());
+	product->view()[idxminus].rawId() = detId.rawId();
+        product->view()[idxminus].valid() = true;
+	product->view()[idxminus].partnerChannelId() = BTLElectronicsSpecs::kTofhirChannelPartner[elecIds.minus.channelId()];
+	product->view()[idxminus].side() = 0; // minus side
+	product->view()[idxminus].pairId() =  static_cast<uint8_t>(detId.crystal()); // pair = crystal
+	++nFilled;
       }
 
       LogDebug("BTLElectronicsToDetIdMappingESProducer")

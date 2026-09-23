@@ -125,8 +125,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                  inputDataHost_->rawWords.data(),
                                  inputDataHost_->channelFedId.data(),
                                  nChannels,
-                                 indexer_,
-                                 elecToDetId);  // nCHannels serve per delimitare la parte valida del buffer.
+				 elecToDetId,
+                                 indexer_);  // nCHannels serve per delimitare la parte valida del buffer.
 
     // Device -> Host
     BTLDigiHostCollection digis_h(digis_d.size());

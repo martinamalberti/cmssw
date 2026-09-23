@@ -64,7 +64,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using btldigi::BTLDigiDeviceCollection;
 
-  static constexpr int32_t kChannelsPerChip = 32;
+  
+  constexpr int kPlusSide = 1;
+  constexpr int kMinusSide = 0;
   
   struct BTLChipSegments {
     int32_t* segmentStart = nullptr; // segmentStart[k]/[k+1] define the segment k 
@@ -87,22 +89,33 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void countDigis(Queue& queue,
 		    BTLChannelPayloadDeviceCollection const& channelPayload_d,
 		    BTLChipSegments const& segments,
-		    int32_t nChips);
-
+		    BTLElectronicsToDetIdMappingDevice const& mapping,
+		    BTLElectronicsIndexer const& indexer,
+		    int32_t nActiveChips);
+    
     
     BTLDigiDeviceCollection process(Queue& queue,
                                     const uint64_t* rawWords_h,
                                     const int32_t* channelFedId_h,
                                     int32_t nChannels,
-                                    BTLElectronicsIndexer const& indexer,
-                                    BTLElectronicsToDetIdMappingDevice const& elecToDetId);
+                                    BTLElectronicsToDetIdMappingDevice const& elecToDetId,
+				    BTLElectronicsIndexer const& indexer);
     
   private:
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_; // Not sure about usage of std::optional
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> nSegments_;
+    // ----  std:optional: buffers are reused for many events, allocated only the first time ---
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_d_; // starting of chip segments 
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> nSegments_d_; // total number of chip segments ( = active chips)
+    //std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> digiCount_d_; // number of digis for each chip segment
+    //std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> digiOffset_d_; // offset
 
-    // Number of digis produced by each segment.
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> digiCount_;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairPlusLocalIndex_;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairMinusLocalIndex_;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> digiCountPerSegment_;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentDigiOffset_;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> totalDigis_;
+
+    int32_t digiCountCapacity_ = 0;
+    
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
