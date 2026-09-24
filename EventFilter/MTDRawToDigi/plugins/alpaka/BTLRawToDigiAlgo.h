@@ -1,6 +1,8 @@
 #ifndef EventFilter_MTDRawToDigi_plugins_alpaka_BTLRawToDigiAlgo_h
 #define EventFilter_MTDRawToDigi_plugins_alpaka_BTLRawToDigiAlgo_h
 
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
@@ -93,7 +95,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 		    BTLElectronicsIndexer const& indexer,
 		    int32_t nActiveChips);
     
-    
+
+    BTLDigiDeviceCollection fillDigis(Queue& queue,
+				      BTLChannelPayloadDeviceCollection const& channelPayload_d,
+				      BTLChipSegments const& segments,
+				      BTLElectronicsToDetIdMappingDevice const& mapping,
+				      BTLElectronicsIndexer const& indexer,
+				      int32_t nActiveChips) ;
+      
     BTLDigiDeviceCollection process(Queue& queue,
                                     const uint64_t* rawWords_h,
                                     const int32_t* channelFedId_h,

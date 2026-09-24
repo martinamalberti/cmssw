@@ -143,7 +143,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	const int32_t start = segmentStart[segment];
 	const int32_t end = segmentStart[segment + 1];
 	
-	const int32_t base = segment * BTLElectronicsIndexer::nChannelsPerChip/2;  // max 32/2 = 16 pairs
+	const int32_t base = segment * BTLElectronicsIndexer::nPairsPerChip;
 	
 	int32_t nDigis = 0; // local thread counter
 	
@@ -198,10 +198,75 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
 
-  
   //---------------------------------------------------------------------
-  // KERNEL 2b: fill digis (one thread per digi)    
-  //
+  // KERNEL 2b: fill digis, one thread per segment
+  // Reuse indices found in BTLPairAndCountDigisKernel, no need of redoing the pairing
+  //---------------------------------------------------------------------
+  class BTLFillDigisKernel {
+  public:
+    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+				  BTLChannelPayloadSoA::ConstView channelData,
+				  const int32_t* nSegments,
+				  const int32_t* digiCountPerSegment,
+				  const int32_t* segmentDigiOffset,
+				  const int32_t* pairPlusLocalIndex,
+				  const int32_t* pairMinusLocalIndex,
+				  BTLElectronicsToDetIdMappingSoA::ConstView mapping,
+				  BTLElectronicsIndexer indexer,
+				  ::btldigi::BTLDigiSoA::View digisOut) const {
+      for (int32_t segment : cms::alpakatools::uniform_elements(acc, *nSegments)) {
+	const int32_t base = segment * BTLElectronicsIndexer::nPairsPerChip;
+	const int32_t writeBase = segmentDigiOffset[segment];
+	
+	for (int32_t k = 0; k < digiCountPerSegment[segment]; ++k) {
+	  const int32_t idxPlus = pairPlusLocalIndex[base + k];
+	  const int32_t idxMinus = pairMinusLocalIndex[base + k];
+	  const int32_t validIdx = (idxMinus >= 0) ? idxMinus : idxPlus;
+	  
+	  const int32_t mappingIndex = indexer.flatIndex(channelData[validIdx].fedId(),
+                                                         channelData[validIdx].hsLinkId(),
+                                                         channelData[validIdx].eLinkId(),
+                                                         channelData[validIdx].chId());
+	  const auto& m = mapping[mappingIndex];
+	  
+	  auto d = digisOut[writeBase + k];
+	  d.rawId() = m.rawId();
+	  
+	  const auto& cValid = channelData[validIdx];
+	  d.BC0count() = cValid.bc0count();
+	  d.status() = cValid.status();
+	  d.BCcount() = cValid.bcCount();
+	  
+	  if (idxMinus >= 0) {
+	    const auto& cm = channelData[idxMinus];
+	    d.chIDMinus() = cm.chId();
+	    d.T1coarseMinus() = cm.t1Coarse();
+	    d.T2coarseMinus() = cm.t2Coarse();
+	    d.EOIcoarseMinus() = cm.eoiCoarse();
+	    d.ChargeMinus() = cm.charge();
+	    d.T1fineMinus() = cm.t1Fine();
+	    d.T2fineMinus() = cm.t2Fine();
+	    d.IdleTimeMinus() = cm.idleTime();
+	    d.PrevTrigFMinus() = cm.prevTrigF();
+	    d.TACIDMinus() = cm.tacId();
+	  }
+	  if (idxPlus >= 0) {
+	    const auto& cp = channelData[idxPlus];
+	    d.chIDPlus() = cp.chId();
+	    d.T1coarsePlus() = cp.t1Coarse();
+	    d.T2coarsePlus() = cp.t2Coarse();
+	    d.EOIcoarsePlus() = cp.eoiCoarse();
+	    d.ChargePlus() = cp.charge();
+	    d.T1finePlus() = cp.t1Fine();
+	    d.T2finePlus() = cp.t2Fine();
+	    d.IdleTimePlus() = cp.idleTime();
+	    d.PrevTrigFPlus() = cp.prevTrigF();
+	    d.TACIDPlus() = cp.tacId();
+	  }
+	}
+      }
+    }
+  };
   
   
   //---------------------------------------------------------------------
@@ -326,6 +391,52 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               << std::endl;
   }
   
+
+  BTLDigiDeviceCollection BTLRawToDigiAlgo::fillDigis(Queue& queue,
+						      BTLChannelPayloadDeviceCollection const& channelPayload_d,
+						      BTLChipSegments const& segments,
+						      BTLElectronicsToDetIdMappingDevice const& mapping,
+						      BTLElectronicsIndexer const& indexer,
+						      int32_t nActiveChips) {
+
+  // copy device to host: needed to correctly dimension the BTLDigiDeviceCollection 
+  auto digiCount_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, std::max(nActiveChips, 1));
+  alpaka::memcpy(queue, digiCount_h, *digiCountPerSegment_);
+  alpaka::wait(queue);
+
+  auto segmentDigiOffset_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nActiveChips + 1);
+  int32_t running = 0;
+  for (int32_t s = 0; s < nActiveChips; ++s) {
+    segmentDigiOffset_h[s] = running;
+    running += digiCount_h[s];
+  }
+  segmentDigiOffset_h[nActiveChips] = running;
+  const int32_t nDigisTot = running;
+  
+  std::cout << "Total number of digis = " << nDigisTot <<std::endl;
+  
+  // copy offset to device
+  alpaka::memcpy(queue, *segmentDigiOffset_, segmentDigiOffset_h);
+  
+  BTLDigiDeviceCollection digis_d(queue, std::max(nDigisTot, 1));
+  
+  if (nDigisTot > 0) {
+    auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nActiveChips), 256u), 256u);
+    alpaka::exec<Acc1D>(queue, workDiv, BTLFillDigisKernel{},
+			channelPayload_d.const_view(),
+			segments.nSegments,
+			digiCountPerSegment_->data(),
+			segmentDigiOffset_->data(),
+			pairPlusLocalIndex_->data(),
+			pairMinusLocalIndex_->data(),
+			mapping.const_view(),
+			indexer,
+			digis_d.view());
+  }
+  
+  return digis_d;
+  }
+  
   
   BTLDigiDeviceCollection BTLRawToDigiAlgo::process(Queue& queue,
                                                     const uint64_t* rawWords_h,
@@ -334,10 +445,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                     BTLElectronicsToDetIdMappingDevice const& elecToDetIdMapping,
 						    BTLElectronicsIndexer const& indexer) {
     // -- STEP1: Launch decode for each channel
-    auto channelsPayload_d = decodeOnly(queue, rawWords_h, channelFedId_h, nChannels, indexer);
+    auto channelsPayload_d = decodeOnly(queue, rawWords_h, channelFedId_h, nChannels, indexer); // auxiliary soa on device
 
     // -- DEBUG STEP1: copy to host and print
-    BTLChannelPayloadHostCollection channelsPayload_h( std::max(nChannels, 1 ));
+    BTLChannelPayloadHostCollection channelsPayload_h(std::max(nChannels, 1 ));
     alpaka::memcpy(queue, channelsPayload_h.buffer(), channelsPayload_d.buffer());
     alpaka::wait(queue);
     auto soa = channelsPayload_h.view();   
@@ -416,15 +527,54 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     
     
-    // STEP2b: pair and fill digis
-    // TO DO Fill digis
+    // -- STEP2b: fill digis
+    auto digis_d = fillDigis(queue, channelsPayload_d, chipSegments_d, elecToDetIdMapping, indexer, nActiveChips);
+
+
+    // -- DEBUGGING FILL DIGIS
+    ::btldigi::BTLDigiHostCollection digis_h(queue, std::max(nDigisTot, 1));
+    alpaka::memcpy(queue, digis_h.buffer(), digis_d.buffer());
+    alpaka::wait(queue);
+    auto digis_h_view = digis_h.view();
+
+    /*for (int32_t i = 0; i < nDigisTot; ++i) {
+      LogDebug("BTLRawToDigi")
+	<< "DIGI " << i
+	<< " rawId=" << digis_h_view[i].rawId()
+	<< " BC0=" << digis_h_view[i].BC0count()
+	<< " status=" << digis_h_view[i].status()
+	<< " BCcount=" << digis_h_view[i].BCcount()
+	<< " plus(ch=" << int(digis_h_view[i].chIDPlus())
+	<< ", charge=" << digis_h_view[i].ChargePlus()
+	<< ")"
+	<< " minus(ch=" << int(digis_h_view[i].chIDMinus())
+	<< ", charge=" << digis_h_view[i].ChargeMinus()
+	<< ")";
+	}*/
+
+
+    for (int32_t i = 0; i < nDigisTot; ++i) {
+      std::cout 
+	<< "DIGI " << i
+	<< " rawId=" << digis_h_view[i].rawId()
+	<< " BC0=" << digis_h_view[i].BC0count()
+	<< " status=" << digis_h_view[i].status()
+	<< " BCcount=" << digis_h_view[i].BCcount()
+	<< " plus(ch=" << int(digis_h_view[i].chIDPlus())
+	<< ", charge=" << digis_h_view[i].ChargePlus()
+	<< ")"
+	<< " minus(ch=" << int(digis_h_view[i].chIDMinus())
+	<< ", charge=" << digis_h_view[i].ChargeMinus()
+	<< ")"
+	<<std::endl;
+    }
+
     
+
+  
     
-    // -- STEP2: Launch pairing and fill digis
-    //auto digis_d = pairChannels(queue, channelsPayload_d, table, indexer, elecToDetId);
-    BTLDigiDeviceCollection digis_d{queue, nDigisTot}; /// temp
     return digis_d;
     
-  }
-
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+    
+  }}
+// namespace ALPAKA_ACCELERATOR_NAMESPACE
