@@ -146,7 +146,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	const int32_t base = segment * BTLElectronicsIndexer::nPairsPerChip;
 	
 	int32_t nDigis = 0; // local thread counter
-	
+
 	for (int32_t i = start; i < end; ++i) {
 	  
 	  const int32_t mappingIndex = indexer.flatIndex(channelData[i].fedId(),
@@ -155,7 +155,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 							 channelData[i].chId());
 	  
 	  const auto& m = mapping[mappingIndex];
-	  
+
 	  if (!m.valid())
 	    continue;
 	  
@@ -171,7 +171,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	      break;
 	    }
 	  }
-	  
+		  
 	  if (partnerRow >= 0) {
 	    // Complete pair: count it only from the plus side.
 	    if (m.side() == kPlusSide) {
@@ -444,28 +444,41 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                     int32_t nChannels,
                                                     BTLElectronicsToDetIdMappingDevice const& elecToDetIdMapping,
 						    BTLElectronicsIndexer const& indexer) {
+
+    //edm::LogInfo("BTLRawToDigi") << "######## LOGINFO TEST ########";
+    
+#ifdef EDM_ML_DEBUG
+    LogDebug("BTLRawToDigi") << "========== BTLRawToDigi process() START ==========";
+#endif
+    
     // -- STEP1: Launch decode for each channel
     auto channelsPayload_d = decodeOnly(queue, rawWords_h, channelFedId_h, nChannels, indexer); // auxiliary soa on device
 
+    
+#ifdef EDM_ML_DEBUG
     // -- DEBUG STEP1: copy to host and print
     BTLChannelPayloadHostCollection channelsPayload_h(std::max(nChannels, 1 ));
     alpaka::memcpy(queue, channelsPayload_h.buffer(), channelsPayload_d.buffer());
     alpaka::wait(queue);
     auto soa = channelsPayload_h.view();   
     
+    std::ostringstream os;
     for (int i = 0; i < nChannels; ++i) {
-      std::cout << "i = " << i
-		<< " fedId = " << soa.fedId()[i]
-		<< " hsLinkId = " << static_cast<int>(soa.hsLinkId()[i])
-		<< " eLinkId = " << static_cast<int>(soa.eLinkId()[i])
-		<< " chId = " << static_cast<int>(soa.chId()[i])
-		<< " chipKey = " << soa.chipKey()[i]
-		<< std::endl;
+      os << "i = " << i
+	 << " fedId = " << soa.fedId()[i]
+	 << " hsLinkId = " << static_cast<int>(soa.hsLinkId()[i])
+	 << " eLinkId = " << static_cast<int>(soa.eLinkId()[i])
+	 << " chId = " << static_cast<int>(soa.chId()[i])
+	 << " chipKey = " << soa.chipKey()[i] << "\n";
+      //<< std::endl;
     }
-    
+    LogDebug("BTLRawToDigi") << os.str();
+#endif
 
+    
     // -- STEP1.5: find segments corresponding to each active chip
     auto chipSegments_d = findChipSegments(queue, channelsPayload_d, indexer); 
+
 
     // -- DEBUG findChipSegments
     auto nSegments_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, 1);
@@ -473,28 +486,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::wait(queue);
     const int32_t nActiveChips = nSegments_h[0];
 
-    std::cout << "Number of active chips = " << nActiveChips << std::endl;
+#ifdef EDM_ML_DEBUG
+    LogDebug("BTLRawToDigi") << "Debugging findChipSegments..."; 
+    LogDebug("BTLRawToDigi") << "Number of active chips = " << nActiveChips;
 
     const int32_t nChips = indexer.nFeds * indexer.nHsLinks * indexer.nELinks;
     auto segmentStart_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nChips + 1);// alloco con lunghezza nChips
     alpaka::memcpy(queue, segmentStart_h, *segmentStart_d_);
     alpaka::wait(queue);
 
-    std::cout << "Debugging findChipSegments..." <<std::endl; 
-    
+    std::ostringstream os1;
     for (int32_t s = 0; s < nActiveChips; ++s) { // solo gli elementi corrispondenti al numero di segmenti (chip attivi)
-      std::cout << "segment " << s
-		<< " : [" << segmentStart_h[s]
-		<< ", " << segmentStart_h[s + 1]
-		<< ")"
-		<< " size=" << segmentStart_h[s + 1] - segmentStart_h[s]
-		<< '\n';
+      os1 << "segment " << s
+	 << " : [" << segmentStart_h[s]
+	 << ", " << segmentStart_h[s + 1]
+	 << ")"
+	 << " size=" << segmentStart_h[s + 1] - segmentStart_h[s]
+	 << '\n';
     }
-
-    std::cout << "Number of active chips = " << nActiveChips << std::endl;
-    
+    LogDebug("BTLRawToDigi") << os1.str();
+#endif    
  
-    // STEP 2a: count digis
+    // STEP 2a: pairing and count digis
     //
     // NOTE: nSegments is the number of active chips found in STEP 1.5,
     // while nChips is the maximum number of chips.
@@ -509,69 +522,51 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     //countDigis(queue, channelsPayload_d, chipSegments_d, nChips); // qui uso nChips. Another possibility is to copy chipSegments_d from device to host and use the host-side nSegments
     countDigis(queue, channelsPayload_d, chipSegments_d, elecToDetIdMapping, indexer, nActiveChips);
 
-    
+
+#ifdef EDM_ML_DEBUG
     // -- DEBUG pair and count digis  
     auto digiCount_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nActiveChips);
     alpaka::memcpy(queue, digiCount_h, *digiCountPerSegment_);
     alpaka::wait(queue);
     
     int32_t nDigisTot = 0;
+    std::ostringstream os2;
     for (int32_t s = 0; s < nActiveChips; ++s) {
-      std::cout << "segment " << s
-		<< "  number of digis in this segment : " << digiCount_h[s]
-		<<std::endl;
-      
+      os2 << "segment " << s
+	 << "  number of digis in this segment : " << digiCount_h[s]
+	 << '\n';
       nDigisTot+=digiCount_h[s];
     }
-
-
+    LogDebug("BTLRawToDigi") << os2.str();
+#endif
     
     
     // -- STEP2b: fill digis
     auto digis_d = fillDigis(queue, channelsPayload_d, chipSegments_d, elecToDetIdMapping, indexer, nActiveChips);
 
-
-    // -- DEBUGGING FILL DIGIS
+#ifdef EDM_ML_DEBUG
+    // -- DEBUG FILL DIGIS
     ::btldigi::BTLDigiHostCollection digis_h(queue, std::max(nDigisTot, 1));
     alpaka::memcpy(queue, digis_h.buffer(), digis_d.buffer());
     alpaka::wait(queue);
     auto digis_h_view = digis_h.view();
-
-    /*for (int32_t i = 0; i < nDigisTot; ++i) {
-      LogDebug("BTLRawToDigi")
-	<< "DIGI " << i
-	<< " rawId=" << digis_h_view[i].rawId()
-	<< " BC0=" << digis_h_view[i].BC0count()
-	<< " status=" << digis_h_view[i].status()
-	<< " BCcount=" << digis_h_view[i].BCcount()
-	<< " plus(ch=" << int(digis_h_view[i].chIDPlus())
-	<< ", charge=" << digis_h_view[i].ChargePlus()
-	<< ")"
-	<< " minus(ch=" << int(digis_h_view[i].chIDMinus())
-	<< ", charge=" << digis_h_view[i].ChargeMinus()
-	<< ")";
-	}*/
-
-
+    std::ostringstream os3;
     for (int32_t i = 0; i < nDigisTot; ++i) {
-      std::cout 
-	<< "DIGI " << i
-	<< " rawId=" << digis_h_view[i].rawId()
-	<< " BC0=" << digis_h_view[i].BC0count()
-	<< " status=" << digis_h_view[i].status()
-	<< " BCcount=" << digis_h_view[i].BCcount()
-	<< " plus(ch=" << int(digis_h_view[i].chIDPlus())
-	<< ", charge=" << digis_h_view[i].ChargePlus()
-	<< ")"
-	<< " minus(ch=" << int(digis_h_view[i].chIDMinus())
-	<< ", charge=" << digis_h_view[i].ChargeMinus()
-	<< ")"
-	<<std::endl;
+      os3 <<"DIGI " << i
+	  << " rawId=" << digis_h_view[i].rawId()
+	  << " BC0=" << digis_h_view[i].BC0count()
+	  << " status=" << digis_h_view[i].status()
+	  << " BCcount=" << digis_h_view[i].BCcount()
+	  << " plus(ch=" << int(digis_h_view[i].chIDPlus())
+	  << ", charge=" << digis_h_view[i].ChargePlus()
+	  << ")"
+	  << " minus(ch=" << int(digis_h_view[i].chIDMinus())
+	  << ", charge=" << digis_h_view[i].ChargeMinus()
+	  << ")"
+	  << '\n';
     }
-
-    
-
-  
+    LogDebug("BTLRawToDigi") << os3.str();
+#endif
     
     return digis_d;
     

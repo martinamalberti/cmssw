@@ -14,6 +14,7 @@
 #include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
+#include <sstream>
 #include <optional>
 
 // ----------------------------------------------------------------
