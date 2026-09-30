@@ -148,6 +148,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	int32_t nDigis = 0; // local thread counter
 
 	for (int32_t i = start; i < end; ++i) {
+
 	  
 	  const int32_t mappingIndex = indexer.flatIndex(channelData[i].fedId(),
 							 channelData[i].hsLinkId(),
@@ -156,9 +157,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	  
 	  const auto& m = mapping[mappingIndex];
 
-	  if (!m.valid())
+	  if (!m.valid()) {
+
+	    printf("INVALID MAPPING: fed=%u hs=%u elink=%u ch=%u mappingIndex=%d\n",
+		   static_cast<unsigned int>(channelData[i].fedId()),
+		   static_cast<unsigned int>(channelData[i].hsLinkId()),
+		   static_cast<unsigned int>(channelData[i].eLinkId()),
+		   static_cast<unsigned int>(channelData[i].chId()),
+		   mappingIndex);
+	    	    
 	    continue;
+	  }
+
 	  
+
 	  //const int32_t pairId = m.pairId(); // not needed anymore?
 	  
 	  
