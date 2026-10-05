@@ -98,6 +98,7 @@ namespace BTLElectronicsSpecs {
   static constexpr uint32_t kNumberOfHSlinks = 36;    // number of HS links: in each Serenity 6 trays x 6 links 
   //static constexpr uint32_t kHSLinksOffset = 4;  // offset (HS link Ids start from 4 (0-3 reserved) /// NOT NEEDED ANYMORE
   
+  static constexpr uint32_t kNumberOfFEDs = 144; // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
   static constexpr uint32_t kNumberOfSlinks = 144; // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
   static constexpr uint32_t kFirstSlinkId = 0;     // arbitrary for now
   static constexpr uint32_t kFirstFEDId = 0;     // arbitrary for now

@@ -6,6 +6,8 @@
 <use name="CondFormats/MTDObjects"/>
 <use name="CondFormats/DataRecord"/>
 <use name="EventFilter/MTDRawToDigi"/>
+<use name="DataFormats/FTLDigi"/>
+<use name="DataFormats/FEDRawData"/>
 <library name="EventFilterMTDRawToDigiPlugins" file="*.cc">
   <flags EDM_PLUGIN="1"/>
 </library>
