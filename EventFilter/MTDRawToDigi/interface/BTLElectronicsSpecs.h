@@ -67,6 +67,10 @@ namespace BTLElectronicsSpecs {
   static constexpr auto FE_to_ELINK_mapping_L0 = buildFEtoElinkMapping(ELINK_to_FE_mapping_L0);
   static constexpr auto FE_to_ELINK_mapping_L1 = buildFEtoElinkMapping(ELINK_to_FE_mapping_L1);
 
+
+  // !!!!!!!!!
+  // All this is not needed anymore: it's an internal daq mapping and not fully consistent with the lastest version here:
+  // https://confluence.cern.ch/pages/viewpage.action?pageId=784058311&spaceKey=MTDDAQ&title=Fiber%2Bmapping%2BHigh-speed%2BEMP%2Blink%2Borganization&preview=/784058311/784058324/BTL_fiber_mapping.pdf
   // ============================================================
   // HS-LINK mapping
   // ============================================================
@@ -81,18 +85,24 @@ namespace BTLElectronicsSpecs {
   // Define an array of 12 elements, each element is the optical Tx channel Id (this depends on the FF).
   // For the first block (FF_N5), channel ids of the optical tx are reversed.
   // Each optical Tx channel Id maps to a CC/RU
-  static constexpr std::array<int, 2 * BTLDetId::kRUPerRod> optTxCh_n5 = {
+  /*
+    static constexpr std::array<int, 2 * BTLDetId::kRUPerRod> optTxCh_n5 = {
       1, 3, 5, 0, 2, 4, 6, 8, 10, 7, 9, 11};  // 12 = 6 RUs x 2 LPGBTs
   static constexpr std::array<int, 2 * BTLDetId::kRUPerRod> optTxCh_common = {
       11, 9, 7, 10, 8, 6, 4, 2, 0, 5, 3, 1};  // 12 = 6 RUs x 2 LPGBTs
-
+  */
+  
   // ============================================================
   // DAQ constants
   // ============================================================
-  static constexpr uint32_t kHSLinksNum = 72;    // number of HS links: in each Serenity 6 trays x 12 links
-  static constexpr uint32_t kHSLinksOffset = 4;  // offset (HS link Ids start from 4 (0-3 reserved)
+  static constexpr uint32_t kNumberOfHSlinks = 36;    // number of HS links: in each Serenity 6 trays x 6 links 
+  //static constexpr uint32_t kHSLinksOffset = 4;  // offset (HS link Ids start from 4 (0-3 reserved) /// NOT NEEDED ANYMORE
+  
+  static constexpr uint32_t kNumberOfSlinks = 144; // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
+  static constexpr uint32_t kFirstSlinkId = 0;     // arbitrary for now
   static constexpr uint32_t kFirstFEDId = 0;     // arbitrary for now
 
+  /*
   static constexpr auto OptTx_map = []() {
     std::array<int, kHSLinksNum + kHSLinksOffset> tmp;
     tmp.fill(-1);
@@ -115,7 +125,8 @@ namespace BTLElectronicsSpecs {
   };
   static constexpr auto tx_inv_n5 = tx_to_index(optTxCh_n5);
   static constexpr auto tx_inv_common = tx_to_index(optTxCh_common);
-
+  */
+  
 }  // namespace BTLElectronicsSpecs
 
 #endif
