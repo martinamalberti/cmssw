@@ -146,9 +146,7 @@ int BTLElectronicsMapping::elink(uint32_t rawID, int lpgbt_id) const {
   return (BTLElectronicsSpecs::kHSLinksOffset + 12 * (tray % 6) + pos);
   }*/
 
-
 int BTLElectronicsMapping::hslinkFromRUandTray(uint32_t runit, uint32_t tray) const {
-
   if (int(runit) < 0 || runit > BTLDetId::kRUPerRod) {
     edm::LogWarning("BTLElectronicsMapping") << "BTLElectronicsMapping::hslinkFromRUandTray "
                                              << "****************** runit = " << runit << "  not valid!";
@@ -160,9 +158,9 @@ int BTLElectronicsMapping::hslinkFromRUandTray(uint32_t runit, uint32_t tray) co
                                              << "****************** tray = " << tray << "  not valid!";
     return -1;
   }
-  
+
   // Based on the proposal discussed here:
-  // https://indico.cern.ch/event/1728068/contributions/7267163/attachments/3340485/5987766/LinkMapping_DAQmeeting_20260910.pdf 
+  // https://indico.cern.ch/event/1728068/contributions/7267163/attachments/3340485/5987766/LinkMapping_DAQmeeting_20260910.pdf
   return (runit + 6 * (tray % 6));
 }
 
@@ -198,13 +196,12 @@ int BTLElectronicsMapping::slinkFromTray(uint32_t tray, uint32_t zside) const {
   }*/
 
 int BTLElectronicsMapping::slinkFromRUandTray(uint32_t runit, uint32_t tray, uint32_t zside) const {
-
   if (int(runit) < 0 || runit > BTLDetId::kRUPerRod) {
     edm::LogWarning("BTLElectronicsMapping") << "BTLElectronicsMapping::SlinkFromRUandTray "
                                              << "****************** runit = " << runit << "  not valid!";
     return -1;
   }
-  
+
   if (int(tray) < 0 || tray >= BTLDetId::HALF_ROD) {
     edm::LogWarning("BTLElectronicsMapping") << "BTLElectronicsMapping::SlinkFromRUandTray: "
                                              << "****************** tray = " << tray << "  not valid!";
@@ -217,12 +214,12 @@ int BTLElectronicsMapping::slinkFromRUandTray(uint32_t runit, uint32_t tray, uin
         << "****************** zside = " << zside << "  not valid (should be 0 or 1)!";
     return -1;
   }
-  
+
   //trays [0-35], Z- --> Slinks [0,71]
   // trays [0-35], Z+ --> Slinks [72,143]
   int halfTray = (runit < 3) ? 0 : 1;
   //return (BTLElectronicsSpecs::kFirstFEDId + BTLElectronicsSpecs::kNumberOfSlinks/2 * zside + tray * 2 + halfTray);
-  return (BTLElectronicsSpecs::kNumberOfSlinks/2 * zside + tray * 2 + halfTray);
+  return (BTLElectronicsSpecs::kNumberOfSlinks / 2 * zside + tray * 2 + halfTray);
 }
 
 int BTLElectronicsMapping::slink(BTLDetId det) const {
@@ -237,9 +234,7 @@ int BTLElectronicsMapping::slink(uint32_t rawID) const {
   return BTLElectronicsMapping::slink(theId);
 }
 
-
-
-int BTLElectronicsMapping::fedFromRUandTray(uint32_t runit, uint32_t tray, uint32_t zside) const{
+int BTLElectronicsMapping::fedFromRUandTray(uint32_t runit, uint32_t tray, uint32_t zside) const {
   return (BTLElectronicsSpecs::kFirstFEDId + BTLElectronicsMapping::slinkFromRUandTray(runit, tray, zside));
 }
 

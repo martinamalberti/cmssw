@@ -55,7 +55,8 @@ public:
   // -- Get the HS-link corresponding to a given RU/CC in a tray
   //  int opticalTxPosition(uint32_t tray, int optTxCh) const;
   //int hslinkFromRU(uint32_t runit, uint32_t tray, int lpgbt_id = 0) const;
-  int hslinkFromRUandTray(uint32_t runit, uint32_t tray) const; // lpgbt_id not needed anymore as it is trasparent from DAQ   
+  int hslinkFromRUandTray(uint32_t runit,
+                          uint32_t tray) const;  // lpgbt_id not needed anymore as it is trasparent from DAQ
   int hslink(BTLDetId det) const;
   int hslink(uint32_t rawID) const;
 
@@ -72,7 +73,7 @@ public:
   int fedFromRUandTray(uint32_t runit, uint32_t tray, uint32_t zside) const;
   int fed(BTLDetId det) const;
   int fed(uint32_t rawID) const;
-  
+
 private:
 };
 

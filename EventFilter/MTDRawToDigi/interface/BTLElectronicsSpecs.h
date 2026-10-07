@@ -15,6 +15,26 @@
 namespace BTLElectronicsSpecs {
 
   // ============================================================
+  // DAQ constants
+  // ============================================================
+  static constexpr uint32_t kNumberOfFEDs = 144;  // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
+  static constexpr uint32_t kNumberOfSlinks = 144;                                      // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
+  static constexpr uint32_t kFirstSlinkId = 0;  // arbitrary for now
+  static constexpr uint32_t kFirstFEDId = 0;    // arbitrary for now
+
+  //static constexpr uint32_t kNumberOfHSlinks = 36;  // number of HS links: in each Serenity 6 trays x 6 links
+  //static constexpr uint32_t kNumberOfElinks = 24;
+
+  
+  static constexpr int32_t nSLinksPerSerenity  = 12;  // number of S-links per Serenity board
+  static constexpr int32_t nFEDsPerSerenity    = 12;  // 1 S-link  = 1 FED ID
+  static constexpr int32_t nHSLinksPerFED      = 3;   // number of HS-links per Slink/FED (3 RUs --> 1 Slink)
+  static constexpr int32_t nHSLinksPerSerenity = nHSLinksPerFED * nFEDsPerSerenity;  // = 36
+  static constexpr int32_t nELinksPerHSLink    = 24;  // number of elinks (chips) per HS-link
+  static constexpr int32_t nChannelsPerELink   = 32;  // channels per TOFHIR2C chip 
+  
+  
+  // ============================================================
   // TOFHIR channel ID mapping
   // ============================================================
 
@@ -32,6 +52,14 @@ namespace BTLElectronicsSpecs {
   static constexpr std::array<uint32_t, BTLDetId::kCrystalsPerModuleV2 * 2> THChannelMap{
       {4,  1,  0,  3,  2,  6,  7,  9,  5,  11, 8,  12, 10, 14, 15, 13,
        17, 16, 18, 19, 20, 23, 21, 26, 22, 27, 28, 31, 30, 24, 25, 29}};
+
+  // Table of TOFHIR channel partners.
+  // The array index is the TOFHIR channelId.
+  // The value is the channelId of its partner.
+  // !!!!!!!!!! DA RICONTROLLARE  !!!!
+  static constexpr std::array<int8_t, 32> kTofhirChannelPartner = {24, 25, 31, 30, 29, 26, 28, 27, 23, 22, 19,
+                                                                   21, 20, 17, 18, 16, 15, 13, 14, 10, 12, 11,
+                                                                   9,  8,  0,  1,  5,  7,  6,  4,  3,  2};
 
   // ============================================================
   // E-LINK mapping
@@ -67,7 +95,6 @@ namespace BTLElectronicsSpecs {
   static constexpr auto FE_to_ELINK_mapping_L0 = buildFEtoElinkMapping(ELINK_to_FE_mapping_L0);
   static constexpr auto FE_to_ELINK_mapping_L1 = buildFEtoElinkMapping(ELINK_to_FE_mapping_L1);
 
-
   // !!!!!!!!!
   // All this is not needed anymore: it's an internal daq mapping and not fully consistent with the lastest version here:
   // https://confluence.cern.ch/pages/viewpage.action?pageId=784058311&spaceKey=MTDDAQ&title=Fiber%2Bmapping%2BHigh-speed%2BEMP%2Blink%2Borganization&preview=/784058311/784058324/BTL_fiber_mapping.pdf
@@ -91,17 +118,6 @@ namespace BTLElectronicsSpecs {
   static constexpr std::array<int, 2 * BTLDetId::kRUPerRod> optTxCh_common = {
       11, 9, 7, 10, 8, 6, 4, 2, 0, 5, 3, 1};  // 12 = 6 RUs x 2 LPGBTs
   */
-  
-  // ============================================================
-  // DAQ constants
-  // ============================================================
-  static constexpr uint32_t kNumberOfHSlinks = 36;    // number of HS links: in each Serenity 6 trays x 6 links 
-  //static constexpr uint32_t kHSLinksOffset = 4;  // offset (HS link Ids start from 4 (0-3 reserved) /// NOT NEEDED ANYMORE
-  
-  static constexpr uint32_t kNumberOfFEDs = 144; // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
-  static constexpr uint32_t kNumberOfSlinks = 144; // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
-  static constexpr uint32_t kFirstSlinkId = 0;     // arbitrary for now
-  static constexpr uint32_t kFirstFEDId = 0;     // arbitrary for now
 
   /*
   static constexpr auto OptTx_map = []() {
@@ -127,7 +143,7 @@ namespace BTLElectronicsSpecs {
   static constexpr auto tx_inv_n5 = tx_to_index(optTxCh_n5);
   static constexpr auto tx_inv_common = tx_to_index(optTxCh_common);
   */
-  
+
 }  // namespace BTLElectronicsSpecs
 
 #endif

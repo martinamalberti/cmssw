@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "CondFormats/MTDObjects/interface/BTLElectronicsId.h"
@@ -49,6 +50,8 @@ public:
   void clear();
 
   int size() const { return detToElec_.size(); };
+
+  std::vector<BTLDetId> getListOfDetIds() const;
 
 private:
   // forward mapping
