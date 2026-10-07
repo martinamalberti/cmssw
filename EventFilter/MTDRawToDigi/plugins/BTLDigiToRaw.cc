@@ -84,7 +84,7 @@ BTLDigiToRaw::~BTLDigiToRaw() {}
 
 void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   using namespace btldigitoraw;
-  
+
   // -- Retrieve the BTL digi collection (sorted by BTLDetId)
   const auto& digis = iEvent.get(digiToken_);
   
@@ -178,7 +178,8 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(int fed, int hsli
   uint8_t PrevTrigF = isPlusSide ? digi.kPrevTrigFPlus() : digi.kPrevTrigFMinus();
   uint8_t TACID = isPlusSide ? digi.kTACIDPlus() : digi.kTACIDMinus();
 
-  int slink = fed - BTLElectronicsSpecs::kFirstFEDId;
+  //int slink = fed - BTLElectronicsSpecs::kFirstFEDId;
+  int slink = 0;
   
   stream.set_bits(118, 10, static_cast<uint64_t>(BC0count));
   stream.set_bits(117,  1, static_cast<uint64_t>(status));
@@ -198,6 +199,7 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(int fed, int hsli
   stream.set_bits(  0,  3, static_cast<uint64_t>(TACID));
 
   LogDebug("BTLDigiToRaw")
+    << "  FEDId="     << static_cast<int>(fed)
     << "  BC0count="  << static_cast<int>(BC0count)
     << "  status="    << static_cast<int>(status)
     << "  slink="     << static_cast<int>(slink)

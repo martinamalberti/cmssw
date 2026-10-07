@@ -30,10 +30,11 @@ process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
     limit = cms.untracked.int32(-1)
 )
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(4))
 
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_20_0_0_pre1/mywork/34434.0_TTbar_14TeV+Run4D121/step2.root")
+    #    fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_20_0_0_pre1/mywork/34434.0_TTbar_14TeV+Run4D121/step2.root")
+    fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/BTLUnpacker/CMSSW_20_1_0_pre3/work/38440.0_MinBias_14TeV+Run4D128/step2.root")
 )
 
 process.load('EventFilter.MTDRawToDigi.BTLReadoutMapESProducer_cfi')

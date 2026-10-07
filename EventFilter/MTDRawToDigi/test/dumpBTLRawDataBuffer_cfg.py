@@ -12,7 +12,7 @@ process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring("file:BtlDigiToRaw.root")
 )
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = cms.untracked.string('INFO')

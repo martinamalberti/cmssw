@@ -221,7 +221,8 @@ int BTLElectronicsMapping::slinkFromRUandTray(uint32_t runit, uint32_t tray, uin
   //trays [0-35], Z- --> Slinks [0,71]
   // trays [0-35], Z+ --> Slinks [72,143]
   int halfTray = (runit < 3) ? 0 : 1;
-  return (BTLElectronicsSpecs::kFirstFEDId + BTLElectronicsSpecs::kNumberOfSlinks/2 * zside + tray * 2 + halfTray);
+  //return (BTLElectronicsSpecs::kFirstFEDId + BTLElectronicsSpecs::kNumberOfSlinks/2 * zside + tray * 2 + halfTray);
+  return (BTLElectronicsSpecs::kNumberOfSlinks/2 * zside + tray * 2 + halfTray);
 }
 
 int BTLElectronicsMapping::slink(BTLDetId det) const {
@@ -234,4 +235,22 @@ int BTLElectronicsMapping::slink(BTLDetId det) const {
 int BTLElectronicsMapping::slink(uint32_t rawID) const {
   BTLDetId theId(rawID);
   return BTLElectronicsMapping::slink(theId);
+}
+
+
+
+int BTLElectronicsMapping::fedFromRUandTray(uint32_t runit, uint32_t tray, uint32_t zside) const{
+  return (BTLElectronicsSpecs::kFirstFEDId + BTLElectronicsMapping::slinkFromRUandTray(runit, tray, zside));
+}
+
+int BTLElectronicsMapping::fed(BTLDetId det) const {
+  uint32_t ru = det.runit();
+  uint32_t tray = det.mtdRR();
+  uint32_t zside = det.mtdSide();
+  return BTLElectronicsMapping::fedFromRUandTray(ru, tray, zside);
+}
+
+int BTLElectronicsMapping::fed(uint32_t rawID) const {
+  BTLDetId theId(rawID);
+  return BTLElectronicsMapping::fed(theId);
 }

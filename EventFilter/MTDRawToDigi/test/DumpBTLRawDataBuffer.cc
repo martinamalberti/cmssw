@@ -140,6 +140,7 @@ void DumpBTLRawDataBuffer::analyze(edm::StreamID,
       edm::LogInfo("DumpBTLRawDataBuffer")
 	<< "  word " << iWord << "\n" 
 	<< "  bit content: " << printStream(stream) << "\n"
+	<< "  FEDId="  << sourceId
 	<< "  BC0count="  << BC0count
 	<< "  status="    << status
 	<< "  slink="     << slink

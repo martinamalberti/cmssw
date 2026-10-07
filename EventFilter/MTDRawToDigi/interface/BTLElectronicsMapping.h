@@ -69,6 +69,10 @@ public:
   int slink(BTLDetId det) const;
   int slink(uint32_t rawID) const;
 
+  int fedFromRUandTray(uint32_t runit, uint32_t tray, uint32_t zside) const;
+  int fed(BTLDetId det) const;
+  int fed(uint32_t rawID) const;
+  
 private:
 };
 
