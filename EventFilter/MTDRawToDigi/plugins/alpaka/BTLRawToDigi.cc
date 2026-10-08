@@ -24,9 +24,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using btldigi::BTLDigiDeviceCollection;
   using ::btldigi::BTLDigiHostCollection;
 
-  class BTLRawToDigi
-      : public stream::
-            EDProducer<> {  // stream::EDProdicer vedi: https://twiki.cern.ch/twiki/bin/view/CMSPublic/FWMultithreadedFrameworkModuleTypes?utm_source=chatgpt.com#Comparing_Stream_and_Global_Modu
+  class BTLRawToDigi : public stream::EDProducer<> { // stream::EDProducer https://twiki.cern.ch/twiki/bin/view/CMSPublic/FWMultithreadedFrameworkModuleTypes?utm_source=chatgpt.com#Comparing_Stream_and_Global_Modu
   public:
     explicit BTLRawToDigi(const edm::ParameterSet& iConfig);
     ~BTLRawToDigi() override = default;
@@ -37,7 +35,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     edm::EDGetTokenT<RawDataBuffer> rawDataBufferToken_;
     //edm::EDPutTokenT<btldigi::BTLDigiDeviceCollection> digiPutToken_;
-    edm::EDPutTokenT<BTLDigiHostCollection> digiPutToken_;  // BTLBaseRecHitSoAProducer consuma una BTLDigiHostCollection
+    edm::EDPutTokenT<BTLDigiHostCollection> digiPutToken_;  // BTLBaseRecHitSoAProducer consumes a BTLDigiHostCollection
     device::ESGetToken<BTLElectronicsToDetIdMappingDevice, BTLReadoutMapRcd> elecToDetIdToken_;
 
     BTLRawToDigiAlgo algo_;
@@ -111,13 +109,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             << "payloadBytes = " << payloadBytes << ", kChannelBytes = " << kChannelBytes
             << ", remainder = " << payloadBytes % kChannelBytes;
       }
-      std::memcpy(
-          inputDataHost_->rawWords.data() + kWordsPerChannel * offset,
-          payload.data(),
-          payloadBytes);  // copia payloadBytes da fedData (dopo aver tolto header e trailer) in rawWords_h_, con un offset kWordsPerChannel * offset che corrisponde a 2 x numero di canali gia' copiati: rawWords_h_.data() + 2 * channelOffset e' un puntatore alla posizione di destinazione in rawWords_h_. Il fattore 2 serve perche' ogni canale sono 128 bit, quindi occupa 2 unit64.
+      // copy payloadBytes from fedData payload (header and trailer removed) in rawWords_h_, with an offset kWordsPerChannel * offset corresponding to 2 x number of channels laready copied
+      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset,
+		  payload.data(),
+		  payloadBytes);  
       const int32_t nChInFed = static_cast<int32_t>(payloadBytes / kChannelBytes);
-      std::fill(
-          inputDataHost_->channelFedId.data() + offset, inputDataHost_->channelFedId.data() + offset + nChInFed, fed);
+      std::fill(inputDataHost_->channelFedId.data() + offset, inputDataHost_->channelFedId.data() + offset + nChInFed, fed);
       offset += nChInFed;
     }
 
@@ -127,12 +124,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                  inputDataHost_->channelFedId.data(),
                                  nChannels,
                                  elecToDetId,
-                                 indexer_);  // nCHannels serve per delimitare la parte valida del buffer.
-
+                                 indexer_);
+    
     // Device -> Host
     BTLDigiHostCollection digis_h(digis_d.size());
 
-    std::cout << "[BTLRawToDigi] digis_d.size() = " << digis_d.size() << std::endl;
     alpaka::memcpy(queue, digis_h.buffer(), digis_d.buffer());
 
     alpaka::wait(queue);
