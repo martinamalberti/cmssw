@@ -423,8 +423,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     LogDebug("BTLRawToDigi") << " === BTLRawToDigi fillDigis(): digiCountPerSegment copied from device to host ==========";
 #endif
 
-    BTLDigiDeviceCollection digis_d(queue, std::max(nDigisTot, 1));
-
+    BTLDigiDeviceCollection digis_d(queue, nDigisTot); 
+    //BTLDigiDeviceCollection digis_d(queue, std::max(nDigisTot, 1)); // avoid allocating a buffer of size 0 if nDigisTot = 0 
+    //digis_d.view().metadata().size() = nDigisTot; // register effective dimension in the SoA metadata
+ 
     if (nDigisTot > 0) {
       auto workDiv =
           cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nActiveChips), 256u), 256u);
