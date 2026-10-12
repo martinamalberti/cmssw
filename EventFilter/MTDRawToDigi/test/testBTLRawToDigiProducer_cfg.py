@@ -21,7 +21,6 @@ process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_20_0_0_pre1/src/EventFilter/MTDRawToDigi/test/BtlDigiToRaw.root")
 )
 
-
 process.load("Configuration.StandardSequences.Accelerators_cff")
 
 process.load('EventFilter.MTDRawToDigi.BTLReadoutMapESProducer_cfi')
@@ -31,7 +30,6 @@ process.load("EventFilter.MTDRawToDigi.BTLElectronicsToDetIdMappingESProducer_cf
 process.btlRawToDigiGPU = cms.EDProducer(
     "BTLRawToDigi@alpaka",
     rawDataBufferTag = cms.InputTag("btlDigiToRaw"),    
-    # btlDigisLabel    = 'btlDigis'
 )
 
 
@@ -41,7 +39,7 @@ process.MessageLogger.cerr.threshold = "DEBUG"
 process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
     limit = cms.untracked.int32(-1)
 )
-#process.MessageLogger.debugModules = ["BTLRawToDigi"]
+
 process.MessageLogger.debugModules = cms.untracked.vstring("btlRawToDigiGPU")
 
 process.out = cms.OutputModule("PoolOutputModule",

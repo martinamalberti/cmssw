@@ -30,7 +30,7 @@ process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
     limit = cms.untracked.int32(-1)
 )
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(4))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 process.source = cms.Source("PoolSource",
     #    fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/CMSSW_20_0_0_pre1/mywork/34434.0_TTbar_14TeV+Run4D121/step2.root")
@@ -49,7 +49,8 @@ process.btlDigiToRaw = cms.EDProducer(
 process.out = cms.OutputModule("PoolOutputModule",
                                splitLevel = cms.untracked.int32(0),
                                outputCommands = cms.untracked.vstring('drop *',
-                                                                      'keep RawDataBuffer_*_*_*',
+                                                                      'keep *_mix_MTDBarrel_*', 
+                                                                      'keep *_btlDigiToRaw_*_*',
                                ),
                         fileName = cms.untracked.string('BtlDigiToRaw.root')
 )
