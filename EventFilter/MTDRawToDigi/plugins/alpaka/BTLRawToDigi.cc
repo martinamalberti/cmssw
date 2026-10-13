@@ -83,6 +83,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       nChannels += static_cast<int32_t>(payloadBytes / kChannelBytes);
     }
 
+
+    // --- if no channels in the payload, return empty collection
+    if (nChannels == 0) {
+      iEvent.emplace(digiPutToken_, BTLDigiHostCollection(0));
+      return;
+    }
+
+    
     // --- reuse a pinned staging buffer across events; only grow, never shrink/realloc every event
     if (nChannels > channelCapacity_) {
       channelCapacity_ = nChannels + nChannels / 4;  // headroom, avoid re-growing every event (+25% arbitrary)

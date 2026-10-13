@@ -90,20 +90,21 @@ void BTLRawToDigiValidator::analyze(const edm::Event& iEvent, const edm::EventSe
   for (int32_t i = 0; i < nCompare; ++i) {
     btldigi::BTLDigi const& r = (*h_ref)[i];
     auto const t = testView[i];
-
-    bool ok = true;
-
+    
+    bool ok = true;  // reset for each digi
+    
     // Lambda: compares one field by value and logs an error on mismatch.
     auto check = [&](const char* fieldName, auto refVal, auto testVal) {
-      if (refVal != testVal) {
-        edm::LogError("BTLRawToDigiValidator")
-            << "Event " << iEvent.id() << "   digi[" << i << "]"
-            << "  mismatch in " << fieldName
-            << ": ref=" << +refVal << " test=" << +testVal;
-        ok = false;
-      }
-    };
- 
+		   if (refVal != testVal) {
+		     edm::LogError("BTLRawToDigiValidator")
+		     << "Event " << iEvent.id() << "   digi[" << i << "]"
+		     << "  mismatch in " << fieldName
+		     << ": ref=" << +refVal << " test=" << +testVal;
+		     ok = false;
+		   }
+		 };
+    
+
     check("rawId",         r.krawId(),         t.rawId());
     check("BC0count",      r.kBC0count(),      t.BC0count());
     check("status",        r.kstatus(),        t.status());
