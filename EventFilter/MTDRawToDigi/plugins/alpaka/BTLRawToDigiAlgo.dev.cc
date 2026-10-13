@@ -137,8 +137,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   BTLElectronicsToDetIdMappingSoA::ConstView mapping,
                                   BTLElectronicsIndexer indexer,
                                   //int32_t nChips,
-                                  int32_t* pairPlusLocalIndex,  // size nSegmentsUpperBound * nPairsMax
-                                  int32_t* pairMinusLocalIndex,
+                                  int32_t* pairPlusGlobalIndex,  // size nSegmentsUpperBound * nPairsMax
+                                  int32_t* pairMinusGlobalIndex,
                                   int32_t* digiCountPerSegment) const {
       //    for (int32_t chip : cms::alpakatools::uniform_elements(acc, nChips)) {
       //if (chip >= *nSegments)
@@ -183,18 +183,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (partnerRow >= 0) {
             // Complete pair: count it only from the plus side.
             if (m.side() == kPlusSide) {
-	      pairPlusLocalIndex[base + nDigis] = i;  // i = global index of this channel. Maybe better to change the name to pairPlusGlobalIndex?????
-              pairMinusLocalIndex[base + nDigis] = partnerRow;
+	      pairPlusGlobalIndex[base + nDigis] = i;  // i = global index of this channel. Maybe better to change the name to pairPlusGlobalIndex?????
+              pairMinusGlobalIndex[base + nDigis] = partnerRow;
               ++nDigis;
             }
           } else {
             // Single-side digi.
             if (m.side() == kPlusSide) {
-              pairPlusLocalIndex[base + nDigis] = i;
-              pairMinusLocalIndex[base + nDigis] = -1;
+              pairPlusGlobalIndex[base + nDigis] = i;
+              pairMinusGlobalIndex[base + nDigis] = -1;
             } else {
-              pairPlusLocalIndex[base + nDigis] = -1;
-              pairMinusLocalIndex[base + nDigis] = i;
+              pairPlusGlobalIndex[base + nDigis] = -1;
+              pairMinusGlobalIndex[base + nDigis] = i;
             }
             ++nDigis;
           }
@@ -220,8 +220,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   const int32_t* nSegments,
                                   const int32_t* digiCountPerSegment,
                                   const int32_t* segmentDigiOffset,
-                                  const int32_t* pairPlusLocalIndex,
-                                  const int32_t* pairMinusLocalIndex,
+                                  const int32_t* pairPlusGlobalIndex,
+                                  const int32_t* pairMinusGlobalIndex,
                                   BTLElectronicsToDetIdMappingSoA::ConstView mapping,
                                   BTLElectronicsIndexer indexer,
                                   ::btldigi::BTLDigiSoA::View digisOut) const {
@@ -230,8 +230,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const int32_t writeBase = segmentDigiOffset[segment];
 
         for (int32_t k = 0; k < digiCountPerSegment[segment]; ++k) {
-          const int32_t idxPlus = pairPlusLocalIndex[base + k];
-          const int32_t idxMinus = pairMinusLocalIndex[base + k];
+          const int32_t idxPlus = pairPlusGlobalIndex[base + k];
+          const int32_t idxMinus = pairMinusGlobalIndex[base + k];
           const int32_t validIdx = (idxMinus >= 0) ? idxMinus : idxPlus;
 
           const int32_t mappingIndex = indexer.flatIndex(channelData[validIdx].fedId(),
@@ -369,8 +369,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     if (!digiCountPerSegment_ || digiCountCapacity_ < nActiveChips) {
       //digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips)); // se voglio dimensionarlo nSegments (chip attivi) invece che nChips (nuemro totale di chip) dovrei conoscere nSegments lato host, pero' implica una sincronizzazione device-host.
       digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips));
-      pairPlusLocalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips * BTLElectronicsIndexer::nPairsPerChip));
-      pairMinusLocalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips * BTLElectronicsIndexer::nPairsPerChip));
+      pairPlusGlobalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips * BTLElectronicsIndexer::nPairsPerChip));
+      pairMinusGlobalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips * BTLElectronicsIndexer::nPairsPerChip));
       segmentDigiOffset_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips + 1));
       digiCountCapacity_ = nActiveChips;
     }
@@ -389,8 +389,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         segments.segmentStart,
                         mapping.const_view(),
                         indexer,
-                        pairPlusLocalIndex_->data(),
-                        pairMinusLocalIndex_->data(),
+                        pairPlusGlobalIndex_->data(),
+                        pairMinusGlobalIndex_->data(),
                         digiCountPerSegment_->data());
 
 #ifdef EDM_ML_DEBUG
@@ -431,7 +431,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << " === BTLRawToDigi fillDigis(): total number of digis = " << nDigisTot;
 #endif
-      
+
+    // protection against nDigisTot = 0 (should not happen, except if the mapping is wrong)
+    if (nDigisTot == 0)
+      return BTLDigiDeviceCollection(queue, 0); 
+    
     // copy offset to device
     alpaka::memcpy(queue, *segmentDigiOffset_, segmentDigiOffset_h);
 
@@ -451,8 +455,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                           segments.nSegments,
                           digiCountPerSegment_->data(),
                           segmentDigiOffset_->data(),
-                          pairPlusLocalIndex_->data(),
-                          pairMinusLocalIndex_->data(),
+                          pairPlusGlobalIndex_->data(),
+                          pairMinusGlobalIndex_->data(),
                           mapping.const_view(),
                           indexer,
                           digis_d.view());

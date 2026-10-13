@@ -113,10 +113,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_d_;  // starting of chip segments
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> nSegments_d_;  // total number of chip segments ( = active chips)
 
-    // pairPlusLocalIndex[seg * nPairsPerChip + k]  = global index in channelPayload_d of the plus-side  channel of the k-th digi in segment seg (-1 if absent)
-    // pairMinusLocalIndex[seg * nPairsPerChip + k] = same for the minus-side channel (-1 if absent)
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairPlusLocalIndex_; // global index in channelPayload_d of the plus-side channel
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairMinusLocalIndex_; // global index in channelPayload_d of the minus-side channel 
+    // pairPlusGlobalIndex[seg * nPairsPerChip + k]  = global index in channelPayload_d of the plus-side  channel of the k-th digi in segment seg (-1 if absent)
+    // pairMinusGlobalIndex[seg * nPairsPerChip + k] = same for the minus-side channel (-1 if absent)
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairPlusGlobalIndex_; // global index in channelPayload_d of the plus-side channel
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairMinusGlobalIndex_; // global index in channelPayload_d of the minus-side channel 
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> digiCountPerSegment_; // number of digis for each chip segment  
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentDigiOffset_; // offset, needed to write digis in the same ordering as input raw data.
 

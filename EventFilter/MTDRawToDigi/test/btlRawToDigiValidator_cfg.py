@@ -66,6 +66,7 @@ process.out = cms.OutputModule("PoolOutputModule",
 
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True)
+    #accelerators = cms.untracked.vstring('cpu')
 )
 
 process.output = cms.EndPath(process.out)
