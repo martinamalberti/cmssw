@@ -201,7 +201,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         }
 
         digiCountPerSegment[segment] = nDigis;
-	printf("KERNEL countDigis segment=%d nDigis=%d\n", segment, nDigis);
       }
     }
   };
