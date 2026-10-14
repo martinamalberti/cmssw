@@ -254,7 +254,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           d.status() = cValid.status();
           d.BCcount() = cValid.bcCount();
 
-          if (idxMinus >= 0) {
+	  // minus side - set to default values (0 for now) if not present
+	  if (idxMinus >= 0) {
             const auto& cm = channelData[idxMinus];
             d.chIDMinus() = cm.chId();
             d.T1coarseMinus() = cm.t1Coarse();
@@ -267,6 +268,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             d.PrevTrigFMinus() = cm.prevTrigF();
             d.TACIDMinus() = cm.tacId();
           }
+	  else {
+            d.chIDMinus() = 0;
+            d.T1coarseMinus() = 0; 
+            d.T2coarseMinus() = 0;
+            d.EOIcoarseMinus() = 0;
+            d.ChargeMinus() = 0;
+            d.T1fineMinus() = 0;
+            d.T2fineMinus() = 0;
+            d.IdleTimeMinus() = 0;
+            d.PrevTrigFMinus() = 0;
+            d.TACIDMinus() = 0;
+	  }
+	  // plus side - set to default values (0 for now) if not present
           if (idxPlus >= 0) {
             const auto& cp = channelData[idxPlus];
             d.chIDPlus() = cp.chId();
@@ -280,7 +294,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             d.PrevTrigFPlus() = cp.prevTrigF();
             d.TACIDPlus() = cp.tacId();
           }
-        }
+	  else {
+            d.chIDPlus() = 0;
+            d.T1coarsePlus() = 0; 
+            d.T2coarsePlus() = 0;
+            d.EOIcoarsePlus() = 0;
+            d.ChargePlus() = 0;
+            d.T1finePlus() = 0;
+            d.T2finePlus() = 0;
+            d.IdleTimePlus() = 0;
+            d.PrevTrigFPlus() = 0;
+            d.TACIDPlus() = 0;
+	  }
+	}
       }
     }
   };
