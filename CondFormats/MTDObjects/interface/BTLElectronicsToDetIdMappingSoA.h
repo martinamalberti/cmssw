@@ -12,11 +12,11 @@
 // -----------------------------------------------------------------------
 
 GENERATE_SOA_LAYOUT(BTLElectronicsToDetIdMappingSoALayout,
-		    SOA_COLUMN(uint32_t, rawId),
-		    SOA_COLUMN(bool, valid),
-		    SOA_COLUMN(uint8_t, partnerChannelId),
-		    SOA_COLUMN(int8_t, side),
-		    SOA_COLUMN(int8_t, pairId))
+                    SOA_COLUMN(uint32_t, rawId),
+                    SOA_COLUMN(bool, valid),
+                    SOA_COLUMN(uint8_t, partnerChannelId),
+                    SOA_COLUMN(int8_t, side),
+                    SOA_COLUMN(int8_t, pairId))
 
 using BTLElectronicsToDetIdMappingSoA = BTLElectronicsToDetIdMappingSoALayout<>;
 
@@ -30,16 +30,16 @@ using BTLElectronicsToDetIdMappingSoA = BTLElectronicsToDetIdMappingSoALayout<>;
 //   Each HS-link (1 RU) carries 24 elinks
 //   Each elink = 1 TOFHIR2C chip = 32 channels
 struct BTLElectronicsIndexer {
-  int32_t firstFedId;  // first FED ID in the BTL (inclusive)
-  int32_t nFeds;       // total number of BTL FED IDs (= 144)
-  int32_t nFEDsPerSerenity; // 12 Slink/FED ids per each serenity
+  int32_t firstFedId;        // first FED ID in the BTL (inclusive)
+  int32_t nFeds;             // total number of BTL FED IDs (= 144)
+  int32_t nFEDsPerSerenity;  // 12 Slink/FED ids per each serenity
   int32_t nHSLinksPerSerenity;
   int32_t nELinksPerHSLink;
   int32_t nChannelsPerELink;
-  
+
   // Aliases kept for use in the kernel code
   static constexpr int32_t nChannelsPerChip = 32;
-  static constexpr int32_t nPairsPerChip    = 16;  // max pairs within one chip
+  static constexpr int32_t nPairsPerChip = 16;  // max pairs within one chip
 
   // Returns the flat array index for the entry (fedId, hs, el, channel).
   //

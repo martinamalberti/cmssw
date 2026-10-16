@@ -3,7 +3,8 @@
 #include <cstring>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/one/EDProducer.h"
+//#include "FWCore/Framework/interface/one/EDProducer.h"
+#include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -39,7 +40,8 @@ namespace btldigitoraw {
 
 }  // namespace btldigitoraw
 
-class BTLDigiToRaw : public edm::one::EDProducer<> {
+//class BTLDigiToRaw : public edm::one::EDProducer<> {
+class BTLDigiToRaw : public edm::stream::EDProducer<> {
 public:
   explicit BTLDigiToRaw(const edm::ParameterSet&);
   ~BTLDigiToRaw() override;
@@ -183,7 +185,10 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(
 
   stream.set_bits(118, 10, static_cast<uint64_t>(BC0count));
   stream.set_bits(117, 1, static_cast<uint64_t>(status));
-  stream.set_bits(110, 7, static_cast<uint64_t>(slink));  // will be removed from the channel payload and put only in the Slink header ?
+  stream.set_bits(
+      110,
+      7,
+      static_cast<uint64_t>(slink));  // will be removed from the channel payload and put only in the Slink header ?
   stream.set_bits(104, 6, static_cast<uint64_t>(hslink));
   stream.set_bits(99, 5, static_cast<uint64_t>(elink));
   stream.set_bits(94, 5, static_cast<uint64_t>(chID));

@@ -18,22 +18,21 @@ namespace BTLElectronicsSpecs {
   // DAQ constants
   // ============================================================
   static constexpr uint32_t kNumberOfFEDs = 144;  // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
-  static constexpr uint32_t kNumberOfSlinks = 144;                                      // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
+  static constexpr uint32_t kNumberOfSlinks =
+      144;                                      // 72 trays x 2 Slinks for each tray (or 12 Slinks for each Serenity)
   static constexpr uint32_t kFirstSlinkId = 0;  // arbitrary for now
   static constexpr uint32_t kFirstFEDId = 0;    // arbitrary for now
 
   //static constexpr uint32_t kNumberOfHSlinks = 36;  // number of HS links: in each Serenity 6 trays x 6 links
   //static constexpr uint32_t kNumberOfElinks = 24;
 
-  
-  static constexpr int32_t nSLinksPerSerenity  = 12;  // number of S-links per Serenity board
-  static constexpr int32_t nFEDsPerSerenity    = 12;  // 1 S-link  = 1 FED ID
-  static constexpr int32_t nHSLinksPerFED      = 3;   // number of HS-links per Slink/FED (3 RUs --> 1 Slink)
+  static constexpr int32_t nSLinksPerSerenity = 12;  // number of S-links per Serenity board
+  static constexpr int32_t nFEDsPerSerenity = 12;    // 1 S-link  = 1 FED ID
+  static constexpr int32_t nHSLinksPerFED = 3;       // number of HS-links per Slink/FED (3 RUs --> 1 Slink)
   static constexpr int32_t nHSLinksPerSerenity = nHSLinksPerFED * nFEDsPerSerenity;  // = 36
-  static constexpr int32_t nELinksPerHSLink    = 24;  // number of elinks (chips) per HS-link
-  static constexpr int32_t nChannelsPerELink   = 32;  // channels per TOFHIR2C chip 
-  
-  
+  static constexpr int32_t nELinksPerHSLink = 24;   // number of elinks (chips) per HS-link
+  static constexpr int32_t nChannelsPerELink = 32;  // channels per TOFHIR2C chip
+
   // ============================================================
   // TOFHIR channel ID mapping
   // ============================================================

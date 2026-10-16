@@ -24,7 +24,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using btldigi::BTLDigiDeviceCollection;
   using ::btldigi::BTLDigiHostCollection;
 
-  class BTLRawToDigi : public stream::EDProducer<> { // stream::EDProducer https://twiki.cern.ch/twiki/bin/view/CMSPublic/FWMultithreadedFrameworkModuleTypes?utm_source=chatgpt.com#Comparing_Stream_and_Global_Modu
+  class BTLRawToDigi : public stream::EDProducer<> {
   public:
     explicit BTLRawToDigi(const edm::ParameterSet& iConfig);
     ~BTLRawToDigi() override = default;
@@ -83,14 +83,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       nChannels += static_cast<int32_t>(payloadBytes / kChannelBytes);
     }
 
-
     // --- if no channels in the payload, return empty collection
     if (nChannels == 0) {
       iEvent.emplace(digiPutToken_, BTLDigiHostCollection(0));
       return;
     }
 
-    
     // --- reuse a pinned staging buffer across events; only grow, never shrink/realloc every event
     if (nChannels > channelCapacity_) {
       channelCapacity_ = nChannels + nChannels / 4;  // headroom, avoid re-growing every event (+25% arbitrary)
@@ -117,23 +115,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             << "payloadBytes = " << payloadBytes << ", kChannelBytes = " << kChannelBytes
             << ", remainder = " << payloadBytes % kChannelBytes;
       }
-      // copy payloadBytes from fedData payload (header and trailer removed) in rawWords_h_, with an offset kWordsPerChannel * offset corresponding to 2 x number of channels laready copied
-      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset,
-		  payload.data(),
-		  payloadBytes);  
+      // copy payloadBytes from fedData payload (header and trailer removed) in rawWords_h_,
+      // with an offset kWordsPerChannel * offset corresponding to 2 x number of channels laready copied
+      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset, payload.data(), payloadBytes);
       const int32_t nChInFed = static_cast<int32_t>(payloadBytes / kChannelBytes);
-      std::fill(inputDataHost_->channelFedId.data() + offset, inputDataHost_->channelFedId.data() + offset + nChInFed, fed);
+      std::fill(
+          inputDataHost_->channelFedId.data() + offset, inputDataHost_->channelFedId.data() + offset + nChInFed, fed);
       offset += nChInFed;
     }
 
     // --- hand off to the device algo
-    auto digis_d = algo_.process(queue,
-                                 inputDataHost_->rawWords.data(),
-                                 inputDataHost_->channelFedId.data(),
-                                 nChannels,
-                                 elecToDetId,
-                                 indexer_);
-    
+    auto digis_d = algo_.process(
+        queue, inputDataHost_->rawWords.data(), inputDataHost_->channelFedId.data(), nChannels, elecToDetId, indexer_);
+
     // Device -> Host
     BTLDigiHostCollection digis_h(digis_d.size());
 

@@ -77,14 +77,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class BTLRawToDigiAlgo {
   public:
     BTLChannelPayloadDeviceCollection decodeChannels(Queue& queue,
-						     const uint64_t* rawWords_h,
-						     const int32_t* channelFedId_h,
-						     int32_t nChannels,
-						     BTLElectronicsIndexer const& indexer);
+                                                     const uint64_t* rawWords_h,
+                                                     const int32_t* channelFedId_h,
+                                                     int32_t nChannels,
+                                                     BTLElectronicsIndexer const& indexer);
 
     BTLChipSegments findChipSegments(Queue& queue,
                                      BTLChannelPayloadDeviceCollection const& channelPayload_d,
-				     int32_t nChannels,
+                                     int32_t nChannels,
                                      BTLElectronicsIndexer const& indexer);
 
     void countDigis(Queue& queue,
@@ -111,12 +111,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     // ----  std:optional: buffers are reused for many events, allocated only the first time ---
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_d_;  // starting of chip segments
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> nSegments_d_;  // total number of chip segments ( = active chips)
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
+        nSegments_d_;  // total number of chip segments ( = active chips)
 
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairPlusGlobalIndex_; // global index in channelPayload_d of the plus-side channel
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> pairMinusGlobalIndex_; // global index in channelPayload_d of the minus-side channel 
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> digiCountPerSegment_; // number of digis for each chip segment  
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentDigiOffset_; // offset, needed to write digis in the same ordering as input raw data.
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
+        pairPlusGlobalIndex_;  // global index in channelPayload_d of the plus-side channel
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
+        pairMinusGlobalIndex_;  // global index in channelPayload_d of the minus-side channel
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
+        digiCountPerSegment_;  // number of digis for each chip segment
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
+        segmentDigiOffset_;  // offset, needed to write digis in the same ordering as input raw data.
 
     //int32_t digiCountCapacity_ = 0;
   };

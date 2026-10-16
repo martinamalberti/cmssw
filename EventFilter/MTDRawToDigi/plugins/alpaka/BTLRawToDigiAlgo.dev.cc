@@ -99,11 +99,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
                                   BTLChannelPayloadSoA::ConstView channelData,
-				  int32_t nChannels,
+                                  int32_t nChannels,
                                   int32_t* segmentStart,
                                   int32_t* nSegmentsOut) const {
       // For now just one thread, to detect chip boundaries. To be checked if performance is acceptable.
-      if (cms::alpakatools::once_per_grid(acc)) { 
+      if (cms::alpakatools::once_per_grid(acc)) {
         int32_t nSegments = 0;
         for (int32_t i = 0; i < nChannels; ++i) {
           if (i == 0 || channelData[i].chipKey() != channelData[i - 1].chipKey()) {
@@ -136,25 +136,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   const int32_t* segmentStart,
                                   BTLElectronicsToDetIdMappingSoA::ConstView mapping,
                                   BTLElectronicsIndexer indexer,
-				  int32_t nChips,
-				  int32_t* pairPlusGlobalIndex,  // size nSegmentsUpperBound * nPairsMax
+                                  int32_t nChips,
+                                  int32_t* pairPlusGlobalIndex,  // size nSegmentsUpperBound * nPairsMax
                                   int32_t* pairMinusGlobalIndex,
                                   int32_t* digiCountPerSegment) const {
-
       for (int32_t segment : cms::alpakatools::uniform_elements(acc, nChips)) {
-	if (segment >= *nSegments) continue;
+        if (segment >= *nSegments)
+          continue;
 
-	//      for (int32_t segment : cms::alpakatools::uniform_elements(acc, *nSegments)) {
+        //      for (int32_t segment : cms::alpakatools::uniform_elements(acc, *nSegments)) {
 
-	const int32_t start = segmentStart[segment];
+        const int32_t start = segmentStart[segment];
         const int32_t end = segmentStart[segment + 1];
-	 
+
         const int32_t base = segment * BTLElectronicsIndexer::nPairsPerChip;
 
         int32_t nDigis = 0;  // local thread counter
 
         for (int32_t i = start; i < end; ++i) {
-
           const int32_t mappingIndex = indexer.flatIndex(
               channelData[i].fedId(), channelData[i].hsLinkId(), channelData[i].eLinkId(), channelData[i].chId());
 
@@ -184,7 +183,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (partnerRow >= 0) {
             // Complete pair: count it only from the plus side.
             if (m.side() == kPlusSide) {
-	      pairPlusGlobalIndex[base + nDigis] = i;  // i = global index of this channel. Maybe better to change the name to pairPlusGlobalIndex?????
+              pairPlusGlobalIndex[base + nDigis] =
+                  i;  // i = global index of this channel. Maybe better to change the name to pairPlusGlobalIndex?????
               pairMinusGlobalIndex[base + nDigis] = partnerRow;
               ++nDigis;
             }
@@ -206,7 +206,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
-
   //---------------------------------------------------------------------
   // KERNEL 2b: fill output BTLDigiSoA, one thread per chip segment
   // Reads the (plus, minus) index pairs built by BTLPairAndCountDigisKernel and
@@ -225,13 +224,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   const int32_t* pairMinusGlobalIndex,
                                   BTLElectronicsToDetIdMappingSoA::ConstView mapping,
                                   BTLElectronicsIndexer indexer,
-				  int32_t nChips,
+                                  int32_t nChips,
                                   ::btldigi::BTLDigiSoA::View digisOut) const {
-
       for (int32_t segment : cms::alpakatools::uniform_elements(acc, nChips)) {
-	if (segment >= *nSegments) continue;
+        if (segment >= *nSegments)
+          continue;
 
-	//for (int32_t segment : cms::alpakatools::uniform_elements(acc, *nSegments)) {
+        //for (int32_t segment : cms::alpakatools::uniform_elements(acc, *nSegments)) {
         const int32_t base = segment * BTLElectronicsIndexer::nPairsPerChip;
         const int32_t writeBase = segmentDigiOffset[segment];
 
@@ -254,8 +253,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           d.status() = cValid.status();
           d.BCcount() = cValid.bcCount();
 
-	  // minus side - set to default values (0 for now) if not present
-	  if (idxMinus >= 0) {
+          // minus side - set to default values (0 for now) if not present
+          if (idxMinus >= 0) {
             const auto& cm = channelData[idxMinus];
             d.chIDMinus() = cm.chId();
             d.T1coarseMinus() = cm.t1Coarse();
@@ -267,10 +266,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             d.IdleTimeMinus() = cm.idleTime();
             d.PrevTrigFMinus() = cm.prevTrigF();
             d.TACIDMinus() = cm.tacId();
-          }
-	  else {
+          } else {
             d.chIDMinus() = 0;
-            d.T1coarseMinus() = 0; 
+            d.T1coarseMinus() = 0;
             d.T2coarseMinus() = 0;
             d.EOIcoarseMinus() = 0;
             d.ChargeMinus() = 0;
@@ -279,8 +277,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             d.IdleTimeMinus() = 0;
             d.PrevTrigFMinus() = 0;
             d.TACIDMinus() = 0;
-	  }
-	  // plus side - set to default values (0 for now) if not present
+          }
+          // plus side - set to default values (0 for now) if not present
           if (idxPlus >= 0) {
             const auto& cp = channelData[idxPlus];
             d.chIDPlus() = cp.chId();
@@ -293,10 +291,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             d.IdleTimePlus() = cp.idleTime();
             d.PrevTrigFPlus() = cp.prevTrigF();
             d.TACIDPlus() = cp.tacId();
-          }
-	  else {
+          } else {
             d.chIDPlus() = 0;
-            d.T1coarsePlus() = 0; 
+            d.T1coarsePlus() = 0;
             d.T2coarsePlus() = 0;
             d.EOIcoarsePlus() = 0;
             d.ChargePlus() = 0;
@@ -305,8 +302,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             d.IdleTimePlus() = 0;
             d.PrevTrigFPlus() = 0;
             d.TACIDPlus() = 0;
-	  }
-	}
+          }
+        }
       }
     }
   };
@@ -315,49 +312,48 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   // BTLRawToDigiAlgo
   //---------------------------------------------------------------------
   BTLChannelPayloadDeviceCollection BTLRawToDigiAlgo::decodeChannels(Queue& queue,
-								     const uint64_t* rawWords_h,
-								     const int32_t* channelFedId_h,
-								     int32_t nChannels,
-								     BTLElectronicsIndexer const& indexer) {
+                                                                     const uint64_t* rawWords_h,
+                                                                     const int32_t* channelFedId_h,
+                                                                     int32_t nChannels,
+                                                                     BTLElectronicsIndexer const& indexer) {
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi [decodeChannels] START ========== \n"
-			     << " decoding " << nChannels << " channels" ;
+                             << " decoding " << nChannels << " channels";
 #endif
-    
+
     // Copy host --> device
-    auto rawWords_d = cms::alpakatools::make_device_buffer<uint64_t[]>(queue, 2 * nChannels); 
+    auto rawWords_d = cms::alpakatools::make_device_buffer<uint64_t[]>(queue, 2 * nChannels);
     auto channelFedId_d = cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChannels);
     alpaka::memcpy(queue, rawWords_d, cms::alpakatools::make_host_view(rawWords_h, 2 * nChannels));
     alpaka::memcpy(queue, channelFedId_d, cms::alpakatools::make_host_view(channelFedId_h, nChannels));
-        
+
     BTLChannelPayloadDeviceCollection channelsPayload_d(queue, nChannels);
-    
-    auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChannels), 256u), 256u);
+
+    auto workDiv =
+        cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChannels), 256u), 256u);
     alpaka::exec<Acc1D>(queue,
-			workDiv,
-			BTLDecodeChannelsKernel{},
-			rawWords_d.data(),
-			channelFedId_d.data(),
-			nChannels,
-			indexer,
-			channelsPayload_d.view());
-  
+                        workDiv,
+                        BTLDecodeChannelsKernel{},
+                        rawWords_d.data(),
+                        channelFedId_d.data(),
+                        nChannels,
+                        indexer,
+                        channelsPayload_d.view());
+
     return channelsPayload_d;
   }
 
-  
   BTLChipSegments BTLRawToDigiAlgo::findChipSegments(Queue& queue,
                                                      BTLChannelPayloadDeviceCollection const& channelPayload_d,
-						     int32_t nChannels,
+                                                     int32_t nChannels,
                                                      BTLElectronicsIndexer const& indexer) {
-    
     const int32_t nChips = indexer.size() / indexer.nChannelsPerELink;
 
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi [findChipSegments] START ==========";
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi [findChipSegments] : total number of chips = " << nChips;
 #endif
-    
+
     if (!segmentStart_d_) {
       segmentStart_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, std::min(nChannels, nChips) + 1));
     }
@@ -365,39 +361,38 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       nSegments_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, 1));
     }
 
-    // reset counters before launching the kernel (buffer reused among events!)   
+    // reset counters before launching the kernel (buffer reused among events!)
     alpaka::memset(queue, *nSegments_d_, 0);
     alpaka::memset(queue, *segmentStart_d_, 0);
-    
+
     auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 1);
 
     alpaka::exec<Acc1D>(queue,
                         workDiv,
                         BTLFindChipSegmentsKernel{},
                         channelPayload_d.const_view(),
-			nChannels,
+                        nChannels,
                         segmentStart_d_->data(),
                         nSegments_d_->data());
-    
+
 #ifdef EDM_ML_DEBUG
-    LogDebug("BTLRawToDigi") << "========== BTLRawToDigi [findChipSegments] : kernel launched, returning segmentStart_d_, nSegments_d_ ==========";
+    LogDebug("BTLRawToDigi") << "========== BTLRawToDigi [findChipSegments] : kernel launched, returning "
+                                "segmentStart_d_, nSegments_d_ ==========";
 #endif
     return {segmentStart_d_->data(), nSegments_d_->data()};
   }
 
-  
   void BTLRawToDigiAlgo::countDigis(Queue& queue,
                                     BTLChannelPayloadDeviceCollection const& channelPayload_d,
                                     BTLChipSegments const& segments,
                                     BTLElectronicsToDetIdMappingDevice const& mapping,
                                     BTLElectronicsIndexer const& indexer,
                                     //int32_t nActiveChips) {
-				    int32_t nChips) {
-    
+                                    int32_t nChips) {
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi countDigis() START ==========";
 #endif
-    
+
     // Buffers dimensioned on nActiveChips e reused among events
     //if (!digiCountPerSegment_ || digiCountCapacity_ < nActiveChips) {
     //  digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nActiveChips));
@@ -408,16 +403,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     //}
 
     // buffers dimensioned on the total number of chips
-    if (!digiCountPerSegment_){
+    if (!digiCountPerSegment_) {
       digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips));
-      pairPlusGlobalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
-      pairMinusGlobalIndex_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
+      pairPlusGlobalIndex_.emplace(
+          cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
+      pairMinusGlobalIndex_.emplace(
+          cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
       segmentDigiOffset_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips + 1));
     }
-    
+
     // reset counters before launching the kernel (buffer reused among events!)
     alpaka::memset(queue, *digiCountPerSegment_, 0);
-   
+    alpaka::memset(queue, *pairPlusGlobalIndex_, 0xFF);   // -1 come int32_t
+    alpaka::memset(queue, *pairMinusGlobalIndex_, 0xFF);  // -1 come int32_t
+
     auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChips), 256u), 256u);
 
     alpaka::exec<Acc1D>(queue,
@@ -428,7 +427,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         segments.segmentStart,
                         mapping.const_view(),
                         indexer,
-			nChips,
+                        nChips,
                         pairPlusGlobalIndex_->data(),
                         pairMinusGlobalIndex_->data(),
                         digiCountPerSegment_->data());
@@ -436,7 +435,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi [countDigis] : kernel launched ==========";
 #endif
-  
   }
 
   BTLDigiDeviceCollection BTLRawToDigiAlgo::fillDigis(Queue& queue,
@@ -445,20 +443,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       BTLElectronicsToDetIdMappingDevice const& mapping,
                                                       BTLElectronicsIndexer const& indexer,
                                                       int32_t nChips) {
-
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi fillDigis() START ==========";
 #endif
-     
+
     // copy device to host: needed to correctly dimension the BTLDigiDeviceCollection
-    auto digiCount_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, alpaka::getExtentProduct(*digiCountPerSegment_));
+    auto digiCount_h =
+        cms::alpakatools::make_host_buffer<int32_t[]>(queue, alpaka::getExtentProduct(*digiCountPerSegment_));
     alpaka::memcpy(queue, digiCount_h, *digiCountPerSegment_);
     alpaka::wait(queue);
 
 #ifdef EDM_ML_DEBUG
-    LogDebug("BTLRawToDigi") << " === BTLRawToDigi fillDigis(): digiCountPerSegment copied from device to host ==========";
+    LogDebug("BTLRawToDigi")
+        << " === BTLRawToDigi fillDigis(): digiCountPerSegment copied from device to host ==========";
 #endif
-    
+
     auto segmentDigiOffset_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nChips + 1);
     int32_t running = 0;
     for (int32_t s = 0; s < nChips; ++s) {
@@ -467,24 +466,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
     segmentDigiOffset_h[nChips] = running;
     const int32_t nDigisTot = running;
-    
+
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << " === BTLRawToDigi fillDigis(): total number of digis = " << nDigisTot;
 #endif
 
     // protection against nDigisTot = 0 (should not happen, except if the mapping is wrong)
     if (nDigisTot == 0)
-      return BTLDigiDeviceCollection(queue, 0); 
-    
+      return BTLDigiDeviceCollection(queue, 0);
+
     // copy offset to device
     alpaka::memcpy(queue, *segmentDigiOffset_, segmentDigiOffset_h);
 
 #ifdef EDM_ML_DEBUG
-    LogDebug("BTLRawToDigi") << " === BTLRawToDigi fillDigis(): digiCountPerSegment copied from device to host ==========";
+    LogDebug("BTLRawToDigi")
+        << " === BTLRawToDigi fillDigis(): digiCountPerSegment copied from device to host ==========";
 #endif
 
-    BTLDigiDeviceCollection digis_d(queue, nDigisTot); 
-          
+    BTLDigiDeviceCollection digis_d(queue, nDigisTot);
+
     if (nDigisTot > 0) {
       auto workDiv =
           cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChips), 256u), 256u);
@@ -499,7 +499,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                           pairMinusGlobalIndex_->data(),
                           mapping.const_view(),
                           indexer,
-			  nChips,
+                          nChips,
                           digis_d.view());
     }
 
@@ -512,13 +512,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                     int32_t nChannels,
                                                     BTLElectronicsToDetIdMappingDevice const& elecToDetIdMapping,
                                                     BTLElectronicsIndexer const& indexer) {
-    
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi process() START ==========";
 #endif
 
     // -- STEP1: Launch decode for each channel
-    auto channelsPayload_d = decodeChannels(queue, rawWords_h, channelFedId_h, nChannels, indexer);  // auxiliary soa on device
+    auto channelsPayload_d =
+        decodeChannels(queue, rawWords_h, channelFedId_h, nChannels, indexer);  // auxiliary soa on device
 
     // -- DEBUG STEP1: copy to host and print
 #ifdef EDM_ML_DEBUG
@@ -539,6 +539,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // -- STEP1.5: find segments corresponding to each active chip
     auto chipSegments_d = findChipSegments(queue, channelsPayload_d, nChannels, indexer);
 
+    const int32_t nChips = indexer.size() / indexer.nChannelsPerELink;
+
     // -- DEBUG findChipSegments
 #ifdef EDM_ML_DEBUG
     auto nSegments_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, 1);
@@ -549,14 +551,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     LogDebug("BTLRawToDigi") << "Debugging findChipSegments...";
     LogDebug("BTLRawToDigi") << "Number of active chips = " << nActiveChips;
 
-    const int32_t nChips = indexer.size() / indexer.nChannelsPerELink;
     auto segmentStart_h =
         cms::alpakatools::make_host_buffer<int32_t[]>(queue, nChips + 1);  // alloco con lunghezza nChips
     alpaka::memcpy(queue, segmentStart_h, *segmentStart_d_);
     alpaka::wait(queue);
 
     std::ostringstream os1;
-    for (int32_t s = 0; s < nActiveChips; ++s) {  // loop only over nActiveChips elements 
+    for (int32_t s = 0; s < nActiveChips; ++s) {  // loop only over nActiveChips elements
       os1 << "segment " << s << " : [" << segmentStart_h[s] << ", " << segmentStart_h[s + 1] << ")"
           << " size=" << segmentStart_h[s + 1] - segmentStart_h[s] << '\n';
     }
@@ -574,13 +575,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // 2) Copy nSegments from device to host and use it to define the
     //    work division directly.
 
-    const int32_t nChips = indexer.size() / indexer.nChannelsPerELink;
-    countDigis(queue, channelsPayload_d, chipSegments_d, elecToDetIdMapping, indexer, nChips); // 1)
+    countDigis(queue, channelsPayload_d, chipSegments_d, elecToDetIdMapping, indexer, nChips);  // 1)
     //countDigis(queue, channelsPayload_d, chipSegments_d, elecToDetIdMapping, indexer, nActiveChips); // 2)
 
     // -- DEBUG pair and count digis
 #ifdef EDM_ML_DEBUG
-    auto digiCount_h = cms::alpakatools::make_host_buffer<int32_t[]>(queue, alpaka::getExtentProduct(*digiCountPerSegment_));
+    auto digiCount_h =
+        cms::alpakatools::make_host_buffer<int32_t[]>(queue, alpaka::getExtentProduct(*digiCountPerSegment_));
     alpaka::memcpy(queue, digiCount_h, *digiCountPerSegment_);
     alpaka::wait(queue);
 
@@ -614,9 +615,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     LogDebug("BTLRawToDigi") << os3.str();
 #endif
 
-
     // -- return the filled digi collection
     return digis_d;
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
-
