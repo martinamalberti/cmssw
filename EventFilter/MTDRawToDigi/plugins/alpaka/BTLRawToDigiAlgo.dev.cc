@@ -355,7 +355,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
     if (!segmentStart_d_) {
-      segmentStart_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, std::min(nChannels, nChips) + 1));
+      segmentStart_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips + 1));
     }
     if (!nSegments_d_) {
       nSegments_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, 1));
