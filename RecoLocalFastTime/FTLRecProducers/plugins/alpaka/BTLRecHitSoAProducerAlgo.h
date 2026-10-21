@@ -9,10 +9,12 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
+  using namespace ::btlrechit;
+
   struct BTLRecHitSoAProducerAlgo {
     static void fromBaseToReco(Queue& queue,
-                               ::btlrechit::BTLBaseRecHitSoA::ConstView const& input,
-                               ::btlrechit::BTLRecHitSoA::View& output,
+                               BTLBaseRecHitSoA::ConstView const& input,
+                               BTLRecHitSoA::View& output,
                                double c_LYSO_,
                                double thresholdToKeep_,
                                double calibration_,

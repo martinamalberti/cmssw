@@ -47,6 +47,7 @@ std::unique_ptr<BTLReadoutMap> BTLReadoutMapESProducer::produce(const BTLReadout
     for (uint iCrystal = 0; iCrystal < BTLDetId::kCrystalsPerModuleV2; iCrystal++) {
       BTLDetId btlId(modId.mtdSide(), modId.mtdRR(), modId.runit(), modId.dmodule(), modId.smodule(), iCrystal);
 
+      int fed = btlElMapping.fed(btlId);
       int sl = btlElMapping.slink(btlId);
       int hs = btlElMapping.hslink(btlId);
       int el = btlElMapping.elink(btlId);
@@ -66,8 +67,8 @@ std::unique_ptr<BTLReadoutMap> BTLReadoutMapESProducer::produce(const BTLReadout
         }
       }
 
-      elecIds.minus = BTLElectronicsId(sl, hs, el, ch[0]);
-      elecIds.plus = BTLElectronicsId(sl, hs, el, ch[1]);
+      elecIds.minus = BTLElectronicsId(fed, hs, el, ch[0]);
+      elecIds.plus = BTLElectronicsId(fed, hs, el, ch[1]);
 
       readoutMap->add(btlId, elecIds);
     }

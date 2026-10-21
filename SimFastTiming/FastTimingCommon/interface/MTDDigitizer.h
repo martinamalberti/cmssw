@@ -261,7 +261,8 @@ namespace mtd_digitizer {
 
     } else if constexpr (std::is_same_v<Traits, BTLDigitizerTraits>) {
       auto digiCollection = std::make_unique<DigiCollection>();
-      auto digiMTDCollection = std::make_unique<typename Traits::MTDDigiCollection>();
+      typedef typename Traits::MTDDigiCollection MTDDigiCollection;
+      auto digiMTDCollection = std::make_unique<MTDDigiCollection>();
 
       auto const& btlReadoutMap = c.getData(btlReadoutMapToken_);
       electronicsSim_.run(simHitAccumulator_, *digiCollection, *digiMTDCollection, hre, btlReadoutMap);
@@ -271,8 +272,8 @@ namespace mtd_digitizer {
 
     } else if constexpr (std::is_same_v<Traits, ETLDigitizerTraits>) {
       auto digiCollection = std::make_unique<DigiCollection>();
-      auto digiMTDCollection = std::make_unique<typename Traits::MTDDigiCollection>();
-
+      typedef typename Traits::MTDDigiCollection MTDDigiCollection;
+      auto digiMTDCollection = std::make_unique<MTDDigiCollection>();
       electronicsSim_.run(simHitAccumulator_, *digiCollection, *digiMTDCollection, hre);
 
       e.put(std::move(digiCollection), digiCollection_);

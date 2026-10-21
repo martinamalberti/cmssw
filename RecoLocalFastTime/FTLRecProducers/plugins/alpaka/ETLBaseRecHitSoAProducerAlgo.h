@@ -9,10 +9,12 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
+  using namespace ::etlrechit;
+
   struct ETLBaseRecHitSoAProducerAlgo {
     static void fromDigiToBase(Queue& queue,
                                ::etldigi::ETLDigiSoA::ConstView const& input,
-                               ::etlrechit::ETLBaseRecHitSoA::View& output,
+                               ETLBaseRecHitSoA::View& output,
                                const uint32_t adcNBits_,
                                const double adcSaturation_,
                                const double adcLSB_,

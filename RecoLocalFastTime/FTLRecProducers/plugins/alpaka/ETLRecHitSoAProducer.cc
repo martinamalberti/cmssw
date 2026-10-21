@@ -30,6 +30,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
           baserh_{consumes<::etlrechit::ETLBaseRecHitHostCollection>(config.getParameter<edm::InputTag>("baserh"))},
           rh_{produces()},
           thresholdToKeep_(config.getParameter<double>("thresholdToKeep")),
+          calibration_(config.getParameter<double>("calibrationConstant")),
           timeResInNs_(config.getParameter<double>("timeResInNs")),
           timeCorr_p0_(config.getParameter<double>("timeCorr_p0")),
           timeCorr_p1_(config.getParameter<double>("timeCorr_p1")),
@@ -40,6 +41,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("baserh");
       desc.add<double>("thresholdToKeep");
+      desc.add<double>("calibrationConstant");
       desc.add<double>("timeResInNs");
       desc.add<double>("timeCorr_p0");
       desc.add<double>("timeCorr_p1");
@@ -66,6 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                                deviceBrh.view(),
                                                rh.view(),
                                                thresholdToKeep_,
+                                               calibration_,
                                                timeResInNs_,
                                                timeCorr_p0_,
                                                timeCorr_p2_,
@@ -81,6 +84,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
     const device::EDPutToken<ETLRecHitDeviceCollection> rh_;
     //edm::ESGetToken<MTDTimeCalib, MTDTimeCalibRecord> tcToken_;
     const double thresholdToKeep_;
+    const double calibration_;
     const double timeResInNs_;
     const double timeCorr_p0_;
     const double timeCorr_p1_;

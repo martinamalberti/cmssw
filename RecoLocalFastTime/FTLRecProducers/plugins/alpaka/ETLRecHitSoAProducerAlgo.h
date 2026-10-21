@@ -11,11 +11,14 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
+  using namespace ::etlrechit;
+
   struct ETLRecHitSoAProducerAlgo {
     static void fromBaseToReco(Queue& queue,
-                               ::etlrechit::ETLBaseRecHitSoA::ConstView const& input,
-                               ::etlrechit::ETLRecHitSoA::View& output,
+                               ETLBaseRecHitSoA::ConstView const& input,
+                               ETLRecHitSoA::View& output,
                                double thresholdToKeep_,
+                               double calibration_,
                                double timeResInNs_,
                                const double timeCorr_p0_,
                                const double timeCorr_p2_,
