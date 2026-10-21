@@ -3,7 +3,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/SynchronizingEDProducer.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
@@ -24,12 +24,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using btldigi::BTLDigiDeviceCollection;
   using ::btldigi::BTLDigiHostCollection;
 
-  class BTLRawToDigi : public stream::EDProducer<> {
+  // SynchronizingEDProducer: the work up to the count of the digis is enqueued in acquire(),
+  // then the framework waits for the queue in a non-blocking way (ExternalWork) before calling
+  // produce(), where nDigisTot is available on the host to allocate the output collection.
+  class BTLRawToDigi : public stream::SynchronizingEDProducer<> {
   public:
     explicit BTLRawToDigi(const edm::ParameterSet& iConfig);
     ~BTLRawToDigi() override = default;
     static void fillDescriptions(edm::ConfigurationDescriptions&);
 
+    void acquire(device::Event const&, device::EventSetup const&) override;
     void produce(device::Event&, device::EventSetup const&) override;
 
   private:
@@ -46,11 +50,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int32_t channelCapacity_ = 0;
     std::unique_ptr<BTLRawToDigiInputData> inputDataHost_;
 
+    // filled in acquire(), read in produce()
+    int32_t nChannels_ = 0;
+    std::optional<cms::alpakatools::host_buffer<int32_t>> nDigisTot_h_;
+
     static constexpr int kWordsPerChannel = 2;
   };
 
   BTLRawToDigi::BTLRawToDigi(const edm::ParameterSet& iConfig)
-      : EDProducer(iConfig),
+      : SynchronizingEDProducer(iConfig),
         rawDataBufferToken_(consumes<RawDataBuffer>(iConfig.getParameter<edm::InputTag>("rawDataBufferTag"))),
         digiPutToken_(produces()),
         elecToDetIdToken_(esConsumes()) {
@@ -62,7 +70,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     indexer_.nChannelsPerELink = BTLElectronicsSpecs::nChannelsPerELink;
   }
 
-  void BTLRawToDigi::produce(device::Event& iEvent, device::EventSetup const& iSetup) {
+  void BTLRawToDigi::acquire(device::Event const& iEvent, device::EventSetup const& iSetup) {
     auto const& rawDataBuffer = iEvent.get(rawDataBufferToken_);
     auto const& elecToDetId = iSetup.getData(elecToDetIdToken_);
     auto& queue = iEvent.queue();
@@ -83,11 +91,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       nChannels += static_cast<int32_t>(payloadBytes / kChannelBytes);
     }
 
-    // --- if no channels in the payload, return empty collection
-    if (nChannels == 0) {
-      iEvent.emplace(digiPutToken_, BTLDigiHostCollection(0));
+    // --- if no channels in the payload, nothing to do on the device: produce() puts an empty collection
+    nChannels_ = nChannels;
+    if (nChannels == 0)
       return;
-    }
 
     // --- reuse a pinned staging buffer across events; only grow, never shrink/realloc every event
     if (nChannels > channelCapacity_) {
@@ -124,15 +131,41 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       offset += nChInFed;
     }
 
-    // --- hand off to the device algo
-    auto digis_d = algo_.process(
-        queue, inputDataHost_->rawWords.data(), inputDataHost_->channelFedId.data(), nChannels, elecToDetId, indexer_);
+    // --- hand off to the device algo: decode, pairing and count of the digis.
+    // The total number of digis is copied asynchronously to nDigisTot_h_
+    nDigisTot_h_.emplace(cms::alpakatools::make_host_buffer<int32_t>(queue));
+    algo_.prepareDigis(queue,
+                       inputDataHost_->rawWords.data(),
+                       inputDataHost_->channelFedId.data(),
+                       nChannels,
+                       elecToDetId,
+                       indexer_,
+                       *nDigisTot_h_);
+  }
+
+  void BTLRawToDigi::produce(device::Event& iEvent, device::EventSetup const& iSetup) {
+    // --- no channels in the payload: return empty collection
+    if (nChannels_ == 0) {
+      iEvent.emplace(digiPutToken_, BTLDigiHostCollection(0));
+      return;
+    }
+
+    auto const& elecToDetId = iSetup.getData(elecToDetIdToken_);
+    auto& queue = iEvent.queue();
+
+    // the queue has been synchronized by the framework after acquire(): nDigisTot is available
+    const int32_t nDigisTot = *nDigisTot_h_->data();
+    nDigisTot_h_.reset();
+
+    auto digis_d = algo_.produceDigis(queue, elecToDetId, indexer_, nDigisTot);
 
     // Device -> Host
     BTLDigiHostCollection digis_h(digis_d.size());
 
     alpaka::memcpy(queue, digis_h.buffer(), digis_d.buffer());
 
+    // still needed as long as a host collection is put: to be removed when the device collection
+    // is put directly and the framework takes care of the (async) device -> host copy
     alpaka::wait(queue);
 
     iEvent.emplace(digiPutToken_, std::move(digis_h));
