@@ -131,7 +131,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::optional<BTLChannelPayloadDeviceCollection> channelsPayload_d_;
     BTLChipSegments chipSegments_d_;
 
-    // ----  std:optional: buffers are reused for many events, allocated only the first time ---
+    // ----  std::optional: buffers are (re)allocated for each event with the caching allocator, and must not be
+    // reused across events: produce() does not wait for the fill kernel, so the previous event may still be using them ---
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_d_;  // starting of chip segments
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
         nSegments_d_;  // total number of chip segments ( = active chips)
