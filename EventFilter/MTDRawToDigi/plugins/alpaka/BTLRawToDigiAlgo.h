@@ -94,21 +94,43 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                     BTLElectronicsIndexer const& indexer,
                     int32_t nActiveChips);
 
+    // computes the per-segment digi offsets on device and enqueues the async copy of nDigisTot to the host
+    void computeDigiOffsets(Queue& queue, int32_t nChips, cms::alpakatools::host_buffer<int32_t>& nDigisTot_h);
+
     BTLDigiDeviceCollection fillDigis(Queue& queue,
                                       BTLChannelPayloadDeviceCollection const& channelPayload_d,
                                       BTLChipSegments const& segments,
                                       BTLElectronicsToDetIdMappingDevice const& mapping,
                                       BTLElectronicsIndexer const& indexer,
-                                      int32_t nActiveChips);
+                                      int32_t nActiveChips,
+                                      int32_t nDigisTot);
 
-    BTLDigiDeviceCollection process(Queue& queue,
-                                    const uint64_t* rawWords_h,
-                                    const int32_t* channelFedId_h,
-                                    int32_t nChannels,
-                                    BTLElectronicsToDetIdMappingDevice const& elecToDetId,
-                                    BTLElectronicsIndexer const& indexer);
+    // ---- The processing is split in two parts, to be called from acquire() and produce() of a
+    // SynchronizingEDProducer: the framework waits (non-blocking) for the queue between the two,
+    // so that nDigisTot is available on the host without an explicit alpaka::wait.
+
+    // STEP1 -> STEP2a.5: decode, find chip segments, pair and count digis, compute offsets.
+    // Enqueues the async copy of the total number of digis into nDigisTot_h.
+    void prepareDigis(Queue& queue,
+                      const uint64_t* rawWords_h,
+                      const int32_t* channelFedId_h,
+                      int32_t nChannels,
+                      BTLElectronicsToDetIdMappingDevice const& elecToDetId,
+                      BTLElectronicsIndexer const& indexer,
+                      cms::alpakatools::host_buffer<int32_t>& nDigisTot_h);
+
+    // STEP2b: allocate the output collection with nDigisTot (read on the host after the
+    // synchronization) and fill it. Must be called after prepareDigis().
+    BTLDigiDeviceCollection produceDigis(Queue& queue,
+                                         BTLElectronicsToDetIdMappingDevice const& elecToDetId,
+                                         BTLElectronicsIndexer const& indexer,
+                                         int32_t nDigisTot);
 
   private:
+    // ---- intermediate products, kept from prepareDigis() (acquire) to produceDigis() (produce)
+    std::optional<BTLChannelPayloadDeviceCollection> channelsPayload_d_;
+    BTLChipSegments chipSegments_d_;
+
     // ----  std:optional: buffers are reused for many events, allocated only the first time ---
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_d_;  // starting of chip segments
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
