@@ -26,6 +26,5 @@
 </library>
 
 <bin file="test_bitstream.cc">
-  <use name="FWCore/Utilities"/>
   <use name="EventFilter/MTDRawToDigi"/>
 </bin>
