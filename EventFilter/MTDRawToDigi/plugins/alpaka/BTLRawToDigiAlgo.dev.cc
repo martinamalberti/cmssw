@@ -386,14 +386,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi [findChipSegments] : total number of chips = " << nChips;
 #endif
 
-    if (!segmentStart_d_) {
-      segmentStart_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips + 1));
-    }
-    if (!nSegments_d_) {
-      nSegments_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, 1));
-    }
+    // allocated for each event (cheap with the caching allocator): the previous event may still be
+    // using its buffers on another queue, since produce() does not wait for the fill kernel
+    segmentStart_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips + 1));
+    nSegments_d_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, 1));
 
-    // reset counters before launching the kernel (buffer reused among events!)
+    // reset counters before launching the kernel
     alpaka::memset(queue, *nSegments_d_, 0);
     alpaka::memset(queue, *segmentStart_d_, 0);
 
@@ -425,17 +423,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi countDigis() START ==========";
 #endif
 
-    // -- buffers dimensioned on the total number of chips
-    if (!digiCountPerSegment_) {
-      digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips));
-      pairPlusGlobalIndex_.emplace(
-          cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
-      pairMinusGlobalIndex_.emplace(
-          cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
-      segmentDigiOffset_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips + 1));
-    }
+    // -- buffers dimensioned on the total number of chips, allocated for each event (see findChipSegments)
+    digiCountPerSegment_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips));
+    pairPlusGlobalIndex_.emplace(
+        cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
+    pairMinusGlobalIndex_.emplace(
+        cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
+    segmentDigiOffset_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips + 1));
 
-    // --- reset counters before launching the kernel (buffer reused among events!)
+    // --- reset counters before launching the kernel
     alpaka::memset(queue, *digiCountPerSegment_, 0);
     alpaka::memset(queue, *pairPlusGlobalIndex_, 0xFF);   // -1 come int32_t
     alpaka::memset(queue, *pairMinusGlobalIndex_, 0xFF);  // -1 come int32_t
@@ -468,9 +464,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
     // Launch KERNEL 2a.5: digi offsets per segment + total number of digis, on device
-    if (!nDigisTot_d_) {
-      nDigisTot_d_.emplace(cms::alpakatools::make_device_buffer<int32_t>(queue));
-    }
+    nDigisTot_d_.emplace(cms::alpakatools::make_device_buffer<int32_t>(queue));
     auto workDivOffset = cms::alpakatools::make_workdiv<Acc1D>(1, 1);
     alpaka::exec<Acc1D>(queue,
                         workDivOffset,
