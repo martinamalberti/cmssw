@@ -6,8 +6,12 @@
 //   - testDigis : btldigi::BTLDigiHostCollection (PortableHostCollection<BTLDigiSoA>)
 //                 produced by BTLRawToDigi (unpacker output)
 //
-// Assumes both collections are in the same order (same index = same digi).
+// The two collections are not in the same order (the unpacker output is ordered by chip):
+// the digis are matched by rawId, assuming at most one digi per crystal per event.
 //
+
+#include <unordered_map>
+#include <vector>
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -83,12 +87,39 @@ void BTLRawToDigiValidator::analyze(const edm::Event& iEvent, const edm::EventSe
         << "Event " << iEvent.id() << "  SIZE MISMATCH: ref=" << nRef << " test=" << nTest;
   }
 
-  int32_t const nCompare = std::min(nRef, nTest);
-  int nOk = 0, nWrong = 0;
+  // index of the unpacker digis by rawId
+  std::unordered_map<uint32_t, int32_t> testIndex;
+  testIndex.reserve(nTest);
+  int nDuplicates = 0;
+  for (int32_t j = 0; j < nTest; ++j) {
+    if (!testIndex.emplace(testView[j].rawId(), j).second) {
+      edm::LogError("BTLRawToDigiValidator")
+          << "Event " << iEvent.id() << "   test digi[" << j << "]  duplicated rawId=" << testView[j].rawId();
+      ++nDuplicates;
+    }
+  }
 
-  for (int32_t i = 0; i < nCompare; ++i) {
+  int nOk = 0, nWrong = 0, nMissing = 0;
+  std::vector<bool> testMatched(nTest, false);
+
+  for (int32_t i = 0; i < nRef; ++i) {
     btldigi::BTLDigi const& r = (*h_ref)[i];
-    auto const t = testView[i];
+
+    auto const found = testIndex.find(r.krawId());
+    if (found == testIndex.end()) {
+      edm::LogError("BTLRawToDigiValidator")
+          << "Event " << iEvent.id() << "   digi[" << i << "]  rawId=" << r.krawId() << " not found in the unpacker output";
+      ++nMissing;
+      continue;
+    }
+    if (testMatched[found->second]) {
+      edm::LogError("BTLRawToDigiValidator")
+          << "Event " << iEvent.id() << "   digi[" << i << "]  rawId=" << r.krawId() << " duplicated in the reference";
+      ++nDuplicates;
+      continue;
+    }
+    testMatched[found->second] = true;
+    auto const t = testView[found->second];
 
     bool ok = true;  // reset for each digi
 
@@ -135,12 +166,23 @@ void BTLRawToDigiValidator::analyze(const edm::Event& iEvent, const edm::EventSe
       ++nWrong;
   }
 
-  if (nRef == nTest && nWrong == 0)
+  // unpacker digis without a reference digi
+  int nExtra = 0;
+  for (int32_t j = 0; j < nTest; ++j) {
+    if (!testMatched[j]) {
+      edm::LogError("BTLRawToDigiValidator") << "Event " << iEvent.id() << "   test digi[" << j
+                                             << "]  rawId=" << testView[j].rawId() << " not found in the reference";
+      ++nExtra;
+    }
+  }
+
+  if (nRef == nTest && nWrong == 0 && nMissing == 0 && nExtra == 0 && nDuplicates == 0)
     edm::LogInfo("BTLRawToDigiValidator") << "Event " << iEvent.id() << "  OK - all " << nOk << " digis match.";
   else
     edm::LogError("BTLRawToDigiValidator")
         << "Event " << iEvent.id() << " FAILURES:"
-        << "  matched=" << nOk << "  wrong=" << nWrong << "  size_diff=" << (nRef - nTest);
+        << "  matched=" << nOk << "  wrong=" << nWrong << "  missing=" << nMissing << "  extra=" << nExtra
+        << "  duplicates=" << nDuplicates << "  size_diff=" << (nRef - nTest);
 }
 
 // ---------------------------------------------------------------------------

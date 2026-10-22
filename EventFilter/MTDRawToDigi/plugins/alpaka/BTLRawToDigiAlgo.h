@@ -69,9 +69,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   constexpr int kPlusSide = 1;
   constexpr int kMinusSide = 0;
 
+  // Segment of channels of each chip, indexed by chip (chipKey): [chipStart[k], chipEnd[k]).
+  // Chips without data have chipStart[k] = chipEnd[k] = 0.
   struct BTLChipSegments {
-    int32_t* segmentStart = nullptr;  // segmentStart[k]/[k+1] define the segment k
-    int32_t* nSegments = nullptr;     // numerber of segments found in the event
+    int32_t* chipStart = nullptr;  // first channel of chip k
+    int32_t* chipEnd = nullptr;    // last channel of chip k + 1
   };
 
   class BTLRawToDigiAlgo {
@@ -92,17 +94,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                     BTLChipSegments const& segments,
                     BTLElectronicsToDetIdMappingDevice const& mapping,
                     BTLElectronicsIndexer const& indexer,
-                    int32_t nActiveChips);
+                    int32_t nChips);
 
     // computes the per-segment digi offsets on device and enqueues the async copy of nDigisTot to the host
     void computeDigiOffsets(Queue& queue, int32_t nChips, cms::alpakatools::host_buffer<int32_t>& nDigisTot_h);
 
     BTLDigiDeviceCollection fillDigis(Queue& queue,
                                       BTLChannelPayloadDeviceCollection const& channelPayload_d,
-                                      BTLChipSegments const& segments,
                                       BTLElectronicsToDetIdMappingDevice const& mapping,
                                       BTLElectronicsIndexer const& indexer,
-                                      int32_t nActiveChips,
+                                      int32_t nChips,
                                       int32_t nDigisTot);
 
     // ---- The processing is split in two parts, to be called from acquire() and produce() of a
@@ -133,9 +134,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // ----  std::optional: buffers are (re)allocated for each event with the caching allocator, and must not be
     // reused across events: produce() does not wait for the fill kernel, so the previous event may still be using them ---
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> segmentStart_d_;  // starting of chip segments
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
-        nSegments_d_;  // total number of chip segments ( = active chips)
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> chipStart_d_;  // start of the segment of each chip
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> chipEnd_d_;    // end of the segment of each chip
 
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
         pairPlusGlobalIndex_;  // global index in channelPayload_d of the plus-side channel
