@@ -2,6 +2,7 @@
 
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/prefixScan.h"
 
 #include "BTLRawToDigiAlgo.h"
 
@@ -65,10 +66,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const int32_t fed = channelFedId[i];
         out[i].fedId() = fed;
         // Dense chip index.  Convert (fedId, hsLinkId, eLinkId) into a contiguous index in [0, nChips).
-        // !!!!! NOTE: The input channels are ordered by FED, HSLink and ELink.
-        // this STEP 1 preserves this ordering because each input channel i
-        // is decoded into output row i. Therefore chipKey is non-decreasing in the output SoA, and
-        // channels belonging to the same chip form a contiguous segment.
+        // !!!!! NOTE: In the input, the channels belonging to the same chip are contiguous
+        // (the chips themselves are NOT sorted by chipKey).
+        // This STEP 1 preserves the input ordering because each input channel i
+        // is decoded into output row i, so channels belonging to the same chip form a contiguous segment.
         // This is exploited in step 1.5 to detect boundaries between segments of data corresponding to different chips
         out[i].chipKey() =
             static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nChannelsPerChip);
@@ -90,29 +91,45 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   //---------------------------------------------------------------------
-  // KERNEL 1.5:  finds segnments corresponding to each chip
-  // The BTLChannelPayloadSoA filled in STEP1 is ordered by chip, so the chip boundaries
-  // can be found with a simple sequential scan.
-  // About 332k in the worst case, typically ~30k. To be understood if this step needs to be parallelized. For now it is not.
+  // STEP 1.5: finds the segments corresponding to each chip, in parallel.
+  // In the BTLChannelPayloadSoA filled in STEP1 the channels of the same chip are contiguous, so a
+  // segment starts at each channel whose chipKey differs from the previous one.
+  // The segments are numbered in the order of the raw data (not sorted by chipKey):
+  //   KERNEL 1.5a: one thread per channel, chipStartFlag[i] = 1 if channel i is the first of its chip
+  //   inclusive prefix scan of chipStartFlag (multiBlockPrefixScan) -> chipStartRank
+  //   KERNEL 1.5b: one thread per channel, the first channel of each chip writes the start of its
+  //                segment, segmentStart[chipStartRank[i] - 1] = i; the last channel writes the end
+  //                of the last segment and the number of segments.
+  // About 332k channels in the worst case, typically ~30k.
   //-----------------------------------------------------------------------------------------------------
-  class BTLFindChipSegmentsKernel {
+  class BTLFlagChipStartsKernel {
   public:
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
                                   BTLChannelPayloadSoA::ConstView channelData,
                                   int32_t nChannels,
+                                  uint32_t* chipStartFlag) const {
+      for (int32_t i : cms::alpakatools::uniform_elements(acc, nChannels)) {
+        chipStartFlag[i] = (i == 0 || channelData[i].chipKey() != channelData[i - 1].chipKey()) ? 1 : 0;
+      }
+    }
+  };
+
+  class BTLFindChipSegmentsKernel {
+  public:
+    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+                                  const uint32_t* chipStartFlag,
+                                  const uint32_t* chipStartRank,  // inclusive prefix scan of chipStartFlag
+                                  int32_t nChannels,
                                   int32_t* segmentStart,
                                   int32_t* nSegmentsOut) const {
-      // For now just one thread, to detect chip boundaries. To be checked if performance is acceptable.
-      if (cms::alpakatools::once_per_grid(acc)) {
-        int32_t nSegments = 0;
-        for (int32_t i = 0; i < nChannels; ++i) {
-          if (i == 0 || channelData[i].chipKey() != channelData[i - 1].chipKey()) {
-            segmentStart[nSegments] = i;
-            ++nSegments;
-          }
+      for (int32_t i : cms::alpakatools::uniform_elements(acc, nChannels)) {
+        if (chipStartFlag[i])
+          segmentStart[chipStartRank[i] - 1] = i;
+        if (i == nChannels - 1) {
+          const int32_t nSegments = chipStartRank[i];
+          segmentStart[nSegments] = nChannels;  // end of last segment
+          *nSegmentsOut = nSegments;
         }
-        segmentStart[nSegments] = nChannels;  // end of last segment
-        *nSegmentsOut = nSegments;
       }
     }
   };
@@ -395,12 +412,39 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::memset(queue, *nSegments_d_, 0);
     alpaka::memset(queue, *segmentStart_d_, 0);
 
-    auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 1);
+    // temporary buffers, only used by the kernels enqueued here
+    auto chipStartFlag_d = cms::alpakatools::make_device_buffer<uint32_t[]>(queue, nChannels);
+    auto chipStartRank_d = cms::alpakatools::make_device_buffer<uint32_t[]>(queue, nChannels);
 
+    // KERNEL 1.5a: flag the first channel of each chip
+    auto workDiv =
+        cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChannels), 256u), 256u);
+    alpaka::exec<Acc1D>(
+        queue, workDiv, BTLFlagChipStartsKernel{}, channelPayload_d.const_view(), nChannels, chipStartFlag_d.data());
+
+    // inclusive prefix scan of the flags: chipStartRank[i] = number of segments starting at or before channel i
+    const uint32_t threadsScan = 1024u;
+    const uint32_t nBlocksScan = cms::alpakatools::divide_up_by(uint32_t(nChannels), threadsScan);
+    const auto workDivScan = cms::alpakatools::make_workdiv<Acc1D>(nBlocksScan, threadsScan);
+    auto blockCounter_d = cms::alpakatools::make_device_buffer<int32_t>(queue);
+    alpaka::memset(queue, blockCounter_d, 0);
+    cms::alpakatools::checkSharedMemoryPrefixScan<Acc1D>(uint32_t(nChannels), nBlocksScan, alpaka::getDev(queue));
+    alpaka::exec<Acc1D>(queue,
+                        workDivScan,
+                        cms::alpakatools::multiBlockPrefixScan<uint32_t>(),
+                        chipStartFlag_d.data(),
+                        chipStartRank_d.data(),
+                        uint32_t(nChannels),
+                        int32_t(nBlocksScan),
+                        blockCounter_d.data(),
+                        alpaka::getPreferredWarpSize(alpaka::getDev(queue)));
+
+    // KERNEL 1.5b: write the start of each segment, in the order of the raw data
     alpaka::exec<Acc1D>(queue,
                         workDiv,
                         BTLFindChipSegmentsKernel{},
-                        channelPayload_d.const_view(),
+                        chipStartFlag_d.data(),
+                        chipStartRank_d.data(),
                         nChannels,
                         segmentStart_d_->data(),
                         nSegments_d_->data());
