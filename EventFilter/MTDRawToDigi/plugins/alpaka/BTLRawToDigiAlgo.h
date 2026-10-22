@@ -143,9 +143,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         pairMinusGlobalIndex_;  // global index in channelPayload_d of the minus-side channel
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
         digiCountPerSegment_;  // number of digis for each chip segment
-    std::optional<cms::alpakatools::device_buffer<Device, int32_t>> nDigisTot_d_;  // total number of digis
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
-        segmentDigiOffset_;  // offset, needed to write digis in the same ordering as input raw data.
+        segmentDigiOffset_;  // offset, needed to write digis in the same ordering as input raw data;
+                             // the last element (index nChips) is the total number of digis
 
     //int32_t digiCountCapacity_ = 0;
   };

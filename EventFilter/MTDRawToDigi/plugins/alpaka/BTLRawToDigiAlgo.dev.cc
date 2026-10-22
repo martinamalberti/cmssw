@@ -223,38 +223,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
-  //------------------------------------------------------------------------------
-  // KERNEL 2a.5: computes digi offsets per chip segment
-  // Exclusive prefix sum of digiCountPerSegment:
-  //   segmentDigiOffset[s]      = index of the first digi of segment s in the output BTLDigiSoA
-  //   segmentDigiOffset[nChips] = nDigisTot = total number of digis in the event
-  // nDigisTot is also written to a scalar buffer: it is the only value copied
-  // device -> host, to allocate the output BTLDigiDeviceCollection.
-  // NOTE: digiCountPerSegment must be zeroed for segments >= nSegments
-  // (memset before BTLPairAndCountDigisKernel).
-  // For now a single thread (sequential loop over nChips). To be parallelized
-  // (prefix scan) if it turns out to be a bottleneck in GPU profiling.
-  //------------------------------------------------------------------------------
-  class BTLDigiOffsetKernel {
-  public:
-    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
-                                  const int32_t* digiCountPerSegment,
-                                  int32_t* segmentDigiOffset,
-                                  int32_t* nDigisTot,
-                                  int32_t nChips) const {
-      // single thread: sequential exclusive prefix sum.
-      if (cms::alpakatools::once_per_grid(acc)) {
-        int32_t running = 0;
-        for (int32_t s = 0; s < nChips; ++s) {
-          segmentDigiOffset[s] = running;
-          running += digiCountPerSegment[s];
-        }
-        segmentDigiOffset[nChips] = running;
-        *nDigisTot = running;
-      }
-    }
-  };
-
   //---------------------------------------------------------------------
   // KERNEL 2b: fill output BTLDigiSoA, one thread per chip segment
   // Reads the (plus, minus) index pairs built by BTLPairAndCountDigisKernel and
@@ -507,20 +475,35 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi computeDigiOffsets() START ==========";
 #endif
 
-    // Launch KERNEL 2a.5: digi offsets per segment + total number of digis, on device
-    nDigisTot_d_.emplace(cms::alpakatools::make_device_buffer<int32_t>(queue));
-    auto workDivOffset = cms::alpakatools::make_workdiv<Acc1D>(1, 1);
-    alpaka::exec<Acc1D>(queue,
-                        workDivOffset,
-                        BTLDigiOffsetKernel{},
-                        digiCountPerSegment_->data(),
-                        segmentDigiOffset_->data(),
-                        nDigisTot_d_->data(),
-                        nChips);
+    // STEP 2a.5: digi offsets per chip segment, as an exclusive prefix sum of digiCountPerSegment:
+    //   segmentDigiOffset[s]      = index of the first digi of segment s in the output BTLDigiSoA
+    //   segmentDigiOffset[nChips] = nDigisTot = total number of digis in the event
+    // The inclusive prefix scan (multiBlockPrefixScan) is written shifted by one element,
+    // into segmentDigiOffset + 1, so that segmentDigiOffset[0] = 0 and the result is the exclusive scan.
+    // NOTE: digiCountPerSegment must be zeroed for segments >= nSegments
+    // (memset before BTLPairAndCountDigisKernel), since the scan runs over all the nChips.
+    alpaka::memset(queue, *segmentDigiOffset_, 0);
 
-    // only device -> host copy: nDigisTot (4 bytes), needed to allocate the output collection.
+    const uint32_t threadsScan = 1024u;
+    const uint32_t nBlocksScan = cms::alpakatools::divide_up_by(uint32_t(nChips), threadsScan);
+    const auto workDivScan = cms::alpakatools::make_workdiv<Acc1D>(nBlocksScan, threadsScan);
+    auto blockCounter_d = cms::alpakatools::make_device_buffer<int32_t>(queue);
+    alpaka::memset(queue, blockCounter_d, 0);
+    cms::alpakatools::checkSharedMemoryPrefixScan<Acc1D>(uint32_t(nChips), nBlocksScan, alpaka::getDev(queue));
+    alpaka::exec<Acc1D>(queue,
+                        workDivScan,
+                        cms::alpakatools::multiBlockPrefixScan<int32_t>(),
+                        digiCountPerSegment_->data(),
+                        segmentDigiOffset_->data() + 1,
+                        uint32_t(nChips),
+                        int32_t(nBlocksScan),
+                        blockCounter_d.data(),
+                        alpaka::getPreferredWarpSize(alpaka::getDev(queue)));
+
+    // only device -> host copy: nDigisTot (4 bytes, last element of segmentDigiOffset), needed to allocate
+    // the output collection.
     // No wait here: the value is read in produce(), after the framework has synchronized the queue.
-    alpaka::memcpy(queue, nDigisTot_h, *nDigisTot_d_);
+    alpaka::memcpy(queue, nDigisTot_h, cms::alpakatools::make_device_view(queue, segmentDigiOffset_->data()[nChips]));
   }
 
   BTLDigiDeviceCollection BTLRawToDigiAlgo::fillDigis(Queue& queue,
