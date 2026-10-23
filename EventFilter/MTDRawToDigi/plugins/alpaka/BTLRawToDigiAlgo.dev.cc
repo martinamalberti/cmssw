@@ -170,13 +170,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           const auto& m = mapping[mappingIndex];
 
           if (!m.valid()) {
+#ifdef EDM_ML_DEBUG
             printf("INVALID MAPPING: fed=%u hs=%u elink=%u ch=%u mappingIndex=%d\n",
                    static_cast<unsigned int>(channelData[i].fedId()),
                    static_cast<unsigned int>(channelData[i].hsLinkId()),
                    static_cast<unsigned int>(channelData[i].eLinkId()),
                    static_cast<unsigned int>(channelData[i].chId()),
                    mappingIndex);
-            continue;
+#endif
+	    continue;
           }
 
           // Find the partner channel within this chip.
@@ -405,11 +407,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     pairMinusGlobalIndex_.emplace(
         cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips * BTLElectronicsIndexer::nPairsPerChip));
     segmentDigiOffset_.emplace(cms::alpakatools::make_device_buffer<int32_t[]>(queue, nChips + 1));
-
-    // --- reset before launching the kernel
-    // (digiCountPerSegment does not need to be reset: the kernel writes it for all the chips)
-    alpaka::memset(queue, *pairPlusGlobalIndex_, 0xFF);   // -1 come int32_t
-    alpaka::memset(queue, *pairMinusGlobalIndex_, 0xFF);  // -1 come int32_t
 
     auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(cms::alpakatools::divide_up_by(uint32_t(nChips), 256u), 256u);
 

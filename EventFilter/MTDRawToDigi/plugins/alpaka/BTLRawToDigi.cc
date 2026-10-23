@@ -1,5 +1,9 @@
+#include <array>
+#include <cstring>
+
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 
@@ -54,7 +58,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int32_t nChannels_ = 0;
     std::optional<cms::alpakatools::host_buffer<int32_t>> nDigisTot_h_;
 
+    // checks the fragment of a FED, and returns the number of channels in its payload (0 if the fragment is not valid)
+    static int32_t nChannelsInFragment(uint32_t fed, RawFragmentWrapper const& fedData);
+
     static constexpr int kWordsPerChannel = 2;
+    static constexpr std::size_t kHeaderSize = sizeof(SLinkRocketHeader_v3);
+    static constexpr std::size_t kTrailerSize = sizeof(SLinkRocketTrailer_v3);
+    static constexpr std::size_t kChannelBytes = kWordsPerChannel * sizeof(uint64_t);  // 128 bit / channel
   };
 
   BTLRawToDigi::BTLRawToDigi(const edm::ParameterSet& iConfig)
@@ -75,20 +85,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const& elecToDetId = iSetup.getData(elecToDetIdToken_);
     auto& queue = iEvent.queue();
 
-    static constexpr std::size_t kHeaderSize = sizeof(SLinkRocketHeader_v3);
-    static constexpr std::size_t kTrailerSize = sizeof(SLinkRocketTrailer_v3);
-    static constexpr std::size_t kChannelBytes = kWordsPerChannel * sizeof(uint64_t);  // 128 bit / channel
-
-    // --- Make a first iteration over the FEDs to compute the total buffer size
+    // --- Make a first iteration over the FEDs to check the fragments and compute the total buffer size.
+    // The number of channels of each FED is kept for the second iteration (0 for the FEDs skipped)
+    std::array<int32_t, BTLElectronicsSpecs::kNumberOfFEDs> nChannelsPerFed;
     int32_t nChannels = 0;
-    for (uint32_t fed = BTLElectronicsSpecs::kFirstFEDId;
-         fed < BTLElectronicsSpecs::kFirstFEDId + BTLElectronicsSpecs::kNumberOfFEDs;
-         ++fed) {
-      const auto& fedData = rawDataBuffer.fragmentData(fed);
-      if (fedData.size() == 0)
-        continue;
-      const std::size_t payloadBytes = fedData.size() - kHeaderSize - kTrailerSize;
-      nChannels += static_cast<int32_t>(payloadBytes / kChannelBytes);
+    for (uint32_t i = 0; i < BTLElectronicsSpecs::kNumberOfFEDs; ++i) {
+      const uint32_t fed = BTLElectronicsSpecs::kFirstFEDId + i;
+      nChannelsPerFed[i] = nChannelsInFragment(fed, rawDataBuffer.fragmentData(fed));
+      nChannels += nChannelsPerFed[i];
     }
 
     // --- if no channels in the payload, nothing to do on the device: produce() puts an empty collection
@@ -107,25 +111,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // Each channel occupies two uint64_t words, and fill channelFedId_h in the same loop
 
     int32_t offset = 0;  // == number of channels already copied
-    for (uint32_t fed = BTLElectronicsSpecs::kFirstFEDId;
-         fed < BTLElectronicsSpecs::kFirstFEDId + BTLElectronicsSpecs::kNumberOfFEDs;
-         ++fed) {
-      const auto& fedData = rawDataBuffer.fragmentData(fed);
-      if (fedData.size() == 0)
+    for (uint32_t i = 0; i < BTLElectronicsSpecs::kNumberOfFEDs; ++i) {
+      const int32_t nChInFed = nChannelsPerFed[i];
+      if (nChInFed == 0)
         continue;
+      const uint32_t fed = BTLElectronicsSpecs::kFirstFEDId + i;
+      const auto& fedData = rawDataBuffer.fragmentData(fed);
       const auto payload = fedData.payload(kHeaderSize, kTrailerSize);
-      const std::size_t payloadBytes = fedData.size() - kHeaderSize - kTrailerSize;
 
-      if (payloadBytes % kChannelBytes != 0) {
-        throw cms::Exception("BTLRawToDigi")
-            << "FED " << fed << ": payload size is not aligned to channel size. "
-            << "payloadBytes = " << payloadBytes << ", kChannelBytes = " << kChannelBytes
-            << ", remainder = " << payloadBytes % kChannelBytes;
-      }
-      // copy payloadBytes from fedData payload (header and trailer removed) in rawWords_h_,
-      // with an offset kWordsPerChannel * offset corresponding to 2 x number of channels laready copied
-      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset, payload.data(), payloadBytes);
-      const int32_t nChInFed = static_cast<int32_t>(payloadBytes / kChannelBytes);
+      // copy the payload (header and trailer removed) in rawWords_h_,
+      // with an offset kWordsPerChannel * offset corresponding to 2 x number of channels already copied
+      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset, payload.data(), nChInFed * kChannelBytes);
       std::fill(
           inputDataHost_->channelFedId.data() + offset, inputDataHost_->channelFedId.data() + offset + nChInFed, fed);
       offset += nChInFed;
@@ -160,6 +156,52 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // no wait: the fill kernel may still be running when produce() returns,
     // the framework synchronizes the consumers with the queue
     iEvent.emplace(digiPutToken_, algo_.produceDigis(queue, elecToDetId, indexer_, nDigisTot));
+  }
+
+  int32_t BTLRawToDigi::nChannelsInFragment(uint32_t fed, RawFragmentWrapper const& fedData) {
+    // FED without data
+    if (fedData.size() == 0)
+      return 0;
+
+    // invalid fragments: the FED is skipped
+    if (fedData.size() < kHeaderSize + kTrailerSize) {
+      edm::LogWarning("BTLRawToDigi") << "FED " << fed << ": fragment of " << fedData.size()
+                                      << " bytes, smaller than SLinkRocket header + trailer. FED skipped";
+      return 0;
+    }
+
+    auto const* header = static_cast<const SLinkRocketHeader_v3*>(static_cast<const void*>(fedData.data().data()));
+    if (!header->verifyMarker() || header->version() != 3) {
+      edm::LogWarning("BTLRawToDigi") << "FED " << fed << ": SLinkRocket header v3 not found. FED skipped";
+      return 0;
+    }
+    if (header->sourceID() != fed) {
+      edm::LogWarning("BTLRawToDigi") << "FED " << fed << ": source ID in the header = " << header->sourceID()
+                                      << ". FED skipped";
+      return 0;
+    }
+
+    auto const* trailer = static_cast<const SLinkRocketTrailer_v3*>(
+        static_cast<const void*>(fedData.data().data() + fedData.size() - kTrailerSize));
+    if (!trailer->verifyMarker()) {
+      edm::LogWarning("BTLRawToDigi") << "FED " << fed << ": SLinkRocket trailer not found. FED skipped";
+      return 0;
+    }
+    if (trailer->eventLenBytes() != fedData.size()) {
+      edm::LogWarning("BTLRawToDigi") << "FED " << fed << ": length in the trailer = " << trailer->eventLenBytes()
+                                      << " bytes, fragment size = " << fedData.size() << " bytes. FED skipped";
+      return 0;
+    }
+
+    const std::size_t payloadBytes = fedData.size() - kHeaderSize - kTrailerSize;
+    if (payloadBytes % kChannelBytes != 0) {
+      edm::LogWarning("BTLRawToDigi") << "FED " << fed << ": payload of " << payloadBytes
+                                      << " bytes, not a multiple of the channel size (" << kChannelBytes
+                                      << " bytes). FED skipped";
+      return 0;
+    }
+
+    return static_cast<int32_t>(payloadBytes / kChannelBytes);
   }
 
   void BTLRawToDigi::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
