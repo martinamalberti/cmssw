@@ -157,6 +157,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         int32_t nDigis = 0;  // local thread counter
 
         for (int32_t i = start; i < end; ++i) {
+          // a chip has at most nPairsPerChip digis (one per crystal): more digis are possible only with
+          // corrupted data (e.g. a duplicated chId), and would be written in the slots of the next chip.
+          // The remaining channels of the chip are discarded.
+	  // TODO: in the future, errors on corrupted data will need to be logged?
+          if (nDigis >= BTLElectronicsIndexer::nPairsPerChip)
+            break;
+
           const int32_t mappingIndex = indexer.flatIndex(
               channelData[i].fedId(), channelData[i].hsLinkId(), channelData[i].eLinkId(), channelData[i].chId());
 

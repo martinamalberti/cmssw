@@ -57,7 +57,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       // -- Fill from the crystals actually present in the readout map.
-      int32_t nFilled = 0, nSkippedInconsistent = 0;
+      int32_t nFilled = 0;
       for (const auto& detId : readoutMap.getListOfDetIds()) {
         BTLElectronicsIdPair elecIds = readoutMap.getElectronicsId(detId);
 
@@ -67,11 +67,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                      elecIds.minus.eLinkId() == elecIds.plus.eLinkId();
 
         if (!consistentLinks) {
-          ++nSkippedInconsistent;
-          edm::LogWarning("BTLElectronicsToDetIdMappingESProducer")
-              << "crystal " << std::hex << detId.rawId() << std::dec << ": electronics mapping inconsistent"
-              << " (minus/plus fed/hs/e-link or pair index mismatch) - excluded from device lookup table.";
-          continue;
+          throw cms::Exception("BTLElectronicsToDetIdMappingESProducer")
+              << "crystal " << std::hex << detId.rawId() << std::dec << ": minus and plus sides on different links"
+              << " (fed " << elecIds.minus.fedId() << " vs " << elecIds.plus.fedId() << ", hs "
+              << elecIds.minus.hsLinkId() << " vs " << elecIds.plus.hsLinkId() << ", el " << elecIds.minus.eLinkId()
+              << " vs " << elecIds.plus.eLinkId() << ")";
         }
 
         // -- isValidLink() is meant to check the ids read from the payload: a readout map that does not respect
@@ -83,8 +83,34 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               << " not compatible with the layout of BTLElectronicsIndexer";
         }
 
+        // -- the unpacker pairs a channel with the channel kTofhirChannelPartner[chId] of the same chip, assuming
+        // that it is the other side of the same crystal (kTofhirChannelPartner is an involution, so checking
+        // the plus -> minus direction is enough)
+        const int32_t chPlus = elecIds.plus.channelId();
+        const int32_t chMinus = elecIds.minus.channelId();
+        const int32_t nChannels = static_cast<int32_t>(BTLElectronicsSpecs::kTofhirChannelPartner.size());
+        if (chPlus < 0 || chPlus >= nChannels || chMinus < 0 || chMinus >= nChannels ||
+            BTLElectronicsSpecs::kTofhirChannelPartner[chPlus] != chMinus) {
+          throw cms::Exception("BTLElectronicsToDetIdMappingESProducer")
+              << "crystal " << std::hex << detId.rawId() << std::dec << ": plus channel " << chPlus
+              << " and minus channel " << chMinus << " are not partners in kTofhirChannelPartner";
+        }
+
         const int32_t idxplus = indexer.flatIndex(
             elecIds.plus.fedId(), elecIds.plus.hsLinkId(), elecIds.plus.eLinkId(), elecIds.plus.channelId());
+        const int32_t idxminus = indexer.flatIndex(
+            elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), elecIds.minus.channelId());
+
+        // -- each electronics channel must belong to a single crystal
+        for (const int32_t idx : {idxplus, idxminus}) {
+          if (product->view()[idx].valid()) {
+            throw cms::Exception("BTLElectronicsToDetIdMappingESProducer")
+                << "crystal " << std::hex << detId.rawId() << std::dec << ": electronics channel (fed="
+                << elecIds.minus.fedId() << " hs=" << elecIds.minus.hsLinkId() << " el=" << elecIds.minus.eLinkId()
+                << " ch=" << (idx == idxplus ? chPlus : chMinus) << ") already assigned to crystal " << std::hex << product->view()[idx].rawId() << std::dec;
+          }
+        }
+
         product->view()[idxplus].rawId() = detId.rawId();
         product->view()[idxplus].valid() = true;
         product->view()[idxplus].partnerChannelId() =
@@ -92,8 +118,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         product->view()[idxplus].side() = 1;                                        // plus side
         ++nFilled;
 
-        const int32_t idxminus = indexer.flatIndex(
-            elecIds.minus.fedId(), elecIds.minus.hsLinkId(), elecIds.minus.eLinkId(), elecIds.minus.channelId());
         product->view()[idxminus].rawId() = detId.rawId();
         product->view()[idxminus].valid() = true;
         product->view()[idxminus].partnerChannelId() =
@@ -103,8 +127,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       LogDebug("BTLElectronicsToDetIdMappingESProducer")
-          << "filled " << nFilled << " / " << indexer.size() << " table entries, skipped " << nSkippedInconsistent
-          << " inconsistent crystals.";
+          << "filled " << nFilled << " / " << indexer.size() << " table entries.";
 
       return product;
     }
