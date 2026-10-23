@@ -15,8 +15,7 @@ GENERATE_SOA_LAYOUT(BTLElectronicsToDetIdMappingSoALayout,
                     SOA_COLUMN(uint32_t, rawId),
                     SOA_COLUMN(bool, valid),
                     SOA_COLUMN(uint8_t, partnerChannelId),
-                    SOA_COLUMN(int8_t, side),
-                    SOA_COLUMN(int8_t, pairId))
+                    SOA_COLUMN(int8_t, side))
 
 using BTLElectronicsToDetIdMappingSoA = BTLElectronicsToDetIdMappingSoALayout<>;
 
@@ -51,6 +50,19 @@ struct BTLElectronicsIndexer {
   ALPAKA_FN_ACC inline int32_t flatIndex(int32_t fedId, int32_t hs, int32_t el, int32_t channel) const {
     int32_t serenityIdx = (fedId - firstFedId) / nFEDsPerSerenity;  // 0-11
     return ((serenityIdx * nHSLinksPerSerenity + hs) * nELinksPerHSLink + el) * nChannelsPerELink + channel;
+  }
+
+  // Checks the (hs, el) ids read from the payload before using them in flatIndex():
+  //   - hs < nHSLinksPerSerenity and el < nELinksPerHSLink: otherwise flatIndex() points to another chip
+  //     (or outside the mapping table), since hs has 6 bits (0-63) and el has 5 bits (0-31) in the payload;
+  //   - hs belongs to this FED: FED k of a Serenity carries the HS-links [k * nHSLinksPerFED, (k + 1) * nHSLinksPerFED).
+  //     The ESProducer of the mapping checks that the readout map respects this rule.
+  // fedId is assumed in [firstFedId, firstFedId + nFeds), since it comes from the FED loop on the host.
+  ALPAKA_FN_HOST_ACC inline bool isValidLink(int32_t fedId, int32_t hs, int32_t el) const {
+    const int32_t nHSLinksPerFED = nHSLinksPerSerenity / nFEDsPerSerenity;
+    const int32_t fedInSerenity = (fedId - firstFedId) % nFEDsPerSerenity;
+    return hs >= 0 && hs < nHSLinksPerSerenity && el >= 0 && el < nELinksPerHSLink &&
+           hs / nHSLinksPerFED == fedInSerenity;
   }
 
   // Total number of entries in the mapping SoA.
