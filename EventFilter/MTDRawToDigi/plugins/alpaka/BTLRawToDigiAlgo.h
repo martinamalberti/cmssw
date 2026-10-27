@@ -30,7 +30,6 @@ GENERATE_SOA_LAYOUT(BTLChannelPayloadSoALayout,
                     SOA_COLUMN(uint16_t, bc0count),
                     SOA_COLUMN(bool, status),
                     SOA_COLUMN(uint32_t, bcCount),
-                    SOA_COLUMN(uint8_t, chId),  // 0..31, as read from the payload
                     SOA_COLUMN(uint16_t, t1Coarse),
                     SOA_COLUMN(uint16_t, t2Coarse),
                     SOA_COLUMN(uint16_t, eoiCoarse),
@@ -41,13 +40,13 @@ GENERATE_SOA_LAYOUT(BTLChannelPayloadSoALayout,
                     SOA_COLUMN(uint8_t, prevTrigF),
                     SOA_COLUMN(uint8_t, tacId),
 
-                    SOA_COLUMN(uint32_t, fedId),
-                    SOA_COLUMN(uint8_t, hsLinkId),
-                    SOA_COLUMN(uint8_t, eLinkId),
-
-                    // Dense key encoding (fedId, hsLinkId, eLinkId).
-                    // Used to group channels belonging to the same ASIC before pairing.
-                    SOA_COLUMN(uint32_t, chipKey))
+                    // Dense index of the electronics channel, BTLElectronicsIndexer::flatIndex(fedId, hsLinkId, eLinkId, chId),
+                    // also used as index in the electronics -> DetId mapping.
+                    // Encodes all the electronics ids of the channel:
+                    //   channelDenseIndex / nChannelsPerChip = chip index (dense, used to group the channels of the same ASIC)
+                    //   channelDenseIndex % nChannelsPerChip = chId
+                    // -1 if (hsLinkId, eLinkId) are not valid for the FED (see BTLElectronicsIndexer::isValidLink).
+                    SOA_COLUMN(int32_t, channelDenseIndex))
 
 using BTLChannelPayloadSoA = BTLChannelPayloadSoALayout<>;
 using BTLChannelPayloadHostCollection = PortableHostCollection<BTLChannelPayloadSoA>;
@@ -69,7 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   constexpr int kPlusSide = 1;
   constexpr int kMinusSide = 0;
 
-  // Segment of channels of each chip, indexed by chip (chipKey): [chipStart[k], chipEnd[k]).
+  // Segment of channels of each chip, indexed by chip (channelDenseIndex / nChannelsPerChip): [chipStart[k], chipEnd[k]).
   // Chips without data have chipStart[k] = chipEnd[k] = 0.
   struct BTLChipSegments {
     int32_t* chipStart = nullptr;  // first channel of chip k
@@ -93,7 +92,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                     BTLChannelPayloadDeviceCollection const& channelPayload_d,
                     BTLChipSegments const& segments,
                     BTLElectronicsToDetIdMappingDevice const& mapping,
-                    BTLElectronicsIndexer const& indexer,
                     int32_t nChips);
 
     // computes the per-segment digi offsets on device and enqueues the async copy of nDigisTot to the host
@@ -102,7 +100,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BTLDigiDeviceCollection fillDigis(Queue& queue,
                                       BTLChannelPayloadDeviceCollection const& channelPayload_d,
                                       BTLElectronicsToDetIdMappingDevice const& mapping,
-                                      BTLElectronicsIndexer const& indexer,
                                       int32_t nChips,
                                       int32_t nDigisTot);
 
@@ -147,7 +144,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         segmentDigiOffset_;  // offset, needed to write digis in the same ordering as input raw data;
                              // the last element (index nChips) is the total number of digis
 
-    //int32_t digiCountCapacity_ = 0;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

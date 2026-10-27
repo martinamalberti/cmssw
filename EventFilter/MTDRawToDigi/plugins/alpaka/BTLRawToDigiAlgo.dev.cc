@@ -47,11 +47,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         //***********
         out[i].bc0count() = static_cast<uint16_t>(extractBits(lo, hi, 118, 10));
         out[i].status() = extractBits(lo, hi, 117, 1) != 0;
-        const uint8_t hslink = static_cast<uint8_t>(extractBits(lo, hi, 104, 6));
-        const uint8_t elink = static_cast<uint8_t>(extractBits(lo, hi, 99, 5));
-        out[i].hsLinkId() = hslink;
-        out[i].eLinkId() = elink;
-        out[i].chId() = static_cast<uint8_t>(extractBits(lo, hi, 94, 5));
+        const int32_t hslink = static_cast<int32_t>(extractBits(lo, hi, 104, 6));
+        const int32_t elink = static_cast<int32_t>(extractBits(lo, hi, 99, 5));
+        const int32_t chId = static_cast<int32_t>(extractBits(lo, hi, 94, 5));
         out[i].bcCount() = static_cast<uint32_t>(extractBits(lo, hi, 82, 12));
         out[i].t1Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 67, 15));
         out[i].t2Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 57, 10));
@@ -63,43 +61,32 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         out[i].prevTrigF() = static_cast<uint8_t>(extractBits(lo, hi, 3, 4));
         out[i].tacId() = static_cast<uint8_t>(extractBits(lo, hi, 0, 3));
 
-        const int32_t fed = channelFedId[i];
-        out[i].fedId() = fed;
-        // Dense chip index.  Convert (fedId, hsLinkId, eLinkId) into a contiguous index in [0, nChips).
+        // Dense index of the electronics channel (also the index in the mapping):
+        // the chip index (dense, in [0, nChips)) is channelDenseIndex / nChannelsPerChip.
+        // Channels with (hsLinkId, eLinkId) not valid for their FED get channelDenseIndex = -1 and are not
+        // assigned to any chip.
         // !!!!! NOTE: In the input, the channels belonging to the same chip are contiguous
-        // (the chips themselves are NOT sorted by chipKey).
+        // (the chips themselves are NOT sorted by chip index).
         // This STEP 1 preserves the input ordering because each input channel i
         // is decoded into output row i, so channels belonging to the same chip form a contiguous segment.
         // This is exploited in step 1.5 to detect boundaries between segments of data corresponding to different chips
-        out[i].chipKey() =
-            static_cast<uint32_t>(indexer.flatIndex(fed, hslink, elink, 0) / BTLElectronicsIndexer::nChannelsPerChip);
-
-        // TEMPORARY PRINT JUST FOR DEBUGGING
-        /*
-	  printf("KERNEL i=%d fed=%u hs=%u elink=%u ch=%u chipKey=%u (0x%08x)\n",
-	       i,
-	       static_cast<unsigned>(out[i].fedId()),
-	       static_cast<unsigned>(out[i].hsLinkId()),
-	       static_cast<unsigned>(out[i].eLinkId()),
-	       static_cast<unsigned>(out[i].chId()),
-	       static_cast<unsigned>(out[i].chipKey()),
-	       static_cast<unsigned>(out[i].chipKey())
-	       );
-	*/
+        const int32_t fed = channelFedId[i];
+        out[i].channelDenseIndex() = indexer.isValidLink(fed, hslink, elink) ? indexer.flatIndex(fed, hslink, elink, chId) : -1;
       }
     }
   };
 
   //---------------------------------------------------------------------
   // KERNEL 1.5: finds the segment of channels corresponding to each chip, one thread per channel.
-  // In the BTLChannelPayloadSoA filled in STEP1 the channels of the same chip are contiguous, and chipKey
-  // is a dense index in [0, nChips): the segment of chip k is stored directly at index k,
+  // In the BTLChannelPayloadSoA filled in STEP1 the channels of the same chip are contiguous, and the chip
+  // key (channelDenseIndex / nChannelsPerChip) is a dense index in [0, nChips): the segment of chip k is stored
+  // directly at index k,
   //   chipStart[k] = first channel of chip k, chipEnd[k] = last channel of chip k + 1
   // Each thread checks if its channel is the first and/or the last one of its chip, so that each
   // entry is written by exactly one thread.
   // Chips without data keep chipStart = chipEnd = 0 (memset before the kernel), i.e. an empty segment.
-  // Channels with chipKey >= nChips (corrupted hsLinkId/eLinkId) are not assigned to any chip.
-  // As a consequence the digis are produced ordered by chipKey (i.e. by FED, HS-link, e-link), not in
+  // Channels with channelDenseIndex = -1 (corrupted hsLinkId/eLinkId) are not assigned to any chip.
+  // As a consequence the digis are produced ordered by chip index (i.e. by FED, HS-link, e-link), not in
   // the order of the raw data; the digis of the same chip are contiguous.
   // About 332k channels in the worst case, typically ~30k.
   //-----------------------------------------------------------------------------------------------------
@@ -108,16 +95,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
                                   BTLChannelPayloadSoA::ConstView channelData,
                                   int32_t nChannels,
-                                  int32_t nChips,
                                   int32_t* chipStart,
                                   int32_t* chipEnd) const {
+      constexpr int32_t nCh = BTLElectronicsIndexer::nChannelsPerChip;
       for (int32_t i : cms::alpakatools::uniform_elements(acc, nChannels)) {
-        const uint32_t key = channelData[i].chipKey();
-        if (key >= static_cast<uint32_t>(nChips))
+        const int32_t idx = channelData[i].channelDenseIndex();
+        if (idx < 0)
           continue;
-        if (i == 0 || channelData[i - 1].chipKey() != key)
+        const int32_t key = idx / nCh;
+        // chip of the previous and next channels: -1 if the neighbour does not exist or has channelDenseIndex = -1
+        // (checked explicitly, since -1 / nCh = 0 is the index of chip 0)
+        const int32_t prev = (i > 0) ? channelData[i - 1].channelDenseIndex() : -1;
+        const int32_t next = (i < nChannels - 1) ? channelData[i + 1].channelDenseIndex() : -1;
+        const int32_t prevKey = (prev < 0) ? -1 : prev / nCh;
+        const int32_t nextKey = (next < 0) ? -1 : next / nCh;
+        if (prevKey != key)
           chipStart[key] = i;
-        if (i == nChannels - 1 || channelData[i + 1].chipKey() != key)
+        if (nextKey != key)
           chipEnd[key] = i + 1;
       }
     }
@@ -128,7 +122,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   // For each segment, scans all channels, matches each plus-side channel with its partner minus-side
   // channel (if present), and stores the result as a list of (plus, minus) index pairs.
   // Complete pairs are counted once from the plus side; single-side hits are also kept.
-  // The segment index is the chip index (chipKey): chips without data have an empty segment, and
+  // The segment index is the chip index (channelDenseIndex / nChannelsPerChip): chips without data have an empty segment, and
   // digiCountPerSegment is written for all the chips (0 for chips without data).
   //
   // Output arrays (size nChips * nPairsPerChip):
@@ -143,7 +137,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   const int32_t* chipStart,
                                   const int32_t* chipEnd,
                                   BTLElectronicsToDetIdMappingSoA::ConstView mapping,
-                                  BTLElectronicsIndexer indexer,
                                   int32_t nChips,
                                   int32_t* pairPlusGlobalIndex,  // size nChips * nPairsPerChip
                                   int32_t* pairMinusGlobalIndex,
@@ -164,29 +157,30 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (nDigis >= BTLElectronicsIndexer::nPairsPerChip)
             break;
 
-          const int32_t mappingIndex = indexer.flatIndex(
-              channelData[i].fedId(), channelData[i].hsLinkId(), channelData[i].eLinkId(), channelData[i].chId());
+          // all the channels of a segment have a valid channelDenseIndex (>= 0), see BTLFindChipSegmentsKernel
+          const int32_t denseIndex = channelData[i].channelDenseIndex();
 
-          const auto& m = mapping[mappingIndex];
+          const auto& m = mapping[denseIndex];
 
           if (!m.valid()) {
 #ifdef EDM_ML_DEBUG
-            printf("INVALID MAPPING: fed=%u hs=%u elink=%u ch=%u mappingIndex=%d\n",
-                   static_cast<unsigned int>(channelData[i].fedId()),
-                   static_cast<unsigned int>(channelData[i].hsLinkId()),
-                   static_cast<unsigned int>(channelData[i].eLinkId()),
-                   static_cast<unsigned int>(channelData[i].chId()),
-                   mappingIndex);
+            printf("INVALID MAPPING: chip=%d ch=%d denseIndex=%d\n",
+                   denseIndex / BTLElectronicsIndexer::nChannelsPerChip,
+                   denseIndex % BTLElectronicsIndexer::nChannelsPerChip,
+                   denseIndex);
 #endif
 	    continue;
           }
 
-          // Find the partner channel within this chip.
+          // Find the partner channel within this chip: same chip, channel partnerChannelId
+          const int32_t partnerDenseIndex =
+              (denseIndex / BTLElectronicsIndexer::nChannelsPerChip) * BTLElectronicsIndexer::nChannelsPerChip +
+              m.partnerChannelId();
           int32_t partnerRow = -1;
           for (int32_t j = start; j < end; ++j) {
             if (j == i)
               continue;
-            if (channelData[j].chId() == m.partnerChannelId()) {
+            if (channelData[j].channelDenseIndex() == partnerDenseIndex) {
               partnerRow = j;
               break;
             }
@@ -234,7 +228,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   const int32_t* pairPlusGlobalIndex,
                                   const int32_t* pairMinusGlobalIndex,
                                   BTLElectronicsToDetIdMappingSoA::ConstView mapping,
-                                  BTLElectronicsIndexer indexer,
                                   int32_t nChips,
                                   ::btldigi::BTLDigiSoA::View digisOut) const {
       // chips without data have digiCountPerSegment = 0 and write nothing
@@ -247,11 +240,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           const int32_t idxMinus = pairMinusGlobalIndex[base + k];
           const int32_t validIdx = (idxMinus >= 0) ? idxMinus : idxPlus;
 
-          const int32_t mappingIndex = indexer.flatIndex(channelData[validIdx].fedId(),
-                                                         channelData[validIdx].hsLinkId(),
-                                                         channelData[validIdx].eLinkId(),
-                                                         channelData[validIdx].chId());
-          const auto& m = mapping[mappingIndex];
+          const auto& m = mapping[channelData[validIdx].channelDenseIndex()];
 
           auto d = digisOut[writeBase + k];
           d.rawId() = m.rawId();
@@ -264,7 +253,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // minus side - set to default values (0 for now) if not present
           if (idxMinus >= 0) {
             const auto& cm = channelData[idxMinus];
-            d.chIDMinus() = cm.chId();
+            d.chIDMinus() = cm.channelDenseIndex() % BTLElectronicsIndexer::nChannelsPerChip;
             d.T1coarseMinus() = cm.t1Coarse();
             d.T2coarseMinus() = cm.t2Coarse();
             d.EOIcoarseMinus() = cm.eoiCoarse();
@@ -289,7 +278,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // plus side - set to default values (0 for now) if not present
           if (idxPlus >= 0) {
             const auto& cp = channelData[idxPlus];
-            d.chIDPlus() = cp.chId();
+            d.chIDPlus() = cp.channelDenseIndex() % BTLElectronicsIndexer::nChannelsPerChip;
             d.T1coarsePlus() = cp.t1Coarse();
             d.T2coarsePlus() = cp.t2Coarse();
             d.EOIcoarsePlus() = cp.eoiCoarse();
@@ -379,7 +368,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         BTLFindChipSegmentsKernel{},
                         channelPayload_d.const_view(),
                         nChannels,
-                        nChips,
                         chipStart_d_->data(),
                         chipEnd_d_->data());
 
@@ -394,7 +382,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     BTLChannelPayloadDeviceCollection const& channelPayload_d,
                                     BTLChipSegments const& segments,
                                     BTLElectronicsToDetIdMappingDevice const& mapping,
-                                    BTLElectronicsIndexer const& indexer,
                                     int32_t nChips) {
 #ifdef EDM_ML_DEBUG
     LogDebug("BTLRawToDigi") << "========== BTLRawToDigi countDigis() START ==========";
@@ -417,7 +404,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         segments.chipStart,
                         segments.chipEnd,
                         mapping.const_view(),
-                        indexer,
                         nChips,
                         pairPlusGlobalIndex_->data(),
                         pairMinusGlobalIndex_->data(),
@@ -468,7 +454,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   BTLDigiDeviceCollection BTLRawToDigiAlgo::fillDigis(Queue& queue,
                                                       BTLChannelPayloadDeviceCollection const& channelPayload_d,
                                                       BTLElectronicsToDetIdMappingDevice const& mapping,
-                                                      BTLElectronicsIndexer const& indexer,
                                                       int32_t nChips,
                                                       int32_t nDigisTot) {
 #ifdef EDM_ML_DEBUG
@@ -492,7 +477,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         pairPlusGlobalIndex_->data(),
                         pairMinusGlobalIndex_->data(),
                         mapping.const_view(),
-                        indexer,
                         nChips,
                         digis_d.view());
 
@@ -524,9 +508,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     std::ostringstream os;
     for (int i = 0; i < nChannels; ++i) {
-      os << "i = " << i << " fedId = " << soa.fedId()[i] << " hsLinkId = " << static_cast<int>(soa.hsLinkId()[i])
-         << " eLinkId = " << static_cast<int>(soa.eLinkId()[i]) << " chId = " << static_cast<int>(soa.chId()[i])
-         << " chipKey = " << soa.chipKey()[i] << "\n";
+      const int32_t idx = soa.channelDenseIndex()[i];
+      os << "i = " << i << " channelDenseIndex = " << idx;
+      if (idx >= 0)
+        os << " chip = " << idx / BTLElectronicsIndexer::nChannelsPerChip
+           << " chId = " << idx % BTLElectronicsIndexer::nChannelsPerChip;
+      os << "\n";
     }
     LogDebug("BTLRawToDigi") << os.str();
 #endif
@@ -560,7 +547,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // STEP 2a: pairing and count digis, one thread per chip (nChips = maximum number of chips);
     // chips without data have an empty segment and give 0 digis.
-    countDigis(queue, channelsPayload_d, chipSegments_d_, elecToDetIdMapping, indexer, nChips);
+    countDigis(queue, channelsPayload_d, chipSegments_d_, elecToDetIdMapping, nChips);
 
     // -- DEBUG pair and count digis
 #ifdef EDM_ML_DEBUG
@@ -593,7 +580,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // -- STEP2b: fill digis
     auto digis_d =
-        fillDigis(queue, *channelsPayload_d_, elecToDetIdMapping, indexer, nChips, nDigisTot);
+        fillDigis(queue, *channelsPayload_d_, elecToDetIdMapping, nChips, nDigisTot);
 
     // the intermediate SoA is not needed anymore: release it (the caching allocator frees it
     // only once the work already enqueued on the queue has completed)
