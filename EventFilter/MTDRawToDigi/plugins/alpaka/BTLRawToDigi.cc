@@ -18,7 +18,7 @@
 
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
-#include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
+#include "CondFormats/MTDObjects/interface/BTLElectronicsSpecs.h"
 
 #include "BTLRawToDigiInputData.h"
 #include "BTLRawToDigiAlgo.h"
