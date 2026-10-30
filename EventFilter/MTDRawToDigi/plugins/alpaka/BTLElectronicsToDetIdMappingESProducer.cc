@@ -17,7 +17,7 @@
 #include "CondFormats/MTDObjects/interface/BTLReadoutMap.h"
 #include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
 #include "CondFormats/MTDObjects/interface/alpaka/BTLElectronicsToDetIdMappingDevice.h"
-#include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
+#include "CondFormats/MTDObjects/interface/BTLElectronicsSpecs.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

@@ -11,7 +11,7 @@
 
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "CondFormats/MTDObjects/interface/alpaka/BTLElectronicsToDetIdMappingDevice.h"
-#include "EventFilter/MTDRawToDigi/interface/BTLElectronicsSpecs.h"
+#include "CondFormats/MTDObjects/interface/BTLElectronicsSpecs.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 #include <sstream>
