@@ -24,10 +24,6 @@ public:
   DDCmsMTDConstruction() = delete;
   static std::unique_ptr<GeometricTimingDet> construct(const DDCompactView& cpv);
   static std::unique_ptr<GeometricTimingDet> construct(const cms::DDCompactView& cpv);
-
-private:
-  static constexpr size_t kNLayerPreTDR = 3;
-  static constexpr size_t kNLayerTDR = 5;
 };
 
 #endif

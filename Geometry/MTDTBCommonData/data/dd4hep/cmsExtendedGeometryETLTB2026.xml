@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<DDDefinition>
+  <open_geometry/>
+  <close_geometry/>
+
+  <IncludeSection>
+    <Include ref='Geometry/CMSCommonData/data/materials/2030/v1/materials.xml'/>
+    <Include ref='Geometry/CMSCommonData/data/rotations.xml'/>
+    <Include ref='Geometry/MTDCommonData/data/mtdMaterial/v4/mtdMaterial.xml'/>
+    <Include ref='Geometry/MTDTBCommonData/data/etl/tb2026/cms.xml'/>
+    <Include ref='Geometry/MTDTBCommonData/data/etl/tb2026/etl.xml'/>
+    <Include ref='Geometry/MTDTBCommonData/data/etl/tb2026/mtdStructureTopology.xml'/>
+    <Include ref='Geometry/MTDCommonData/data/mtdParameters/v9/mtdParameters.xml'/>
+    <Include ref='Geometry/MTDSimData/data/v5/mtdsens.xml'/>
+    <Include ref='Geometry/MTDSimData/data/v5/mtdProdCuts.xml'/>
+  </IncludeSection>
+</DDDefinition>

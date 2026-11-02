@@ -104,6 +104,7 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const DDComp
 
   std::vector<GeometricTimingDet*> subdet;
   std::vector<GeometricTimingDet*> layer;
+  std::vector<size_t> layerSubdet;  // position in subdet of the subdetector containing each layer
 
   do {
     GeometricTimingDet::GeometricTimingEnumType fullNode = theCmsMTDStringToEnum.type(fv.name());
@@ -124,7 +125,11 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const DDComp
       subdet.emplace_back(theCmsMTDConstruction.buildSubdet(fv));
     }
     if (fullNode == GeometricTimingDet::BTLLayer || fullNode == GeometricTimingDet::ETLDisc) {
+      if (subdet.empty()) {
+        throw cms::Exception("MTDNumbering") << "Layer " << fv.name() << " found outside of a subdetector";
+      }
       layer.emplace_back(theCmsMTDConstruction.buildLayer(fv));
+      layerSubdet.emplace_back(subdet.size() - 1);
 #ifdef EDM_ML_DEBUG
       edm::LogVerbatim("MTDNumbering") << "Number of layers: " << layer.size();
 #endif
@@ -169,7 +174,7 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const DDComp
 
   for (size_t index = 0; index < layer.size(); index++) {
     GeometricTimingDet::ConstGeometricTimingDetContainer& icomp = layer[index]->components();
-    if (index > 0) {
+    if (layer[index]->type() == GeometricTimingDet::ETLDisc) {
       std::stable_sort(icomp.begin(), icomp.end(), CmsMTDConstruction<DDFilteredView>::mtdOrderZ);
       std::stable_sort(icomp.begin(), icomp.end(), CmsMTDConstruction<DDFilteredView>::mtdOrderRR);
       std::stable_sort(icomp.begin(), icomp.end(), CmsMTDConstruction<DDFilteredView>::mtdOrderPhi);
@@ -179,23 +184,11 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const DDComp
     }
   }
 
-  // Add layers to subdetectors:
-  // first BTL (one layer only)
+  // Add layers to subdetectors, following the volume hierarchy
+  // (BTL has one layer, each ETL endcap one or two discs; test beam geometries may not contain all of them)
 
-  subdet[0]->addComponent(layer[0]);
-
-  // then ETL (number of layers depend on preTDR design or not)
-
-  if (layer.size() == kNLayerPreTDR) {
-    subdet[1]->addComponent(layer[1]);
-    subdet[2]->addComponent(layer[2]);
-  } else if (layer.size() == kNLayerTDR) {
-    subdet[1]->addComponent(layer[1]);
-    subdet[1]->addComponent(layer[2]);
-    subdet[2]->addComponent(layer[3]);
-    subdet[2]->addComponent(layer[4]);
-  } else {
-    throw cms::Exception("MTDNumbering") << "Wrong number of layers: " << layer.size();
+  for (size_t index = 0; index < layer.size(); index++) {
+    subdet[layerSubdet[index]]->addComponent(layer[index]);
   }
 
   // Add subdetectors to MTD
@@ -271,6 +264,7 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const cms::D
 
   std::vector<GeometricTimingDet*> subdet;
   std::vector<GeometricTimingDet*> layer;
+  std::vector<size_t> layerSubdet;  // position in subdet of the subdetector containing each layer
 
   while (doSubdet) {
     std::string nodeName(fv.name());
@@ -290,7 +284,11 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const cms::D
       subdet.emplace_back(theCmsMTDConstruction.buildSubdet(fv));
     }
     if (fullNode == GeometricTimingDet::BTLLayer || fullNode == GeometricTimingDet::ETLDisc) {
+      if (subdet.empty()) {
+        throw cms::Exception("DD4hep_MTDNumbering") << "Layer " << fv.name() << " found outside of a subdetector";
+      }
       layer.emplace_back(theCmsMTDConstruction.buildLayer(fv));
+      layerSubdet.emplace_back(subdet.size() - 1);
 #ifdef EDM_ML_DEBUG
       edm::LogVerbatim("DD4hep_MTDNumbering") << "Number of layers: " << layer.size();
 #endif
@@ -323,7 +321,7 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const cms::D
 
   for (size_t index = 0; index < layer.size(); index++) {
     GeometricTimingDet::ConstGeometricTimingDetContainer& icomp = layer[index]->components();
-    if (index > 0) {
+    if (layer[index]->type() == GeometricTimingDet::ETLDisc) {
       std::stable_sort(icomp.begin(), icomp.end(), CmsMTDConstruction<DDFilteredView>::mtdOrderZ);
       std::stable_sort(icomp.begin(), icomp.end(), CmsMTDConstruction<DDFilteredView>::mtdOrderRR);
       std::stable_sort(icomp.begin(), icomp.end(), CmsMTDConstruction<DDFilteredView>::mtdOrderPhi);
@@ -333,23 +331,11 @@ std::unique_ptr<GeometricTimingDet> DDCmsMTDConstruction::construct(const cms::D
     }
   }
 
-  // Add layers to subdetectors:
-  // first BTL (one layer only)
+  // Add layers to subdetectors, following the volume hierarchy
+  // (BTL has one layer, each ETL endcap one or two discs; test beam geometries may not contain all of them)
 
-  subdet[0]->addComponent(layer[0]);
-
-  // then ETL (number of layers depend on preTDR design or not)
-
-  if (layer.size() == kNLayerPreTDR) {
-    subdet[1]->addComponent(layer[1]);
-    subdet[2]->addComponent(layer[2]);
-  } else if (layer.size() == kNLayerTDR) {
-    subdet[1]->addComponent(layer[1]);
-    subdet[1]->addComponent(layer[2]);
-    subdet[2]->addComponent(layer[3]);
-    subdet[2]->addComponent(layer[4]);
-  } else {
-    throw cms::Exception("DD4hep_MTDNumbering") << "Wrong number of layers: " << layer.size();
+  for (size_t index = 0; index < layer.size(); index++) {
+    subdet[layerSubdet[index]]->addComponent(layer[index]);
   }
 
   // Add subdetectors to MTD

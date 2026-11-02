@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<DDDefinition>
+  <!--
+      Minimal world for the ETL test beam 2026 (see etl.xml in the same directory).
+      OCMS -> CALOECTSFront -> CALOECFront -> etl:EndcapTimingLayer
+      CALOECTSFront (copy 1, +z side) and CALOECFront are kept to provide the volume levels expected
+      by ETLNumberingScheme. All the volumes are boxes centred in the origin and filled with air.
+  -->
+
+  <SolidSection label="cms.xml">
+    <Box name="OCMS" dx="1.*m" dy="1.*m" dz="2.*m"/>
+    <Box name="CALOECTSFront" dx="30.*cm" dy="30.*cm" dz="110.*cm"/>
+    <Box name="CALOECFront" dx="29.*cm" dy="29.*cm" dz="109.*cm"/>
+  </SolidSection>
+
+  <LogicalPartSection label="cms.xml">
+    <LogicalPart name="World" category="unspecified">
+      <rSolid name="cms:OCMS"/>
+      <rMaterial name="materials:Air"/>
+    </LogicalPart>
+    <LogicalPart name="OCMS" category="unspecified">
+      <rSolid name="cms:OCMS"/>
+      <rMaterial name="materials:Air"/>
+    </LogicalPart>
+    <LogicalPart name="CALOECTSFront" category="unspecified">
+      <rSolid name="cms:CALOECTSFront"/>
+      <rMaterial name="materials:Air"/>
+    </LogicalPart>
+    <LogicalPart name="CALOECFront" category="unspecified">
+      <rSolid name="cms:CALOECFront"/>
+      <rMaterial name="materials:Air"/>
+    </LogicalPart>
+  </LogicalPartSection>
+
+  <PosPartSection label="cms.xml">
+    <PosPart copyNumber="1">
+      <rParent name="cms:World"/>
+      <rChild name="cms:OCMS"/>
+    </PosPart>
+    <PosPart copyNumber="1">
+      <rParent name="cms:OCMS"/>
+      <rChild name="cms:CALOECTSFront"/>
+    </PosPart>
+    <PosPart copyNumber="1">
+      <rParent name="cms:CALOECTSFront"/>
+      <rChild name="cms:CALOECFront"/>
+    </PosPart>
+  </PosPartSection>
+</DDDefinition>
