@@ -47,7 +47,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     device::ESGetToken<BTLElectronicsToDetIdMappingDevice, BTLReadoutMapRcd> elecToDetIdToken_;
 
     BTLRawToDigiAlgo algo_;
-    BTLElectronicsIndexer indexer_;
 
     // reused across events - member state is fine in stream::EDProducer
     // (one instance per stream, not shared across streams)
@@ -71,14 +70,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       : SynchronizingEDProducer(iConfig),
         rawDataBufferToken_(consumes<RawDataBuffer>(iConfig.getParameter<edm::InputTag>("rawDataBufferTag"))),
         digiPutToken_(produces()),
-        elecToDetIdToken_(esConsumes()) {
-    indexer_.firstFedId = BTLElectronicsSpecs::kFirstFEDId;
-    indexer_.nFeds = BTLElectronicsSpecs::kNumberOfFEDs;
-    indexer_.nFEDsPerSerenity = BTLElectronicsSpecs::nFEDsPerSerenity;
-    indexer_.nHSLinksPerSerenity = BTLElectronicsSpecs::nHSLinksPerSerenity;
-    indexer_.nELinksPerHSLink = BTLElectronicsSpecs::nELinksPerHSLink;
-    indexer_.nChannelsPerELink = BTLElectronicsSpecs::nChannelsPerELink;
-  }
+        elecToDetIdToken_(esConsumes()) {}
 
   void BTLRawToDigi::acquire(device::Event const& iEvent, device::EventSetup const& iSetup) {
     auto const& rawDataBuffer = iEvent.get(rawDataBufferToken_);
@@ -121,7 +113,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // copy the payload (header and trailer removed) in rawWords_h_,
       // with an offset kWordsPerChannel * offset corresponding to 2 x number of channels already copied
-      std::memcpy(inputDataHost_->rawWords.data() + kWordsPerChannel * offset, payload.data(), nChInFed * kChannelBytes);
+      std::memcpy(
+          inputDataHost_->rawWords.data() + kWordsPerChannel * offset, payload.data(), nChInFed * kChannelBytes);
       std::fill(
           inputDataHost_->channelFedId.data() + offset, inputDataHost_->channelFedId.data() + offset + nChInFed, fed);
       offset += nChInFed;
@@ -135,7 +128,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                        inputDataHost_->channelFedId.data(),
                        nChannels,
                        elecToDetId,
-                       indexer_,
                        *nDigisTot_h_);
   }
 
@@ -155,7 +147,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // no wait: the fill kernel may still be running when produce() returns,
     // the framework synchronizes the consumers with the queue
-    iEvent.emplace(digiPutToken_, algo_.produceDigis(queue, elecToDetId, indexer_, nDigisTot));
+    iEvent.emplace(digiPutToken_, algo_.produceDigis(queue, elecToDetId, nDigisTot));
   }
 
   int32_t BTLRawToDigi::nChannelsInFragment(uint32_t fed, RawFragmentWrapper const& fedData) {

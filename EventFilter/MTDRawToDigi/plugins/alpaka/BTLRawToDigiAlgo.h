@@ -12,6 +12,7 @@
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "CondFormats/MTDObjects/interface/alpaka/BTLElectronicsToDetIdMappingDevice.h"
 #include "CondFormats/MTDObjects/interface/BTLElectronicsSpecs.h"
+#include "CondFormats/MTDObjects/interface/BTLElectronicsIndexing.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 #include <sstream>
@@ -26,27 +27,29 @@
 // Keep local to this module rather than in DataFormats/: it's a pure auxiliary format.
 // See also: https://github.com/cms-sw/cmssw/blob/master/RecoLocalTracker/SiStripClusterizer/plugins/alpaka/SiStripRawToClusterAlgo.h
 
-GENERATE_SOA_LAYOUT(BTLChannelPayloadSoALayout,
-                    SOA_COLUMN(uint16_t, bc0count),
-                    SOA_COLUMN(bool, status),
-                    SOA_COLUMN(uint32_t, bcCount),
-                    SOA_COLUMN(uint16_t, t1Coarse),
-                    SOA_COLUMN(uint16_t, t2Coarse),
-                    SOA_COLUMN(uint16_t, eoiCoarse),
-                    SOA_COLUMN(uint16_t, charge),
-                    SOA_COLUMN(uint16_t, t1Fine),
-                    SOA_COLUMN(uint16_t, t2Fine),
-                    SOA_COLUMN(uint16_t, idleTime),
-                    SOA_COLUMN(uint8_t, prevTrigF),
-                    SOA_COLUMN(uint8_t, tacId),
+GENERATE_SOA_LAYOUT(
+    BTLChannelPayloadSoALayout,
+    SOA_COLUMN(uint16_t, bc0count),
+    SOA_COLUMN(bool, status),
+    SOA_COLUMN(uint32_t, bcCount),
+    SOA_COLUMN(uint16_t, t1Coarse),
+    SOA_COLUMN(uint16_t, t2Coarse),
+    SOA_COLUMN(uint16_t, eoiCoarse),
+    SOA_COLUMN(uint16_t, charge),
+    SOA_COLUMN(uint16_t, t1Fine),
+    SOA_COLUMN(uint16_t, t2Fine),
+    SOA_COLUMN(uint16_t, idleTime),
+    SOA_COLUMN(uint8_t, prevTrigF),
+    SOA_COLUMN(uint8_t, tacId),
 
-                    // Dense index of the electronics channel, BTLElectronicsIndexer::flatIndex(fedId, hsLinkId, eLinkId, chId),
-                    // also used as index in the electronics -> DetId mapping.
-                    // Encodes all the electronics ids of the channel:
-                    //   channelDenseIndex / nChannelsPerChip = chip index (dense, used to group the channels of the same ASIC)
-                    //   channelDenseIndex % nChannelsPerChip = chId
-                    // -1 if (hsLinkId, eLinkId) are not valid for the FED (see BTLElectronicsIndexer::isValidLink).
-                    SOA_COLUMN(int32_t, channelDenseIndex))
+    // Dense index of the electronics channel,
+    // BTLElectronicsIndexing::denseChannelIndex(fedId, hsLinkId, eLinkId, chId),
+    // also used as index in the electronics -> DetId mapping.
+    // Encodes all the electronics ids of the channel:
+    //   channelDenseIndex / nChannelsPerChip = chip index (dense, used to group the channels of the same ASIC)
+    //   channelDenseIndex % nChannelsPerChip = chId
+    // -1 if (hsLinkId, eLinkId) are not valid for the FED (see BTLElectronicsIndexing::isValidLink).
+    SOA_COLUMN(int32_t, channelDenseIndex))
 
 using BTLChannelPayloadSoA = BTLChannelPayloadSoALayout<>;
 using BTLChannelPayloadHostCollection = PortableHostCollection<BTLChannelPayloadSoA>;
@@ -80,13 +83,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BTLChannelPayloadDeviceCollection decodeChannels(Queue& queue,
                                                      const uint64_t* rawWords_h,
                                                      const int32_t* channelFedId_h,
-                                                     int32_t nChannels,
-                                                     BTLElectronicsIndexer const& indexer);
+                                                     int32_t nChannels);
 
     BTLChipSegments findChipSegments(Queue& queue,
                                      BTLChannelPayloadDeviceCollection const& channelPayload_d,
-                                     int32_t nChannels,
-                                     BTLElectronicsIndexer const& indexer);
+                                     int32_t nChannels);
 
     void countDigis(Queue& queue,
                     BTLChannelPayloadDeviceCollection const& channelPayload_d,
@@ -114,14 +115,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                       const int32_t* channelFedId_h,
                       int32_t nChannels,
                       BTLElectronicsToDetIdMappingDevice const& elecToDetId,
-                      BTLElectronicsIndexer const& indexer,
                       cms::alpakatools::host_buffer<int32_t>& nDigisTot_h);
 
     // STEP2b: allocate the output collection with nDigisTot (read on the host after the
     // synchronization) and fill it. Must be called after prepareDigis().
     BTLDigiDeviceCollection produceDigis(Queue& queue,
                                          BTLElectronicsToDetIdMappingDevice const& elecToDetId,
-                                         BTLElectronicsIndexer const& indexer,
                                          int32_t nDigisTot);
 
   private:
@@ -143,7 +142,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>>
         segmentDigiOffset_;  // offset, needed to write digis in the same ordering as input raw data;
                              // the last element (index nChips) is the total number of digis
-
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

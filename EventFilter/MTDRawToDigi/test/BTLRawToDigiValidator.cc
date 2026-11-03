@@ -107,8 +107,8 @@ void BTLRawToDigiValidator::analyze(const edm::Event& iEvent, const edm::EventSe
 
     auto const found = testIndex.find(r.krawId());
     if (found == testIndex.end()) {
-      edm::LogError("BTLRawToDigiValidator")
-          << "Event " << iEvent.id() << "   digi[" << i << "]  rawId=" << r.krawId() << " not found in the unpacker output";
+      edm::LogError("BTLRawToDigiValidator") << "Event " << iEvent.id() << "   digi[" << i << "]  rawId=" << r.krawId()
+                                             << " not found in the unpacker output";
       ++nMissing;
       continue;
     }
