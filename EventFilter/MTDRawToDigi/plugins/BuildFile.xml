@@ -4,6 +4,7 @@
 <use name="CondFormats/DataRecord"/>
 <use name="EventFilter/MTDRawToDigi"/>
 <library name="EventFilterMTDRawToDigiPlugins" file="*.cc">
+  <use name="alpaka"/>
   <flags EDM_PLUGIN="1"/>
 </library>
 <!-- alpaka-based portable plugins -->

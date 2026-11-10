@@ -1,3 +1,4 @@
+#include <bitset>
 #include <cstring>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -15,12 +16,7 @@
 #include "DataFormats/FEDRawData/interface/RawDataBuffer.h"
 #include "DataFormats/FEDRawData/interface/SLinkRocketHeaders.h"
 
-#include "EventFilter/MTDRawToDigi/interface/BitStream.h"
-
-namespace btldigitoraw {
-  using ChannelStream = BitStream<2>;
-  constexpr std::size_t kWordsPerChannel = ChannelStream::BITS / ChannelStream::WORD_BITS;
-}  // namespace btldigitoraw
+#include "EventFilter/MTDRawToDigi/interface/BTLRawDataFormat.h"
 
 class DumpBTLRawDataBuffer : public edm::global::EDAnalyzer<> {
 public:
@@ -46,7 +42,7 @@ void DumpBTLRawDataBuffer::analyze(edm::StreamID, edm::Event const& iEvent, edm:
 
   constexpr std::size_t kHeaderSize = sizeof(SLinkRocketHeader_v3);
   constexpr std::size_t kTrailerSize = sizeof(SLinkRocketTrailer_v3);
-  constexpr std::size_t kWordBytes = 16;  // 128-bit words
+  constexpr std::size_t kWordBytes = sizeof(btlraw::ChannelWord);  // 128-bit words
 
   edm::LogInfo("DumpBTLRawDataBuffer") << "=== Event " << iEvent.id().event()
                                        << " -- number of FED fragments: " << rawDataBuffer.map().size();
@@ -99,39 +95,36 @@ void DumpBTLRawDataBuffer::analyze(edm::StreamID, edm::Event const& iEvent, edm:
 
     edm::LogInfo("DumpBTLRawDataBuffer") << "  [Payload]  " << nWords << " channel word(s) of 128 bit each";
 
-    auto printStream = [&](const BitStream<2>& bs) {
-      std::stringstream ss;
-      for (int index = static_cast<int>(bs.size()) - 1; index >= 0; --index) {
-        ss << bs.get_bit(static_cast<size_t>(index));
-      }
-      return ss.str();
+    // bits from 127 (MSB of hi) down to 0 (LSB of lo)
+    auto printStream = [](const btlraw::ChannelWord& w) {
+      return std::bitset<64>(w.hi).to_string() + std::bitset<64>(w.lo).to_string();
     };
 
     for (std::size_t iWord = 0; iWord < nWords; ++iWord) {
       const unsigned char* wordPtr = payloadSpan.data() + iWord * kWordBytes;
 
-      // Copy the 16 bytes of this channel word into a BitStream<2>
-      // and extract each field by name, mirroring the layout defined
-      // in BTLDigiToRaw::encodeChannelPayload().
-      btldigitoraw::ChannelStream stream;
-      std::memcpy(stream.raw_data(), wordPtr, kWordBytes);
+      // Copy the 16 bytes of this channel word into a btlraw::ChannelWord
+      // and extract each field by name, with the layout defined in BTLRawDataFormat.h
+      using namespace btlraw;
+      ChannelWord stream;
+      std::memcpy(&stream, wordPtr, kWordBytes);
 
-      const uint64_t BC0count = stream.get_bits(118, 10);
-      const uint64_t status = stream.get_bits(117, 1);
-      const uint64_t slink = stream.get_bits(110, 7);
-      const uint64_t hslink = stream.get_bits(104, 6);
-      const uint64_t elink = stream.get_bits(99, 5);
-      const uint64_t chID = stream.get_bits(94, 5);
-      const uint64_t BCcount = stream.get_bits(82, 12);
-      const uint64_t T1coarse = stream.get_bits(67, 15);
-      const uint64_t T2coarse = stream.get_bits(57, 10);
-      const uint64_t EOIcoarse = stream.get_bits(47, 10);
-      const uint64_t Charge = stream.get_bits(37, 10);
-      const uint64_t T1fine = stream.get_bits(27, 10);
-      const uint64_t T2fine = stream.get_bits(17, 10);
-      const uint64_t IdleTime = stream.get_bits(7, 10);
-      const uint64_t PrevTrigF = stream.get_bits(3, 4);
-      const uint64_t TACID = stream.get_bits(0, 3);
+      const uint64_t BC0count = extractBits(stream, kBC0count);
+      const uint64_t status = extractBits(stream, kStatus);
+      const uint64_t slink = extractBits(stream, kSLink);
+      const uint64_t hslink = extractBits(stream, kHSLink);
+      const uint64_t elink = extractBits(stream, kELink);
+      const uint64_t chID = extractBits(stream, kChId);
+      const uint64_t BCcount = extractBits(stream, kBCcount);
+      const uint64_t T1coarse = extractBits(stream, kT1Coarse);
+      const uint64_t T2coarse = extractBits(stream, kT2Coarse);
+      const uint64_t EOIcoarse = extractBits(stream, kEOICoarse);
+      const uint64_t Charge = extractBits(stream, kCharge);
+      const uint64_t T1fine = extractBits(stream, kT1Fine);
+      const uint64_t T2fine = extractBits(stream, kT2Fine);
+      const uint64_t IdleTime = extractBits(stream, kIdleTime);
+      const uint64_t PrevTrigF = extractBits(stream, kPrevTrigF);
+      const uint64_t TACID = extractBits(stream, kTACId);
 
       edm::LogInfo("DumpBTLRawDataBuffer")
           << "  word " << iWord << "\n"

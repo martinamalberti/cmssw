@@ -25,15 +25,12 @@
 #include "CondFormats/MTDObjects/interface/BTLElectronicsId.h"
 #include "CondFormats/DataRecord/interface/BTLReadoutMapRcd.h"
 
-#include "EventFilter/MTDRawToDigi/interface/BitStream.h"
+#include "EventFilter/MTDRawToDigi/interface/BTLRawDataFormat.h"
 #include "CondFormats/MTDObjects/interface/BTLElectronicsSpecs.h"
 
 namespace btldigitoraw {
 
-  using ChannelStream = BitStream<2>;
-  using Word = ChannelStream::word_t;
-
-  const int kWordsPerChannel = ChannelStream::BITS / ChannelStream::WORD_BITS;
+  using ChannelStream = btlraw::ChannelWord;
 
   constexpr std::size_t kSlinkHeaderSize = sizeof(SLinkRocketHeader_v3);
   constexpr std::size_t kSlinkTrailerSize = sizeof(SLinkRocketTrailer_v3);
@@ -53,7 +50,7 @@ private:
 
   // -------------------------------------------------------------------
   // Encode one TOFHIR channel into a raw word.
-  // Returns a BitStream<2> (128 bit)
+  // Returns a btlraw::ChannelWord (128 bit)
   // -------------------------------------------------------------------
   btldigitoraw::ChannelStream encodeChannelPayload(
       int fed, int hslink, int elink, const btldigi::BTLDigi& digi, bool isPlus) const;
@@ -97,7 +94,7 @@ void BTLDigiToRaw::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   // -- Output
   // pre-allocated RawDataBuffer size (in Bytes)
   const std::size_t maxTotalSize =
-      (ChannelStream::BITS / 8) * digis.size() * 2 +
+      sizeof(ChannelStream) * digis.size() * 2 +
       (kSlinkHeaderSize + kSlinkTrailerSize) *
           BTLElectronicsSpecs::
               kNumberOfFEDs;  /// 128 bit (16Bytes) x number of BTL digis x 2  + number of FEDs * size (header + trailer)
@@ -183,25 +180,24 @@ btldigitoraw::ChannelStream BTLDigiToRaw::encodeChannelPayload(
   //int slink = fed - BTLElectronicsSpecs::kFirstFEDId;
   int slink = 0;
 
-  stream.set_bits(118, 10, static_cast<uint64_t>(BC0count));
-  stream.set_bits(117, 1, static_cast<uint64_t>(status));
-  stream.set_bits(
-      110,
-      7,
-      static_cast<uint64_t>(slink));  // will be removed from the channel payload and put only in the Slink header ?
-  stream.set_bits(104, 6, static_cast<uint64_t>(hslink));
-  stream.set_bits(99, 5, static_cast<uint64_t>(elink));
-  stream.set_bits(94, 5, static_cast<uint64_t>(chID));
-  stream.set_bits(82, 12, static_cast<uint64_t>(BCcount));
-  stream.set_bits(67, 15, static_cast<uint64_t>(T1coarse));
-  stream.set_bits(57, 10, static_cast<uint64_t>(T2coarse));
-  stream.set_bits(47, 10, static_cast<uint64_t>(EOIcoarse));
-  stream.set_bits(37, 10, static_cast<uint64_t>(Charge));
-  stream.set_bits(27, 10, static_cast<uint64_t>(T1fine));
-  stream.set_bits(17, 10, static_cast<uint64_t>(T2fine));
-  stream.set_bits(7, 10, static_cast<uint64_t>(IdleTime));
-  stream.set_bits(3, 4, static_cast<uint64_t>(PrevTrigF));
-  stream.set_bits(0, 3, static_cast<uint64_t>(TACID));
+  // the bit layout is defined in BTLRawDataFormat.h
+  using namespace btlraw;
+  insertBits(stream, kBC0count, BC0count);
+  insertBits(stream, kStatus, status);
+  insertBits(stream, kSLink, slink);
+  insertBits(stream, kHSLink, hslink);
+  insertBits(stream, kELink, elink);
+  insertBits(stream, kChId, chID);
+  insertBits(stream, kBCcount, BCcount);
+  insertBits(stream, kT1Coarse, T1coarse);
+  insertBits(stream, kT2Coarse, T2coarse);
+  insertBits(stream, kEOICoarse, EOIcoarse);
+  insertBits(stream, kCharge, Charge);
+  insertBits(stream, kT1Fine, T1fine);
+  insertBits(stream, kT2Fine, T2fine);
+  insertBits(stream, kIdleTime, IdleTime);
+  insertBits(stream, kPrevTrigF, PrevTrigF);
+  insertBits(stream, kTACId, TACID);
 
   LogDebug("BTLDigiToRaw") << "  FEDId=" << static_cast<int>(fed) << "  BC0count=" << static_cast<int>(BC0count)
                            << "  status=" << static_cast<int>(status) << "  slink=" << static_cast<int>(slink)
@@ -231,7 +227,7 @@ void BTLDigiToRaw::fillFEDBuffer(int fedId,
                                  RawDataBuffer& rawDataBuffer) const {
   using namespace btldigitoraw;
 
-  const std::size_t payloadBytes = channelsStream.size() * sizeof(Word) * kWordsPerChannel;
+  const std::size_t payloadBytes = channelsStream.size() * sizeof(ChannelStream);
   const std::size_t fragmentBytes = kSlinkHeaderSize + payloadBytes + kSlinkTrailerSize;
 
   LogDebug("BTLDigiToRaw") << " FED id = " << fedId << " event id = " << eventId
@@ -254,15 +250,8 @@ void BTLDigiToRaw::fillFEDBuffer(int fedId,
   // --------------------------------------------------------
   // Channel payload
   // --------------------------------------------------------
-  std::vector<Word> payloadWords;
-  payloadWords.reserve(channelsStream.size() * kWordsPerChannel);
-
-  for (const auto& channel : channelsStream) {
-    for (std::size_t i = 0; i < kWordsPerChannel; ++i) {
-      payloadWords.push_back(channel.raw_data()[i]);
-    }
-  }
-  std::memcpy(buffer.data() + kSlinkHeaderSize, payloadWords.data(), payloadWords.size() * sizeof(Word));
+  // each channel word is written as 16 bytes, lo first
+  std::memcpy(buffer.data() + kSlinkHeaderSize, channelsStream.data(), payloadBytes);
 
   // --------------------------------------------------------
   // S-Link trailer (128 bit)

@@ -4,31 +4,14 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/prefixScan.h"
 
+#include "EventFilter/MTDRawToDigi/interface/BTLRawDataFormat.h"
+
 #include "BTLRawToDigiAlgo.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   // number of channels of a chip (e-link)
   constexpr int32_t kChannelsPerChip = BTLElectronicsSpecs::nChannelsPerELink;
-
-  ALPAKA_FN_ACC ALPAKA_FN_INLINE uint64_t extractBits(uint64_t lo, uint64_t hi, int pos, int width) {
-    // width must be in [1, 64]
-    const uint64_t mask = (width == 64) ? ~0ULL : ((1ULL << width) - 1ULL);
-
-    if (pos < 64) {
-      // Entire field is in the low word
-      if (pos + width <= 64)
-        return (lo >> pos) & mask;
-
-      // Field spans the 64-bit boundary
-      const uint64_t lowPart = lo >> pos;
-      const uint64_t highPart = hi << (64 - pos);
-      return (lowPart | highPart) & mask;
-    }
-
-    // Entire field is in the high word
-    return (hi >> (pos - 64)) & mask;
-  }
 
   //---------------------------------------------------------------------
   // KERNEL 1: one thread per raw channel payload.
@@ -42,26 +25,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   int32_t nChannels,
                                   BTLChannelPayloadSoA::View out) const {
       for (int32_t i : cms::alpakatools::uniform_elements(acc, nChannels)) {
-        const uint64_t lo = rawWords[2 * i];
-        const uint64_t hi = rawWords[2 * i + 1];
-        //***********
-        // !!!!!!!!!!!!!!! FIXME: Update bit positions once the final BTL payload format is frozen. !!!!!!!!!!!!!!!!!!
-        //***********
-        out[i].bc0count() = static_cast<uint16_t>(extractBits(lo, hi, 118, 10));
-        out[i].status() = extractBits(lo, hi, 117, 1) != 0;
-        const int32_t hslink = static_cast<int32_t>(extractBits(lo, hi, 104, 6));
-        const int32_t elink = static_cast<int32_t>(extractBits(lo, hi, 99, 5));
-        const int32_t chId = static_cast<int32_t>(extractBits(lo, hi, 94, 5));
-        out[i].bcCount() = static_cast<uint32_t>(extractBits(lo, hi, 82, 12));
-        out[i].t1Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 67, 15));
-        out[i].t2Coarse() = static_cast<uint16_t>(extractBits(lo, hi, 57, 10));
-        out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(lo, hi, 47, 10));
-        out[i].charge() = static_cast<uint16_t>(extractBits(lo, hi, 37, 10));
-        out[i].t1Fine() = static_cast<uint16_t>(extractBits(lo, hi, 27, 10));
-        out[i].t2Fine() = static_cast<uint16_t>(extractBits(lo, hi, 17, 10));
-        out[i].idleTime() = static_cast<uint16_t>(extractBits(lo, hi, 7, 10));
-        out[i].prevTrigF() = static_cast<uint8_t>(extractBits(lo, hi, 3, 4));
-        out[i].tacId() = static_cast<uint8_t>(extractBits(lo, hi, 0, 3));
+        // the bit layout is defined in BTLRawDataFormat.h
+        using namespace btlraw;
+        ChannelWord w;
+        w.lo = rawWords[2 * i];
+        w.hi = rawWords[2 * i + 1];
+        out[i].bc0count() = static_cast<uint16_t>(extractBits(w, kBC0count));
+        out[i].status() = extractBits(w, kStatus) != 0;
+        const int32_t hslink = static_cast<int32_t>(extractBits(w, kHSLink));
+        const int32_t elink = static_cast<int32_t>(extractBits(w, kELink));
+        const int32_t chId = static_cast<int32_t>(extractBits(w, kChId));
+        out[i].bcCount() = static_cast<uint32_t>(extractBits(w, kBCcount));
+        out[i].t1Coarse() = static_cast<uint16_t>(extractBits(w, kT1Coarse));
+        out[i].t2Coarse() = static_cast<uint16_t>(extractBits(w, kT2Coarse));
+        out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(w, kEOICoarse));
+        out[i].charge() = static_cast<uint16_t>(extractBits(w, kCharge));
+        out[i].t1Fine() = static_cast<uint16_t>(extractBits(w, kT1Fine));
+        out[i].t2Fine() = static_cast<uint16_t>(extractBits(w, kT2Fine));
+        out[i].idleTime() = static_cast<uint16_t>(extractBits(w, kIdleTime));
+        out[i].prevTrigF() = static_cast<uint8_t>(extractBits(w, kPrevTrigF));
+        out[i].tacId() = static_cast<uint8_t>(extractBits(w, kTACId));
 
         // Dense index of the electronics channel (also the index in the mapping):
         // the chip index (dense, in [0, nChips)) is channelDenseIndex / nChannelsPerChip.

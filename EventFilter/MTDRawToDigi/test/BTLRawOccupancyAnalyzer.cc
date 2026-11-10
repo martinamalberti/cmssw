@@ -29,7 +29,7 @@
 #include "CondFormats/MTDObjects/interface/BTLElectronicsSpecs.h"
 #include "CondFormats/MTDObjects/interface/BTLElectronicsIndexing.h"
 
-#include "EventFilter/MTDRawToDigi/interface/BitStream.h"
+#include "EventFilter/MTDRawToDigi/interface/BTLRawDataFormat.h"
 
 #include "TH1F.h"
 #include "TProfile.h"
@@ -46,20 +46,20 @@ private:
 
   static constexpr std::size_t kHeaderSize = sizeof(SLinkRocketHeader_v3);
   static constexpr std::size_t kTrailerSize = sizeof(SLinkRocketTrailer_v3);
-  static constexpr std::size_t kWordBytes = 16;  // 128 bit per channel
+  static constexpr std::size_t kWordBytes = sizeof(btlraw::ChannelWord);  // 128 bit per channel
   static constexpr int32_t kChannelsPerChip = BTLElectronicsSpecs::nChannelsPerELink;
 
   // per event
-  TH1F* hNChannels_;            // channels in the payload
-  TH1F* hNInvalidChannels_;     // channels with (hsLinkId, eLinkId) not valid for their FED
-  TH1F* hNActiveChips_;         // chips with at least one channel
-  TH1F* hMaxChannelsPerChip_;   // max number of channels in a chip
-  TH1F* hNFEDsWithData_;        // FEDs with at least one channel
-  TH1F* hMaxChannelsPerFED_;    // max number of channels in a FED
+  TH1F* hNChannels_;           // channels in the payload
+  TH1F* hNInvalidChannels_;    // channels with (hsLinkId, eLinkId) not valid for their FED
+  TH1F* hNActiveChips_;        // chips with at least one channel
+  TH1F* hMaxChannelsPerChip_;  // max number of channels in a chip
+  TH1F* hNFEDsWithData_;       // FEDs with at least one channel
+  TH1F* hMaxChannelsPerFED_;   // max number of channels in a FED
   // per chip / per FED
-  TH1F* hChannelsPerChip_;      // channels in each active chip
-  TH1F* hChannelsPerFED_;       // channels in each FED with data
-  TProfile* pChannelsVsFED_;    // mean number of channels vs FED id
+  TH1F* hChannelsPerChip_;    // channels in each active chip
+  TH1F* hChannelsPerFED_;     // channels in each FED with data
+  TProfile* pChannelsVsFED_;  // mean number of channels vs FED id
 
   // summary over the job
   int64_t nEvents_ = 0;
@@ -89,8 +89,8 @@ BTLRawOccupancyAnalyzer::BTLRawOccupancyAnalyzer(edm::ParameterSet const& iPSet)
                                         kChannelsPerChip + 1.5);
   hNFEDsWithData_ =
       fs->make<TH1F>("hNFEDsWithData", "FEDs with data per event;FEDs;events", nFEDs + 1, -0.5, nFEDs + 0.5);
-  hMaxChannelsPerFED_ =
-      fs->make<TH1F>("hMaxChannelsPerFED", "max channels per FED in the event;max channels per FED;events", 100, 0., 2000.);
+  hMaxChannelsPerFED_ = fs->make<TH1F>(
+      "hMaxChannelsPerFED", "max channels per FED in the event;max channels per FED;events", 100, 0., 2000.);
   hChannelsPerChip_ = fs->make<TH1F>("hChannelsPerChip",
                                      "channels per active chip;channels per chip;chips",
                                      kChannelsPerChip + 2,
@@ -122,11 +122,11 @@ void BTLRawOccupancyAnalyzer::analyze(edm::Event const& iEvent, edm::EventSetup 
 
       for (int32_t iWord = 0; iWord < nChInFed; ++iWord) {
         // same decoding as DumpBTLRawDataBuffer
-        BitStream<2> stream;
-        std::memcpy(stream.raw_data(), payloadSpan.data() + iWord * kWordBytes, kWordBytes);
-        const int32_t hslink = static_cast<int32_t>(stream.get_bits(104, 6));
-        const int32_t elink = static_cast<int32_t>(stream.get_bits(99, 5));
-        const int32_t chId = static_cast<int32_t>(stream.get_bits(94, 5));
+        btlraw::ChannelWord w;
+        std::memcpy(&w, payloadSpan.data() + iWord * kWordBytes, kWordBytes);
+        const int32_t hslink = static_cast<int32_t>(btlraw::extractBits(w, btlraw::kHSLink));
+        const int32_t elink = static_cast<int32_t>(btlraw::extractBits(w, btlraw::kELink));
+        const int32_t chId = static_cast<int32_t>(btlraw::extractBits(w, btlraw::kChId));
 
         if (!BTLElectronicsIndexing::isValidLink(fed, hslink, elink)) {
           ++nInvalid;
@@ -168,8 +168,8 @@ void BTLRawOccupancyAnalyzer::analyze(edm::Event const& iEvent, edm::EventSetup 
   edm::LogInfo("BTLRawOccupancyAnalyzer")
       << "run " << iEvent.id().run() << " lumi " << iEvent.id().luminosityBlock() << " event " << iEvent.id().event()
       << ": channels " << nChannels << " (invalid link " << nInvalid << "), active chips " << nActiveChips
-      << ", max channels per chip " << maxPerChip << ", FEDs with data " << nFEDsWithData
-      << ", max channels per FED " << maxPerFED;
+      << ", max channels per chip " << maxPerChip << ", FEDs with data " << nFEDsWithData << ", max channels per FED "
+      << maxPerFED;
 
   ++nEvents_;
   sumChannels_ += nChannels;
