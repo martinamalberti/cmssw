@@ -23,14 +23,8 @@ process.source = cms.Source("PoolSource",
 
 process.load("Configuration.StandardSequences.Accelerators_cff")
 
-process.load('EventFilter.MTDRawToDigi.BTLReadoutMapESProducer_cfi')
-process.load("EventFilter.MTDRawToDigi.BTLElectronicsToDetIdMappingESProducer_cfi")
-
-# EDProducer
-process.btlRawToDigiGPU = cms.EDProducer(
-    "BTLRawToDigi@alpaka",
-    rawDataBufferTag = cms.InputTag("btlDigiToRaw"),    
-)
+# unpacker, with the readout map and the electronics -> DetId mapping
+process.load('EventFilter.MTDRawToDigi.btlRawToDigi_cff')
 
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
@@ -40,7 +34,7 @@ process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
     limit = cms.untracked.int32(-1)
 )
 
-process.MessageLogger.debugModules = cms.untracked.vstring("btlRawToDigiGPU")
+process.MessageLogger.debugModules = cms.untracked.vstring("btlRawToDigi")
 
 process.out = cms.OutputModule("PoolOutputModule",
                                splitLevel = cms.untracked.int32(0),
@@ -53,5 +47,5 @@ process.options = cms.untracked.PSet(
     #accelerators = cms.untracked.vstring('cpu')
 )
 
-process.path1 = cms.Path(process.btlRawToDigiGPU)
+process.path1 = cms.Path(process.btlRawToDigi)
 process.output = cms.EndPath(process.out)

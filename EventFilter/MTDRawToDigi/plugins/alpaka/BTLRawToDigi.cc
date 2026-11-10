@@ -198,7 +198,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   void BTLRawToDigi::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
-    desc.add<edm::InputTag>("rawDataBufferTag", edm::InputTag("btlRaw"));  // ???
+    desc.add<edm::InputTag>("rawDataBufferTag", edm::InputTag("btlDigiToRaw"));
     descriptions.addWithDefaultLabel(desc);
   }
 

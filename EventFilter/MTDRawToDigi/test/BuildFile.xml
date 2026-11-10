@@ -28,3 +28,13 @@
 <bin file="test_bitstream.cc">
   <use name="EventFilter/MTDRawToDigi"/>
 </bin>
+
+<library name="BTLRawOccupancyAnalyzer" file="BTLRawOccupancyAnalyzer.cc">
+  <use name="FWCore/MessageLogger"/>
+  <use name="FWCore/ServiceRegistry"/>
+  <use name="CommonTools/UtilAlgos"/>
+  <use name="DataFormats/FEDRawData"/>
+  <use name="CondFormats/MTDObjects"/>
+  <use name="root"/>
+  <flags EDM_PLUGIN="1"/>
+</library>

@@ -16,37 +16,29 @@ process.load('Geometry.MTDCommonData.GeometryDD4hepExtendedRun4MTDDefaultReco_cf
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/BTLUnpacker/CMSSW_20_1_X_2026-10-20-2300/work/38440.0_MinBias_14TeV+Run4D128/step2.root")
+                            #fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/BTLUnpacker/CMSSW_20_1_X_2026-10-20-2300/work/38440.0_MinBias_14TeV+Run4D128/step2.root")
                             #fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/BTLUnpacker/CMSSW_20_1_X_2026-10-20-2300/work/38430.0_QCD_Pt_3000_3500_14TeV+Run4D128/step2.root")
+                            fileNames = cms.untracked.vstring("/store/user/malberti/MTD/DPG/BTLUnpacker/TTbar_PU200_D128_Aging1000/step2_0.root")
                             )
 
 
 process.load("Configuration.StandardSequences.Accelerators_cff")
-process.load('EventFilter.MTDRawToDigi.BTLReadoutMapESProducer_cfi')
-process.load("EventFilter.MTDRawToDigi.BTLElectronicsToDetIdMappingESProducer_cfi")
 
+# Step 1: packer (btlDigiToRaw), with the readout map
+process.load('EventFilter.MTDRawToDigi.btlDigiToRaw_cff')
 
-# Step 1: packer
-process.btlDigiToRaw = cms.EDProducer(
-    "BTLDigiToRaw",
-    btlDigiCollection = cms.InputTag("mix","MTDBarrel")    
-)
-
-# Step 2: unpacker
-process.btlRawToDigiGPU = cms.EDProducer(
-    "BTLRawToDigi@alpaka",
-    rawDataBufferTag = cms.InputTag("btlDigiToRaw"),
-)
+# Step 2: unpacker (btlRawToDigi), with the readout map and the electronics -> DetId mapping
+process.load('EventFilter.MTDRawToDigi.btlRawToDigi_cff')
 
 # Step 3: validator
 process.btlValidator = cms.EDAnalyzer('BTLRawToDigiValidator',
     refDigis  = cms.InputTag("mix", "MTDBarrel"),   # original SortedCollection
-    testDigis = cms.InputTag("btlRawToDigiGPU"),    # BTLDigiSoA from the unpacker (digi -> raw -> digi)
+    testDigis = cms.InputTag("btlRawToDigi"),       # BTLDigiSoA from the unpacker (digi -> raw -> digi)
 )
 
 process.path = cms.Path(
     process.btlDigiToRaw
-    + process.btlRawToDigiGPU
+    + process.btlRawToDigi
     + process.btlValidator
 )
 
@@ -65,7 +57,7 @@ process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
     limit = cms.untracked.int32(-1)
 )
 
-process.MessageLogger.debugModules = cms.untracked.vstring("btlRawToDigiGPU")
+process.MessageLogger.debugModules = cms.untracked.vstring("btlRawToDigi")
 
 process.out = cms.OutputModule("PoolOutputModule",
     outputCommands = cms.untracked.vstring('keep *'),

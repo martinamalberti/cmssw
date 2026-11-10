@@ -37,13 +37,8 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/m/malberti/MTD/DPG/BTLUnpacker/CMSSW_20_1_0_pre3/work/38440.0_MinBias_14TeV+Run4D128/step2.root")
 )
 
-process.load('EventFilter.MTDRawToDigi.BTLReadoutMapESProducer_cfi')
-
-# ESProducer
-process.btlDigiToRaw = cms.EDProducer(
-    "BTLDigiToRaw",
-    btlDigiCollection = cms.InputTag("mix","MTDBarrel")    
-)
+# packer, with the readout map
+process.load('EventFilter.MTDRawToDigi.btlDigiToRaw_cff')
 
 
 process.out = cms.OutputModule("PoolOutputModule",

@@ -192,7 +192,7 @@ void BTLRawToDigiValidator::analyze(const edm::Event& iEvent, const edm::EventSe
 void BTLRawToDigiValidator::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("refDigis", edm::InputTag{"mix", "MTDBarrel"});
-  desc.add<edm::InputTag>("testDigis", edm::InputTag{"btlRawToDigiGPU"});
+  desc.add<edm::InputTag>("testDigis", edm::InputTag{"btlRawToDigi"});
   descriptions.addWithDefaultLabel(desc);
 }
 
