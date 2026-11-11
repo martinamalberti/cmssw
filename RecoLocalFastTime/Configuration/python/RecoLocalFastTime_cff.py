@@ -12,3 +12,9 @@ from RecoLocalFastTime.FTLRecProducers.MTDTimeCalibESProducers_cff import *
 
 fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,btlDigiSoAProducer,btlBaseRecHitsSoA,btlRecHitsSoA,etlDigiSoAProducer,etlBaseRecHitsSoA,etlRecHitsSoA,mtdClusters,mtdTrackingRecHits)
 fastTimingLocalReco = cms.Sequence(fastTimingLocalRecoTask)
+
+# with the btlRawData process modifier the BTL SoA local reconstruction reads the digis of the BTL unpacker,
+# which replaces the conversion of the simulated digis to SoA
+from Configuration.ProcessModifiers.btlRawData_cff import btlRawData
+btlRawData.toModify(btlBaseRecHitsSoA, digi = "btlRawToDigi")
+btlRawData.toReplaceWith(fastTimingLocalRecoTask, fastTimingLocalRecoTask.copyAndExclude([btlDigiSoAProducer]))

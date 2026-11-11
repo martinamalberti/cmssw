@@ -3788,6 +3788,29 @@ upgradeWFs['Phase2_HeavyIon'] = UpgradeWorkflow_Phase2_HeavyIon(
     offset = 0.85,
 )
 
+# BTL local reconstruction from the BTL raw data: BTL packer in DIGI2RAW, BTL alpaka unpacker in RAW2DIGI
+class UpgradeWorkflow_btlRawData(UpgradeWorkflow):
+    def setup_(self, step, stepName, stepDict, k, properties):
+        # packer in step2 (DIGI2RAW), unpacker and BTL SoA local reconstruction in step3 (RAW2DIGI, RECO)
+        if 'DigiTrigger' in step or 'RecoGlobal' in step:
+            stepDict[stepName][k] = merge([{'--procModifiers': 'btlRawData'}, stepDict[step][k]])
+    def condition(self, fragment, stepList, key, hasHarvest):
+        selected_fragments = ["TTbar_14TeV", "MinBias_14TeV"]
+        return any(sf in fragment for sf in selected_fragments) and 'Run4' in key
+
+upgradeWFs['btlRawData'] = UpgradeWorkflow_btlRawData(
+    steps = [
+        'DigiTrigger',
+        'RecoGlobal',
+    ],
+    PU = [
+        'DigiTrigger',
+        'RecoGlobal',
+    ],
+    suffix = '_btlRawData',
+    offset = 0.32,
+)
+
 # check for duplicates in offsets or suffixes
 offsets  = [specialWF.offset for specialType,specialWF in upgradeWFs.items()]
 suffixes = [specialWF.suffix for specialType,specialWF in upgradeWFs.items()]

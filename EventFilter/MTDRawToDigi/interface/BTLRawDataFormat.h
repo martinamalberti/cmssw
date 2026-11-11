@@ -30,7 +30,7 @@ namespace btlraw {
   //***********
   inline constexpr Field kBC0count{118, 10};
   inline constexpr Field kStatus{117, 1};
-  inline constexpr Field kSLink{110, 7};  // will be removed from the channel payload and put only in the S-Link header ?
+  inline constexpr Field kSLink{110, 7};  // will be likely removed from the channel payload
   inline constexpr Field kHSLink{104, 6};
   inline constexpr Field kELink{99, 5};
   inline constexpr Field kChId{94, 5};

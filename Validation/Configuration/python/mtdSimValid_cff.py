@@ -28,3 +28,7 @@ from Validation.MtdValidation.vertices4DValid_cff import vertices4DValid
 mtdSimValid  = cms.Sequence(btlSimHitsValid  + etlSimHitsValid )
 mtdDigiValid = cms.Sequence(btlDigiHitsValid + btlDigiSoAHitsValid + etlDigiHitsValid + etlDigiSoAHitsValid)
 mtdRecoValid = cms.Sequence(mtdAssociationProducers + btlLocalRecoValid + btlLocalRecoSoAValid + etlLocalRecoValid + etlLocalRecoSoAValid + mtdTracksValid + vertices4DValid)
+
+# with the btlRawData process modifier the BTL digis SoA come from the BTL unpacker
+from Configuration.ProcessModifiers.btlRawData_cff import btlRawData
+btlRawData.toModify(btlDigiSoAHitsValid, inputTag = "btlRawToDigi")
