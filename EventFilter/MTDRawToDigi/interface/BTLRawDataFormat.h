@@ -68,15 +68,21 @@ namespace btlraw {
     return (width == 64) ? ~uint64_t(0) : ((uint64_t(1) << width) - 1);
   }
 
+  // Read a field (returned in the low bits), with position and width passed as integers:
+  // used in device code, where passing a Field object makes nvcc read it from global memory
+  ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE constexpr uint64_t extractBits(const ChannelWord& w, int pos, int width) {
+    const uint64_t mask = lowMask(width);
+    if (pos >= 64)  // entirely in hi
+      return (w.hi >> (pos - 64)) & mask;
+    if (pos + width <= 64)  // entirely in lo
+      return (w.lo >> pos) & mask;
+    // across the 64-bit boundary (0 < pos < 64)
+    return ((w.lo >> pos) | (w.hi << (64 - pos))) & mask;
+  }
+
   // Read a field (returned in the low bits)
   ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE constexpr uint64_t extractBits(const ChannelWord& w, Field f) {
-    const uint64_t mask = lowMask(f.width);
-    if (f.pos >= 64)  // entirely in hi
-      return (w.hi >> (f.pos - 64)) & mask;
-    if (f.pos + f.width <= 64)  // entirely in lo
-      return (w.lo >> f.pos) & mask;
-    // across the 64-bit boundary (0 < pos < 64)
-    return ((w.lo >> f.pos) | (w.hi << (64 - f.pos))) & mask;
+    return extractBits(w, f.pos, f.width);
   }
 
   // Write a field: only the lowest f.width bits of value are used, the other bits of the word are unchanged

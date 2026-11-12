@@ -30,21 +30,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         ChannelWord w;
         w.lo = rawWords[2 * i];
         w.hi = rawWords[2 * i + 1];
-        out[i].bc0count() = static_cast<uint16_t>(extractBits(w, kBC0count));
-        out[i].status() = extractBits(w, kStatus) != 0;
-        const int32_t hslink = static_cast<int32_t>(extractBits(w, kHSLink));
-        const int32_t elink = static_cast<int32_t>(extractBits(w, kELink));
-        const int32_t chId = static_cast<int32_t>(extractBits(w, kChId));
-        out[i].bcCount() = static_cast<uint32_t>(extractBits(w, kBCcount));
-        out[i].t1Coarse() = static_cast<uint16_t>(extractBits(w, kT1Coarse));
-        out[i].t2Coarse() = static_cast<uint16_t>(extractBits(w, kT2Coarse));
-        out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(w, kEOICoarse));
-        out[i].charge() = static_cast<uint16_t>(extractBits(w, kCharge));
-        out[i].t1Fine() = static_cast<uint16_t>(extractBits(w, kT1Fine));
-        out[i].t2Fine() = static_cast<uint16_t>(extractBits(w, kT2Fine));
-        out[i].idleTime() = static_cast<uint16_t>(extractBits(w, kIdleTime));
-        out[i].prevTrigF() = static_cast<uint8_t>(extractBits(w, kPrevTrigF));
-        out[i].tacId() = static_cast<uint8_t>(extractBits(w, kTACId));
+        out[i].bc0count() = static_cast<uint16_t>(extractBits(w, kBC0count.pos, kBC0count.width));
+        out[i].status() = extractBits(w, kStatus.pos, kStatus.width) != 0;
+        const int32_t hslink = static_cast<int32_t>(extractBits(w, kHSLink.pos, kHSLink.width));
+        const int32_t elink = static_cast<int32_t>(extractBits(w, kELink.pos, kELink.width));
+        const int32_t chId = static_cast<int32_t>(extractBits(w, kChId.pos, kChId.width));
+        out[i].bcCount() = static_cast<uint32_t>(extractBits(w, kBCcount.pos, kBCcount.width));
+        out[i].t1Coarse() = static_cast<uint16_t>(extractBits(w, kT1Coarse.pos, kT1Coarse.width));
+        out[i].t2Coarse() = static_cast<uint16_t>(extractBits(w, kT2Coarse.pos, kT2Coarse.width));
+        out[i].eoiCoarse() = static_cast<uint16_t>(extractBits(w, kEOICoarse.pos, kEOICoarse.width));
+        out[i].charge() = static_cast<uint16_t>(extractBits(w, kCharge.pos, kCharge.width));
+        out[i].t1Fine() = static_cast<uint16_t>(extractBits(w, kT1Fine.pos, kT1Fine.width));
+        out[i].t2Fine() = static_cast<uint16_t>(extractBits(w, kT2Fine.pos, kT2Fine.width));
+        out[i].idleTime() = static_cast<uint16_t>(extractBits(w, kIdleTime.pos, kIdleTime.width));
+        out[i].prevTrigF() = static_cast<uint8_t>(extractBits(w, kPrevTrigF.pos, kPrevTrigF.width));
+        out[i].tacId() = static_cast<uint8_t>(extractBits(w, kTACId.pos, kTACId.width));
 
         // Dense index of the electronics channel (also the index in the mapping):
         // the chip index (dense, in [0, nChips)) is channelDenseIndex / nChannelsPerChip.
