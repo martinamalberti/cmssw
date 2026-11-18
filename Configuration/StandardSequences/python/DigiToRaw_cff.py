@@ -61,11 +61,11 @@ fastSim.toReplaceWith(DigiToRawTask, DigiToRawTask.copyAndExclude([siPixelRawDat
 from Configuration.Eras.Modifier_phase2_ecal_devel_cff import phase2_ecal_devel
 phase2_ecal_devel.toReplaceWith(DigiToRawTask, DigiToRawTask.copyAndExclude([L1TDigiToRawTask, ecalPacker, esDigiToRaw, cscpacker]))
 
-# BTL packer, only with the btlRawData process modifier:
+# BTL packer, only with the mtdRawData process modifier:
 # the packer and the readout map are loaded only when the modifier is active
 def _addBTLPacker(process):
     process.load("EventFilter.MTDRawToDigi.btlDigiToRaw_cff")
     process.DigiToRawTask.add(process.btlDigiToRaw)
 
-from Configuration.ProcessModifiers.btlRawData_cff import btlRawData
-modifyConfigurationStandardSequencesDigiToRawAddBTLPacker_ = btlRawData.makeProcessModifier(_addBTLPacker)
+from Configuration.ProcessModifiers.mtdRawData_cff import mtdRawData
+modifyConfigurationStandardSequencesDigiToRawAddBTLPacker_ = mtdRawData.makeProcessModifier(_addBTLPacker)
