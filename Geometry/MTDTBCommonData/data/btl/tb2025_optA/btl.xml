@@ -11,6 +11,11 @@
         the same ReadoutUnit as the DUT (same module and material) in a dedicated container, TrayZposREF (copy 2).
         The beam crosses the REF perpendicularly to its face (3.75 mm of LYSO) and the REF crystals are along z,
         perpendicular to the DUT ones. The REF DetId differs from the DUT one only by the tray (rod) number.
+      - the whole BarrelTimingLayer is rotated and translated in cms:Tracker so that the beam travels along +z,
+        on the z axis: the beam direction of the 2025 setup (transverse plane, phi = 52 deg) is mapped onto +z,
+        the CMS z axis onto +y, and the 2025 beam line (91.015 cm from the CMS axis) onto the z axis.
+        The 2025 beam vertex is mapped onto the origin. Incidence angles on DUT and REF, bar orientations
+        and distances along the beam are unchanged: REF centre at z = 41.2 cm, DUT centre at z = 71.2 cm.
   -->
   <ConstantsSection label="btl.xml" eval="true">
     <Constant name="BTLrmin" value="650.0*mm"/>
@@ -26,6 +31,9 @@
     <Rotation name="RotTrayZposREF" thetaX="90*deg" phiX="142*deg" thetaY="90*deg" phiY="232*deg" thetaZ="0*deg" phiZ="0*deg"/>
     <!-- REF readout unit: rotated by -90 deg around the module normal, so that the REF crystals are along z -->
     <RotationByAxis name="RotReadoutUnitREF" axis="y" angle="-90*deg"/>
+    <!-- BarrelTimingLayer in the beam frame: local x -> (-sin52, 0, cos52), local y -> (cos52, 0, sin52), local z -> +y,
+         i.e. the 2025 beam direction (cos52, sin52, 0) -> +z -->
+    <Rotation name="RotBTLbeamZ" thetaX="52*deg" phiX="180*deg" thetaY="38*deg" phiY="0*deg" thetaZ="90*deg" phiZ="90*deg"/>
   </RotationSection>
 
   <SolidSection label="btl.xml">
@@ -304,6 +312,8 @@
     <PosPart copyNumber="1">
       <rParent name="cms:Tracker"/>
       <rChild name="btl:BarrelTimingLayer"/>
+      <rRotation name="btl:RotBTLbeamZ"/>
+      <Translation x="910.1524204157639*mm" y="0.0*mm" z="0.0*mm"/>
     </PosPart>
 
     <!-- Position the timing layer inside the BTL volume -->

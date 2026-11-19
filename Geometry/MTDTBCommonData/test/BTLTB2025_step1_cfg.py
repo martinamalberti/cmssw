@@ -1,5 +1,6 @@
 # GEN-SIM for the BTL test beam 2025 geometry with active DUT and REF modules (DD4hep),
-# adapted from BTLTB2025_step1_DUTbehind_cfg.py (same beam, the module positions are the same as in the 2025 geometry)
+# adapted from BTLTB2025_step1_DUTbehind_cfg.py. The setup is rotated so that the beam travels along +z (see btl.xml):
+# same incidence on the modules and same vertex position relative to them as in the 2025 configuration
 #   cmsRun BTLTB2025_step1_cfg.py maxEvents=200 outputFile=BTLTB2025_step1.root
 import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
@@ -44,17 +45,17 @@ process.genstepfilter.triggerConditions = cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_0T', '')
 
-# Same beam as in BTLTB2025_step1_DUTbehind_cfg.py: pions in the transverse plane (eta = 0) at 52 degrees
-# with respect to the normal to the DUT surface, crossing first the REF and then the DUT module.
-# With eta = 0 and the default Psi the beam profile is in the plane orthogonal to the beam direction:
-# BeamMeanY = -91.015 cm gives the vertex at (71.7, -56.0, 0) cm, on the line through the REF and DUT centres.
-beamPhi = 0.9075712110370513
-process.VtxSmeared.MinEta = 0.
-process.VtxSmeared.MaxEta = 0.
-process.VtxSmeared.MinPhi = beamPhi
-process.VtxSmeared.MaxPhi = beamPhi
+# Pion beam along +z (eta = 10, i.e. 0.09 mrad from the z axis), starting at z = BeamPosition = 0 with a
+# transverse Gaussian profile centred on the z axis. In the rotated geometry the z axis goes through the REF
+# and DUT centres (z = 41.2 and 71.2 cm): this is the same beam as in BTLTB2025_step1_DUTbehind_cfg.py
+# (phi = 52 deg in the transverse plane, BeamMeanY = -91.015 cm), expressed in the beam frame.
+beamEta = 10.
+process.VtxSmeared.MinEta = beamEta
+process.VtxSmeared.MaxEta = beamEta
+process.VtxSmeared.MinPhi = 0.
+process.VtxSmeared.MaxPhi = 0.
 process.VtxSmeared.BeamMeanX = 0.
-process.VtxSmeared.BeamMeanY = -91.01524204157639
+process.VtxSmeared.BeamMeanY = 0.
 process.VtxSmeared.BeamPosition = 0.
 process.VtxSmeared.BeamSigmaX = 2.
 process.VtxSmeared.BeamSigmaY = 2.
@@ -62,10 +63,10 @@ process.VtxSmeared.BeamSigmaY = 2.
 process.generator = cms.EDProducer("FlatRandomEGunProducer",
     PGunParameters = cms.PSet(
         PartID = cms.vint32(211),
-        MinEta = cms.double(0.),
-        MaxEta = cms.double(0.),
-        MinPhi = cms.double(beamPhi),
-        MaxPhi = cms.double(beamPhi),
+        MinEta = cms.double(beamEta),
+        MaxEta = cms.double(beamEta),
+        MinPhi = cms.double(0.),
+        MaxPhi = cms.double(0.),
         MinE   = cms.double(180.00),
         MaxE   = cms.double(180.00)
     ),
@@ -75,6 +76,11 @@ process.generator = cms.EDProducer("FlatRandomEGunProducer",
 
 # only the MTD sensitive detector is present in the test beam geometry
 process.g4SimHits.OnlySDs = ['MtdSensitiveDetector']
+# the beam is along z (eta = 10): remove the CMS acceptance cut on the generated particles (abs(eta) < 5.5)
+process.g4SimHits.Generator.ApplyEtaCuts = False
+# particles of status 1 extrapolated to Z_hector within RDecLenCut of the beam axis are treated as very forward
+# (only n and gamma are passed to Geant4): switch it off, the beam is close to the z axis
+process.g4SimHits.Generator.RDecLenCut = 0.
 
 process.generation_step = cms.Path(process.pgen)
 process.simulation_step = cms.Path(process.psim)
