@@ -6,13 +6,13 @@
       CMSE and Tracker are kept to provide the number of volume levels expected by BTLNumberingScheme.
       All the volumes are boxes centred in the origin and filled with air.
       The BTL volume is rotated so that the beam travels along +z (see btl.xml): the boxes are sized to contain
-      the rotated BarrelTimingLayer envelope (x from -0.28 to 2.10 m, |y| < 2.91 m, |z| < 1.19 m).
+      the rotated BarrelTimingLayer envelope (x from -0.35 to 2.17 m, |y| < 2.91 m, |z| < 1.26 m).
   -->
 
   <SolidSection label="cms.xml">
-    <Box name="OCMS" dx="2.3*m" dy="3.0*m" dz="1.35*m"/>
-    <Box name="CMSE" dx="2.25*m" dy="2.95*m" dz="1.3*m"/>
-    <Box name="Tracker" dx="2.2*m" dy="2.92*m" dz="1.25*m"/>
+    <Box name="OCMS" dx="2.3*m" dy="3.0*m" dz="1.4*m"/>
+    <Box name="CMSE" dx="2.25*m" dy="2.95*m" dz="1.35*m"/>
+    <Box name="Tracker" dx="2.2*m" dy="2.92*m" dz="1.3*m"/>
   </SolidSection>
 
   <LogicalPartSection label="cms.xml">

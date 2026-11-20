@@ -16,10 +16,14 @@
         the CMS z axis onto +y, and the 2025 beam line (91.015 cm from the CMS axis) onto the z axis.
         The 2025 beam vertex is mapped onto the origin. Incidence angles on DUT and REF, bar orientations
         and distances along the beam are unchanged: REF centre at z = 41.2 cm, DUT centre at z = 71.2 cm.
+      - the DUT is then rotated by +104 deg around the axis parallel to y through its module centre, so that its
+        tilt is mirrored with respect to the 2025 setup: angle of +52 deg around y from the position perpendicular
+        to the beam (the end of the DUT bars at larger x is at smaller z). BTLrmax is raised to contain the
+        rotated DUT tray.
   -->
   <ConstantsSection label="btl.xml" eval="true">
     <Constant name="BTLrmin" value="650.0*mm"/>
-    <Constant name="BTLrmax" value="1191.1*mm"/>
+    <Constant name="BTLrmax" value="1260.0*mm"/>
     <Constant name="BTLz" value="2910.0*mm"/>
   </ConstantsSection>
 
@@ -31,6 +35,9 @@
     <Rotation name="RotTrayZposREF" thetaX="90*deg" phiX="142*deg" thetaY="90*deg" phiY="232*deg" thetaZ="0*deg" phiZ="0*deg"/>
     <!-- REF readout unit: rotated by -90 deg around the module normal, so that the REF crystals are along z -->
     <RotationByAxis name="RotReadoutUnitREF" axis="y" angle="-90*deg"/>
+    <!-- DUT tray: rotation by 90 deg around z from DDTrackerPhiAltAlgo at phi = 0, further rotated by 104 deg around z
+         (= around +y in the beam frame), i.e. a rotation by 194 deg around z -->
+    <Rotation name="RotTrayZposDUT" thetaX="90*deg" phiX="194*deg" thetaY="90*deg" phiY="284*deg" thetaZ="0*deg" phiZ="0*deg"/>
     <!-- BarrelTimingLayer in the beam frame: local x -> (-sin52, 0, cos52), local y -> (cos52, 0, sin52), local z -> +y,
          i.e. the 2025 beam direction (cos52, sin52, 0) -> +z -->
     <Rotation name="RotBTLbeamZ" thetaX="52*deg" phiX="180*deg" thetaY="38*deg" phiY="0*deg" thetaZ="90*deg" phiZ="90*deg"/>
@@ -45,7 +52,7 @@
     </Polycone>
 
     <!-- BTL timing layer -->
-    <Tubs name="LayerTiming" rMin="650.01*mm" rMax="1191.09*mm" dz="2909.99*mm" startPhi="0*deg" deltaPhi="360*deg"/>
+    <Tubs name="LayerTiming" rMin="650.01*mm" rMax="1259.99*mm" dz="2909.99*mm" startPhi="0*deg" deltaPhi="360*deg"/>
 
     <!-- Trays -->
     <Box name="TrayZpos" dx="92.01*mm" dy="10.26*mm" dz="1240.41*mm"/>
@@ -606,22 +613,29 @@
     </PosPart>
 
     <!-- Position the trays in the timing layer -->
-    <Algorithm name="track:DDTrackerPhiAltAlgo">
+    <!-- DUT tray: originally placed by DDTrackerPhiAltAlgo (phi = 0, radius 1160.25 mm, z = 1059.36 mm, copy 1).
+         It is now placed explicitly, rotated by 104 deg around z around the DUT module centre, which stays at
+         (1156.025, 0, 0.01) mm (module centre in the tray frame: (0, 4.225, -1059.35) mm).
+         Tray translation = C + Rz(104 deg) * ((1160.25, 0) - C), with C = (1156.025, 0) mm -->
+    <!--<Algorithm name="track:DDTrackerPhiAltAlgo">
       <rParent name="btl:LayerTiming"/>
       <String name="ChildName" value="btl:TrayZpos"/>
       <Numeric name="Tilt" value="0*deg"/>
-      <!--<Numeric name="StartAngle" value="9.4736842*deg"/>-->
       <Numeric name="StartAngle" value="0*deg"/>
       <Numeric name="RangeAngle" value="161.05263*deg"/>
       <Numeric name="RadiusIn" value="1160.25*mm"/>
       <Numeric name="RadiusOut" value="1160.25*mm"/>
-      <!--<Numeric name="ZPosition" value="1240.41*mm"/>-->
       <Numeric name="ZPosition" value="1059.36*mm"/>
-      <!--<Numeric name="Number" value="18"/>-->
       <Numeric name="Number" value="1"/>
       <Numeric name="StartCopyNo" value="1"/>
       <Numeric name="IncrCopyNo" value="1"/>
-    </Algorithm>
+    </Algorithm>-->
+    <PosPart copyNumber="1">
+      <rParent name="btl:LayerTiming"/>
+      <rChild name="btl:TrayZpos"/>
+      <rRotation name="btl:RotTrayZposDUT"/>
+      <Translation x="1155.0028799910915*mm" y="4.099499443515997*mm" z="1059.36*mm"/>
+    </PosPart>
     <!--<Algorithm name="track:DDTrackerPhiAltAlgo">-->
       <!--<rParent name="btl:LayerTiming"/>-->
       <!--<String name="ChildName" value="btl:TrayZpos"/>-->
